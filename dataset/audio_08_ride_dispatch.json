@@ -1,0 +1,324 @@
+{
+  "dataset": "Synthetic Two-Speaker Golden Audio Dataset",
+  "audio_id": "audio_08_ride_dispatch",
+  "topic": "Ride Hailing Dispatch System",
+  "duration_seconds": 359.12,
+  "speakers": [
+    "SPEAKER_00",
+    "SPEAKER_01"
+  ],
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 5.356,
+      "speaker": "SPEAKER_00",
+      "text": "Let's design the dispatch system for a ride hailing service, matching riders to nearby drivers."
+    },
+    {
+      "start": 5.656,
+      "end": 12.924,
+      "speaker": "SPEAKER_01",
+      "text": "The core loop is location ingestion, proximity search, matching, and then trip state management until completion."
+    },
+    {
+      "start": 13.224,
+      "end": 20.157,
+      "speaker": "SPEAKER_00",
+      "text": "Start with location updates. Every active driver reports position every few seconds, which is a very high write rate."
+    },
+    {
+      "start": 20.457,
+      "end": 27.982,
+      "speaker": "SPEAKER_01",
+      "text": "With a million active drivers reporting every four seconds, that is two hundred fifty thousand writes per second just for positions."
+    },
+    {
+      "start": 28.282,
+      "end": 34.414,
+      "speaker": "SPEAKER_00",
+      "text": "We should not write those to a durable transactional store. Current position belongs in memory with a short expiry."
+    },
+    {
+      "start": 34.714,
+      "end": 41.274,
+      "speaker": "SPEAKER_01",
+      "text": "The historical trail can go to a separate append only pipeline for analytics, billing and dispute resolution."
+    },
+    {
+      "start": 41.574,
+      "end": 49.072,
+      "speaker": "SPEAKER_00",
+      "text": "That separation is important. The real time path needs speed, the historical path needs durability, and they have different shapes."
+    },
+    {
+      "start": 49.372,
+      "end": 58.21,
+      "speaker": "SPEAKER_01",
+      "text": "Now the geospatial query. Given a rider's coordinates, find available drivers within a few kilometers, ranked by estimated arrival time."
+    },
+    {
+      "start": 58.51,
+      "end": 65.906,
+      "speaker": "SPEAKER_00",
+      "text": "The classic approach is a geohash, which encodes latitude and longitude into a string where shared prefixes mean spatial proximity."
+    },
+    {
+      "start": 66.206,
+      "end": 73.068,
+      "speaker": "SPEAKER_01",
+      "text": "So we index drivers by geohash prefix and query the rider's cell plus the eight surrounding cells to avoid boundary misses."
+    },
+    {
+      "start": 73.368,
+      "end": 80.114,
+      "speaker": "SPEAKER_00",
+      "text": "The boundary problem is real. Two points can be a few meters apart but sit in different cells with completely different prefixes."
+    },
+    {
+      "start": 80.414,
+      "end": 87.504,
+      "speaker": "SPEAKER_01",
+      "text": "Hierarchical cell systems like S2 or the hexagonal H3 grid handle this more gracefully and give better shaped cells."
+    },
+    {
+      "start": 87.804,
+      "end": 94.255,
+      "speaker": "SPEAKER_00",
+      "text": "Hexagons have the nice property that all six neighbors are equidistant, which makes ring queries cleaner than with squares."
+    },
+    {
+      "start": 94.555,
+      "end": 100.641,
+      "speaker": "SPEAKER_01",
+      "text": "Whatever the grid, we keep an in memory index from cell identifier to the set of drivers currently in that cell."
+    },
+    {
+      "start": 100.941,
+      "end": 107.658,
+      "speaker": "SPEAKER_00",
+      "text": "On each position update we move the driver between cells, which is two set operations rather than a full spatial rebuild."
+    },
+    {
+      "start": 107.958,
+      "end": 115.494,
+      "speaker": "SPEAKER_01",
+      "text": "Cell size is a tuning decision. Too large and every query scans thousands of drivers, too small and we query many cells."
+    },
+    {
+      "start": 115.794,
+      "end": 123.092,
+      "speaker": "SPEAKER_00",
+      "text": "Dense city centers and sparse suburbs argue for different sizes, which is why a hierarchical system with variable resolution helps."
+    },
+    {
+      "start": 123.392,
+      "end": 130.604,
+      "speaker": "SPEAKER_01",
+      "text": "Once we have candidates, straight line distance is a poor ranking signal because of rivers, highways and one way streets."
+    },
+    {
+      "start": 130.904,
+      "end": 137.75,
+      "speaker": "SPEAKER_00",
+      "text": "Agreed. We should use a routing engine to compute actual travel time for the shortlisted candidates, not for all of them."
+    },
+    {
+      "start": 138.05,
+      "end": 145.434,
+      "speaker": "SPEAKER_01",
+      "text": "So filter geometrically to maybe twenty candidates, then compute real estimated arrival times for those, then rank."
+    },
+    {
+      "start": 145.734,
+      "end": 151.789,
+      "speaker": "SPEAKER_00",
+      "text": "Now the matching decision itself. The greedy approach assigns the nearest driver to each request as it arrives."
+    },
+    {
+      "start": 152.089,
+      "end": 159.069,
+      "speaker": "SPEAKER_01",
+      "text": "Greedy is simple but globally suboptimal. Two requests can each grab a driver in a way that leaves a third rider stranded."
+    },
+    {
+      "start": 159.369,
+      "end": 166.595,
+      "speaker": "SPEAKER_00",
+      "text": "Batched matching collects requests over a short window, a few seconds, and solves an assignment problem across the whole batch."
+    },
+    {
+      "start": 166.895,
+      "end": 173.162,
+      "speaker": "SPEAKER_01",
+      "text": "That typically reduces total wait time meaningfully, at the cost of adding the batching delay to every request."
+    },
+    {
+      "start": 173.462,
+      "end": 180.078,
+      "speaker": "SPEAKER_00",
+      "text": "The optimization objective is interesting. Minimizing total pickup time is not the same as minimizing the worst wait."
+    },
+    {
+      "start": 180.378,
+      "end": 187.138,
+      "speaker": "SPEAKER_01",
+      "text": "And neither accounts for fairness to drivers, or for repositioning supply toward areas where demand is about to rise."
+    },
+    {
+      "start": 187.438,
+      "end": 193.236,
+      "speaker": "SPEAKER_00",
+      "text": "Let's talk about the offer protocol. We send the trip to a driver, who has a limited time to accept."
+    },
+    {
+      "start": 193.536,
+      "end": 200.028,
+      "speaker": "SPEAKER_01",
+      "text": "During that window the driver must be soft locked, otherwise a concurrent match could offer the same driver two trips."
+    },
+    {
+      "start": 200.328,
+      "end": 205.456,
+      "speaker": "SPEAKER_00",
+      "text": "A short lease in the dispatch store, with the driver marked as pending, handles that cleanly."
+    },
+    {
+      "start": 205.756,
+      "end": 211.1,
+      "speaker": "SPEAKER_01",
+      "text": "If the driver declines or the lease expires, we release them and offer the trip to the next candidate."
+    },
+    {
+      "start": 211.4,
+      "end": 217.73,
+      "speaker": "SPEAKER_00",
+      "text": "We should cap the number of sequential offers, because a rider waiting through ten declines has a terrible experience."
+    },
+    {
+      "start": 218.03,
+      "end": 224.47,
+      "speaker": "SPEAKER_01",
+      "text": "After a few failures we should widen the search radius rather than continuing to cycle within the same candidate set."
+    },
+    {
+      "start": 224.77,
+      "end": 231.713,
+      "speaker": "SPEAKER_00",
+      "text": "Trip state management comes next. A trip moves through requested, matched, en route, in progress and completed."
+    },
+    {
+      "start": 232.013,
+      "end": 239.266,
+      "speaker": "SPEAKER_01",
+      "text": "Those transitions must be idempotent and recorded durably, because mobile clients on bad networks will retry everything."
+    },
+    {
+      "start": 239.566,
+      "end": 246.112,
+      "speaker": "SPEAKER_00",
+      "text": "Each transition should carry the expected current state, so a duplicate or out of order message is rejected safely."
+    },
+    {
+      "start": 246.412,
+      "end": 252.076,
+      "speaker": "SPEAKER_01",
+      "text": "For the live tracking during a trip, we push driver positions to the rider over a persistent connection."
+    },
+    {
+      "start": 252.376,
+      "end": 257.394,
+      "speaker": "SPEAKER_00",
+      "text": "We can reduce that traffic by sending the route once and then sending only position deltas along it."
+    },
+    {
+      "start": 257.694,
+      "end": 264.058,
+      "speaker": "SPEAKER_01",
+      "text": "Clients can also interpolate between updates, which makes the marker move smoothly at a much lower update rate."
+    },
+    {
+      "start": 264.358,
+      "end": 270.817,
+      "speaker": "SPEAKER_00",
+      "text": "Let's discuss surge pricing, since it is really a supply and demand balancing mechanism rather than a pricing feature."
+    },
+    {
+      "start": 271.117,
+      "end": 276.773,
+      "speaker": "SPEAKER_01",
+      "text": "We compute the ratio of open requests to available drivers per geographic cell over a rolling window."
+    },
+    {
+      "start": 277.073,
+      "end": 284.459,
+      "speaker": "SPEAKER_00",
+      "text": "When demand outpaces supply, the multiplier rises, which suppresses some demand and attracts drivers from adjacent areas."
+    },
+    {
+      "start": 284.759,
+      "end": 291.409,
+      "speaker": "SPEAKER_01",
+      "text": "The multiplier must be smoothed over time, otherwise it oscillates wildly and both riders and drivers lose trust in it."
+    },
+    {
+      "start": 291.709,
+      "end": 297.544,
+      "speaker": "SPEAKER_00",
+      "text": "And the quoted price should be locked at request time, so a rider is never charged more than what they accepted."
+    },
+    {
+      "start": 297.844,
+      "end": 304.569,
+      "speaker": "SPEAKER_01",
+      "text": "On the geographic architecture, this system partitions naturally by city or region, which is a big advantage."
+    },
+    {
+      "start": 304.869,
+      "end": 311.971,
+      "speaker": "SPEAKER_00",
+      "text": "A trip almost never crosses regional boundaries, so each region can run an independent dispatch cluster with its own state."
+    },
+    {
+      "start": 312.271,
+      "end": 317.992,
+      "speaker": "SPEAKER_01",
+      "text": "That limits the blast radius of failures and lets us deploy changes city by city rather than globally."
+    },
+    {
+      "start": 318.292,
+      "end": 326.49,
+      "speaker": "SPEAKER_00",
+      "text": "For failure handling, if the dispatch service loses its in memory index, drivers repopulate it within a few seconds of position updates."
+    },
+    {
+      "start": 326.79,
+      "end": 333.202,
+      "speaker": "SPEAKER_01",
+      "text": "In flight trips are the harder case, so active trip state must live in durable storage, not only in memory."
+    },
+    {
+      "start": 333.502,
+      "end": 339.907,
+      "speaker": "SPEAKER_00",
+      "text": "A trip in progress must survive any service restart, because a rider physically in a car cannot simply be forgotten."
+    },
+    {
+      "start": 340.207,
+      "end": 348.766,
+      "speaker": "SPEAKER_01",
+      "text": "To summarize, in memory geospatial index with hierarchical cells, routing based ranking of a small candidate set, and batched matching."
+    },
+    {
+      "start": 349.066,
+      "end": 356.1,
+      "speaker": "SPEAKER_00",
+      "text": "Plus leased offers, idempotent durable trip state, smoothed surge by cell, and regional partitioning for isolation."
+    },
+    {
+      "start": 356.4,
+      "end": 363.317,
+      "speaker": "SPEAKER_01",
+      "text": "The physical world constraints are what make this different. Real roads, real time and real people waiting on a curb."
+    }
+  ]
+}

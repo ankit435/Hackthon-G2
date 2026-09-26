@@ -1,0 +1,348 @@
+{
+  "dataset": "Synthetic Two-Speaker Golden Audio Dataset",
+  "audio_id": "audio_01_rate_limiter",
+  "topic": "Distributed Rate Limiter",
+  "duration_seconds": 442.08,
+  "speakers": [
+    "SPEAKER_00",
+    "SPEAKER_01"
+  ],
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 3.487,
+      "speaker": "SPEAKER_00",
+      "text": "Let's design a distributed rate limiter for a public API."
+    },
+    {
+      "start": 3.787,
+      "end": 12.631,
+      "speaker": "SPEAKER_01",
+      "text": "The first requirement is one hundred requests per minute for each normal client, and we also need a higher tier for partners who have signed a contract with us."
+    },
+    {
+      "start": 12.931,
+      "end": 20.631,
+      "speaker": "SPEAKER_00",
+      "text": "So we need at least two policy tiers. Do we key the limit on the API key, the user identity, or the source IP address?"
+    },
+    {
+      "start": 20.931,
+      "end": 30.282,
+      "speaker": "SPEAKER_01",
+      "text": "I would key it on the API key as the primary identity, and fall back to the IP address only for unauthenticated endpoints like login and password reset."
+    },
+    {
+      "start": 30.582,
+      "end": 38.278,
+      "speaker": "SPEAKER_00",
+      "text": "That makes sense. IP based limiting alone breaks badly behind corporate NAT, where thousands of users share a single egress address."
+    },
+    {
+      "start": 38.578,
+      "end": 47.3,
+      "speaker": "SPEAKER_01",
+      "text": "Right, and it also breaks for mobile carriers. One carrier gateway can front a huge population, so we would punish legitimate traffic."
+    },
+    {
+      "start": 47.6,
+      "end": 54.118,
+      "speaker": "SPEAKER_00",
+      "text": "Let's talk about the algorithm. The obvious starting point is a fixed window counter, one counter per key per minute."
+    },
+    {
+      "start": 54.418,
+      "end": 60.36,
+      "speaker": "SPEAKER_01",
+      "text": "Fixed windows are cheap and easy to reason about, but they allow a burst of double the limit at the window boundary."
+    },
+    {
+      "start": 60.66,
+      "end": 67.843,
+      "speaker": "SPEAKER_00",
+      "text": "Exactly. A client can send one hundred requests at the last second of one minute and another hundred at the first second of the next."
+    },
+    {
+      "start": 68.143,
+      "end": 77.452,
+      "speaker": "SPEAKER_01",
+      "text": "For a public API that is a real problem, because the backend sees two hundred requests inside a two second span even though the policy says one hundred per minute."
+    },
+    {
+      "start": 77.752,
+      "end": 85.752,
+      "speaker": "SPEAKER_00",
+      "text": "The sliding window log fixes that precisely. We store a timestamp for every request and count the entries inside the trailing sixty seconds."
+    },
+    {
+      "start": 86.052,
+      "end": 95.072,
+      "speaker": "SPEAKER_01",
+      "text": "Precise, but expensive. For a key doing one hundred requests per minute we hold one hundred timestamps, and memory grows linearly with traffic."
+    },
+    {
+      "start": 95.372,
+      "end": 102.736,
+      "speaker": "SPEAKER_00",
+      "text": "So the practical middle ground is the sliding window counter, where we blend the previous window and the current window using a weighted average."
+    },
+    {
+      "start": 103.036,
+      "end": 110.685,
+      "speaker": "SPEAKER_01",
+      "text": "That gives us accuracy within a small error margin while storing only two integers per key, which is a good trade for a high volume API."
+    },
+    {
+      "start": 110.985,
+      "end": 117.079,
+      "speaker": "SPEAKER_00",
+      "text": "There is also the token bucket, which I like because it expresses burst capacity as a first class concept."
+    },
+    {
+      "start": 117.379,
+      "end": 126.136,
+      "speaker": "SPEAKER_01",
+      "text": "Agreed. The bucket holds a maximum number of tokens, tokens refill at a steady rate, and a request is allowed only if it can remove a token."
+    },
+    {
+      "start": 126.436,
+      "end": 134.218,
+      "speaker": "SPEAKER_00",
+      "text": "So a client that has been quiet accumulates tokens and can send a short burst, which is usually what API consumers actually want."
+    },
+    {
+      "start": 134.518,
+      "end": 144.923,
+      "speaker": "SPEAKER_01",
+      "text": "We should cap the bucket so idle clients cannot accumulate an unlimited burst. Capacity of one hundred with a refill of one point six seven tokens per second matches our policy."
+    },
+    {
+      "start": 145.223,
+      "end": 152.6,
+      "speaker": "SPEAKER_00",
+      "text": "Let's move to the distributed part. We will run many stateless API gateway nodes, so the counter cannot live in local memory."
+    },
+    {
+      "start": 152.9,
+      "end": 161.68,
+      "speaker": "SPEAKER_01",
+      "text": "If each node keeps its own counter, then with ten nodes a client effectively gets ten times the limit, assuming the load balancer spreads traffic evenly."
+    },
+    {
+      "start": 161.98,
+      "end": 170.272,
+      "speaker": "SPEAKER_00",
+      "text": "So we need shared state. The standard choice is Redis, keyed by the client identifier and the window, with atomic increment operations."
+    },
+    {
+      "start": 170.572,
+      "end": 177.691,
+      "speaker": "SPEAKER_01",
+      "text": "We should do the whole check and decrement inside a single Lua script so the read, the compare and the write are atomic on the Redis side."
+    },
+    {
+      "start": 177.991,
+      "end": 183.864,
+      "speaker": "SPEAKER_00",
+      "text": "That avoids the classic race where two gateway nodes both read ninety nine and both decide to allow the request."
+    },
+    {
+      "start": 184.164,
+      "end": 193.357,
+      "speaker": "SPEAKER_01",
+      "text": "For the token bucket the script would compute the elapsed time since the last refill, add the earned tokens, clamp to capacity, then try to spend one."
+    },
+    {
+      "start": 193.657,
+      "end": 200.231,
+      "speaker": "SPEAKER_00",
+      "text": "We store the token count and the last refill timestamp in a single hash, so one round trip does the entire decision."
+    },
+    {
+      "start": 200.531,
+      "end": 208.487,
+      "speaker": "SPEAKER_01",
+      "text": "Latency budget matters here. Every request pays this cost, so we want the Redis call to stay in the low single digit milliseconds."
+    },
+    {
+      "start": 208.787,
+      "end": 214.973,
+      "speaker": "SPEAKER_00",
+      "text": "That means the Redis cluster should be in the same region and ideally the same availability zone group as the gateway fleet."
+    },
+    {
+      "start": 215.273,
+      "end": 220.929,
+      "speaker": "SPEAKER_01",
+      "text": "We should also shard by key so a hot client does not concentrate all the load on one Redis primary."
+    },
+    {
+      "start": 221.229,
+      "end": 228.365,
+      "speaker": "SPEAKER_00",
+      "text": "Redis Cluster hashes the key to a slot, so as long as our key space is wide, the distribution is naturally balanced."
+    },
+    {
+      "start": 228.665,
+      "end": 236.179,
+      "speaker": "SPEAKER_01",
+      "text": "But a single abusive client is still a single key, and a single key always lands on a single node. That is our hot key problem."
+    },
+    {
+      "start": 236.479,
+      "end": 243.69,
+      "speaker": "SPEAKER_00",
+      "text": "For that case we can shard the counter itself, splitting the limit across a few sub counters and picking one at random per request."
+    },
+    {
+      "start": 243.99,
+      "end": 250.861,
+      "speaker": "SPEAKER_01",
+      "text": "That reduces contention at the cost of some accuracy, because the sub counters drift and one may exhaust before the others."
+    },
+    {
+      "start": 251.161,
+      "end": 258.681,
+      "speaker": "SPEAKER_00",
+      "text": "Another option for extreme traffic is a local token allocation model, where each gateway node leases a slice of the budget from Redis."
+    },
+    {
+      "start": 258.981,
+      "end": 267.143,
+      "speaker": "SPEAKER_01",
+      "text": "So a node asks for ten tokens at a time, serves them locally without any network call, and goes back for more when the lease runs low."
+    },
+    {
+      "start": 267.443,
+      "end": 274.767,
+      "speaker": "SPEAKER_00",
+      "text": "That cuts the Redis call rate by an order of magnitude, and the accuracy loss is bounded by the unspent leases at the moment of a burst."
+    },
+    {
+      "start": 275.067,
+      "end": 280.886,
+      "speaker": "SPEAKER_01",
+      "text": "Let's discuss failure handling. What happens when Redis is unreachable or slow beyond our timeout?"
+    },
+    {
+      "start": 281.186,
+      "end": 289.687,
+      "speaker": "SPEAKER_00",
+      "text": "We need an explicit policy. Fail open means we allow the traffic and protect availability. Fail closed means we reject and protect the backend."
+    },
+    {
+      "start": 289.987,
+      "end": 299.099,
+      "speaker": "SPEAKER_01",
+      "text": "For a public API I would fail open for normal endpoints, but fail closed for expensive or sensitive ones like account creation and bulk export."
+    },
+    {
+      "start": 299.399,
+      "end": 306.356,
+      "speaker": "SPEAKER_00",
+      "text": "We should also degrade to a local in memory limiter when the shared store is down, so there is still some ceiling rather than none at all."
+    },
+    {
+      "start": 306.656,
+      "end": 315.703,
+      "speaker": "SPEAKER_01",
+      "text": "Good. The local fallback should use a conservative limit, since each node enforces it independently and the effective total is multiplied by the fleet size."
+    },
+    {
+      "start": 316.003,
+      "end": 323.719,
+      "speaker": "SPEAKER_00",
+      "text": "Now the response contract. On rejection we return status four twenty nine, too many requests, with a Retry-After header."
+    },
+    {
+      "start": 324.019,
+      "end": 332.347,
+      "speaker": "SPEAKER_01",
+      "text": "And on every response we should include the limit, the remaining allowance and the reset timestamp, so well behaved clients can pace themselves."
+    },
+    {
+      "start": 332.647,
+      "end": 340.134,
+      "speaker": "SPEAKER_00",
+      "text": "Those headers turn the rate limiter from a punishment into a protocol. Clients can back off proactively instead of hammering and getting blocked."
+    },
+    {
+      "start": 340.434,
+      "end": 349.295,
+      "speaker": "SPEAKER_01",
+      "text": "We should also recommend jittered exponential backoff in the client documentation, otherwise every rejected client retries at the same reset instant."
+    },
+    {
+      "start": 349.595,
+      "end": 356.583,
+      "speaker": "SPEAKER_00",
+      "text": "That synchronized retry storm is a real failure mode. Jitter spreads the recovery traffic instead of creating a second spike."
+    },
+    {
+      "start": 356.883,
+      "end": 364.676,
+      "speaker": "SPEAKER_01",
+      "text": "What about rules configuration? I would keep the policies in a control plane and push them to the gateways, rather than hard coding them."
+    },
+    {
+      "start": 364.976,
+      "end": 373.816,
+      "speaker": "SPEAKER_00",
+      "text": "Yes, a policy service with versioned rules, so we can change a partner tier without a deployment. The gateways cache the rules and refresh periodically."
+    },
+    {
+      "start": 374.116,
+      "end": 381.63,
+      "speaker": "SPEAKER_01",
+      "text": "We should also support per endpoint overrides. A cheap read endpoint and an expensive search endpoint should not share the same budget."
+    },
+    {
+      "start": 381.93,
+      "end": 388.103,
+      "speaker": "SPEAKER_00",
+      "text": "A weighted cost model handles that well. A search request spends five tokens while a simple read spends one."
+    },
+    {
+      "start": 388.403,
+      "end": 396.47,
+      "speaker": "SPEAKER_01",
+      "text": "For observability we need metrics on allowed and rejected counts per tier, the top rejected keys, and the latency of the limiter itself."
+    },
+    {
+      "start": 396.77,
+      "end": 403.796,
+      "speaker": "SPEAKER_00",
+      "text": "We should alert when the rejection rate crosses a threshold, because that usually means either an attack or a client that shipped a bad loop."
+    },
+    {
+      "start": 404.096,
+      "end": 411.343,
+      "speaker": "SPEAKER_01",
+      "text": "One more concern is multi region. If a client can hit two regions, do we enforce a global limit or a per region limit?"
+    },
+    {
+      "start": 411.643,
+      "end": 419.373,
+      "speaker": "SPEAKER_00",
+      "text": "Cross region synchronous checks would add tens of milliseconds, so I would enforce per region budgets and reconcile asynchronously for billing."
+    },
+    {
+      "start": 419.673,
+      "end": 428.378,
+      "speaker": "SPEAKER_01",
+      "text": "That is a reasonable trade. The limiter protects capacity, which is regional anyway, and the exact global count only matters for the contract."
+    },
+    {
+      "start": 428.678,
+      "end": 438.073,
+      "speaker": "SPEAKER_00",
+      "text": "So to summarize, token bucket in Redis with atomic Lua scripts, local leases for hot keys, explicit fail open policy, and standard headers."
+    },
+    {
+      "start": 438.373,
+      "end": 446.616,
+      "speaker": "SPEAKER_01",
+      "text": "Plus a versioned policy control plane, weighted endpoint costs, and per region enforcement. I think that covers the design end to end."
+    }
+  ]
+}

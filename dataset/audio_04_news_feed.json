@@ -1,0 +1,312 @@
+{
+  "dataset": "Synthetic Two-Speaker Golden Audio Dataset",
+  "audio_id": "audio_04_news_feed",
+  "topic": "Social News Feed Ranking and Fanout",
+  "duration_seconds": 356.09,
+  "speakers": [
+    "SPEAKER_00",
+    "SPEAKER_01"
+  ],
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 6.064,
+      "speaker": "SPEAKER_00",
+      "text": "Let's work through a social news feed, the kind where a user opens the app and sees posts from people they follow."
+    },
+    {
+      "start": 6.364,
+      "end": 11.04,
+      "speaker": "SPEAKER_01",
+      "text": "The central tension in this problem is always fan out on write versus fan out on read."
+    },
+    {
+      "start": 11.34,
+      "end": 19.03,
+      "speaker": "SPEAKER_00",
+      "text": "Let's define them clearly. Fan out on write means that when someone posts, we immediately insert a reference into every follower's feed."
+    },
+    {
+      "start": 19.33,
+      "end": 26.299,
+      "speaker": "SPEAKER_01",
+      "text": "And fan out on read means we store the post once and assemble the feed at request time by querying everyone the viewer follows."
+    },
+    {
+      "start": 26.599,
+      "end": 33.265,
+      "speaker": "SPEAKER_00",
+      "text": "Fan out on write makes reads extremely fast, which matters because reads dominate by a huge factor in this product."
+    },
+    {
+      "start": 33.565,
+      "end": 40.15,
+      "speaker": "SPEAKER_01",
+      "text": "But the write amplification is brutal for accounts with millions of followers. One post becomes millions of inserts."
+    },
+    {
+      "start": 40.45,
+      "end": 46.993,
+      "speaker": "SPEAKER_00",
+      "text": "And most of those inserts are wasted, because only a small fraction of followers will open the app before the post is stale."
+    },
+    {
+      "start": 47.293,
+      "end": 54.654,
+      "speaker": "SPEAKER_01",
+      "text": "So the standard answer is a hybrid. Regular accounts fan out on write, and high follower accounts are merged in at read time."
+    },
+    {
+      "start": 54.954,
+      "end": 62.108,
+      "speaker": "SPEAKER_00",
+      "text": "We set a threshold, maybe a hundred thousand followers, above which an account is flagged as a celebrity and excluded from push."
+    },
+    {
+      "start": 62.408,
+      "end": 70.051,
+      "speaker": "SPEAKER_01",
+      "text": "At read time we take the precomputed feed, pull recent posts from the celebrities the viewer follows, and merge the two lists."
+    },
+    {
+      "start": 70.351,
+      "end": 75.495,
+      "speaker": "SPEAKER_00",
+      "text": "The merge is cheap because the celebrity set per viewer is small, usually a handful of accounts."
+    },
+    {
+      "start": 75.795,
+      "end": 82.403,
+      "speaker": "SPEAKER_01",
+      "text": "We should cache the celebrity timelines aggressively, since millions of viewers pull the same few author timelines."
+    },
+    {
+      "start": 82.703,
+      "end": 90.265,
+      "speaker": "SPEAKER_00",
+      "text": "Let's define the data model. A post record holds the author, the content reference, the creation time and the visibility settings."
+    },
+    {
+      "start": 90.565,
+      "end": 97.07,
+      "speaker": "SPEAKER_01",
+      "text": "And the feed itself is a per user list of post identifiers with a ranking score, trimmed to some maximum length."
+    },
+    {
+      "start": 97.37,
+      "end": 104.385,
+      "speaker": "SPEAKER_00",
+      "text": "We do not store post content in the feed, only references, so an edit or deletion takes effect everywhere immediately."
+    },
+    {
+      "start": 104.685,
+      "end": 111.044,
+      "speaker": "SPEAKER_01",
+      "text": "Hydration happens at read time, fetching the actual post objects in a batch from the post store or cache."
+    },
+    {
+      "start": 111.344,
+      "end": 119.028,
+      "speaker": "SPEAKER_00",
+      "text": "That also lets us filter at read time. Blocked authors, deleted posts and changed privacy settings are all applied during hydration."
+    },
+    {
+      "start": 119.328,
+      "end": 125.658,
+      "speaker": "SPEAKER_01",
+      "text": "Without that, a deleted post would linger in millions of precomputed feeds and we would have to chase it down with deletes."
+    },
+    {
+      "start": 125.958,
+      "end": 131.967,
+      "speaker": "SPEAKER_00",
+      "text": "Now ranking. The simplest feed is reverse chronological, which is predictable and needs no machine learning."
+    },
+    {
+      "start": 132.267,
+      "end": 139.688,
+      "speaker": "SPEAKER_01",
+      "text": "But engagement optimized feeds score each candidate on predicted interaction, then sort by that score instead of by time."
+    },
+    {
+      "start": 139.988,
+      "end": 147.965,
+      "speaker": "SPEAKER_00",
+      "text": "The typical pipeline has three stages. Candidate generation, then a lightweight ranking pass, then a heavier model on the survivors."
+    },
+    {
+      "start": 148.265,
+      "end": 156.567,
+      "speaker": "SPEAKER_01",
+      "text": "Candidate generation might produce a few thousand posts, the light ranker cuts that to a few hundred, and the heavy ranker orders the final page."
+    },
+    {
+      "start": 156.867,
+      "end": 163.703,
+      "speaker": "SPEAKER_00",
+      "text": "That staged funnel is what keeps latency acceptable, because the expensive model only ever sees a small candidate set."
+    },
+    {
+      "start": 164.003,
+      "end": 171.675,
+      "speaker": "SPEAKER_01",
+      "text": "Features would include the viewer's past interaction with the author, recency, content type and early engagement signals on the post."
+    },
+    {
+      "start": 171.975,
+      "end": 178.792,
+      "speaker": "SPEAKER_00",
+      "text": "We should also apply diversity rules after ranking, so the feed does not show ten consecutive posts from the same author."
+    },
+    {
+      "start": 179.092,
+      "end": 185.121,
+      "speaker": "SPEAKER_01",
+      "text": "And integrity filters, removing content that violates policy or that the viewer has explicitly muted."
+    },
+    {
+      "start": 185.421,
+      "end": 192.995,
+      "speaker": "SPEAKER_00",
+      "text": "Let's talk about the serving path latency. A feed request should complete in a couple hundred milliseconds at the ninety ninth percentile."
+    },
+    {
+      "start": 193.295,
+      "end": 199.875,
+      "speaker": "SPEAKER_01",
+      "text": "That means the precomputed feed lookup must be a single cache read, and hydration must be one batched multi get."
+    },
+    {
+      "start": 200.175,
+      "end": 206.85,
+      "speaker": "SPEAKER_00",
+      "text": "Pagination needs a stable cursor, because if we paginate by offset the list shifts under the user as new posts arrive."
+    },
+    {
+      "start": 207.15,
+      "end": 213.156,
+      "speaker": "SPEAKER_01",
+      "text": "A cursor encoding the last seen position and the ranking snapshot avoids duplicates and gaps when scrolling."
+    },
+    {
+      "start": 213.456,
+      "end": 220.841,
+      "speaker": "SPEAKER_00",
+      "text": "For the write path, posting should be fast for the author. We persist the post, acknowledge, then fan out asynchronously."
+    },
+    {
+      "start": 221.141,
+      "end": 228.801,
+      "speaker": "SPEAKER_01",
+      "text": "The fan out worker reads the follower list and writes into feed stores in batches, with backpressure so a spike does not overwhelm the cluster."
+    },
+    {
+      "start": 229.101,
+      "end": 236.151,
+      "speaker": "SPEAKER_00",
+      "text": "We should prioritize active followers first, so people likely to open the app soon get the post before dormant accounts."
+    },
+    {
+      "start": 236.451,
+      "end": 243.612,
+      "speaker": "SPEAKER_01",
+      "text": "That is a nice optimization. It cuts the perceived fan out latency dramatically even if the full fan out takes minutes."
+    },
+    {
+      "start": 243.912,
+      "end": 249.83,
+      "speaker": "SPEAKER_00",
+      "text": "In fact for dormant users we could skip the push entirely and rebuild their feed on read when they eventually return."
+    },
+    {
+      "start": 250.13,
+      "end": 257.059,
+      "speaker": "SPEAKER_01",
+      "text": "That saves an enormous amount of write volume, since a large fraction of registered accounts are inactive on any given day."
+    },
+    {
+      "start": 257.359,
+      "end": 263.828,
+      "speaker": "SPEAKER_00",
+      "text": "Storage wise, feeds are pure cache. We can always rebuild them from the posts and the follow graph if we lose them."
+    },
+    {
+      "start": 264.128,
+      "end": 271.001,
+      "speaker": "SPEAKER_01",
+      "text": "So we can keep them in memory with a bounded length, say the most recent few hundred entries, and rebuild on a miss."
+    },
+    {
+      "start": 271.301,
+      "end": 277.385,
+      "speaker": "SPEAKER_00",
+      "text": "The follow graph itself needs to be fast to traverse, since fan out and read time assembly both depend on it."
+    },
+    {
+      "start": 277.685,
+      "end": 285.002,
+      "speaker": "SPEAKER_01",
+      "text": "We store followers and following as separate adjacency lists, because the two directions are queried in different code paths."
+    },
+    {
+      "start": 285.302,
+      "end": 292.304,
+      "speaker": "SPEAKER_00",
+      "text": "For very large follower lists we paginate the traversal, and the fan out job processes them in chunks rather than loading them all."
+    },
+    {
+      "start": 292.604,
+      "end": 298.458,
+      "speaker": "SPEAKER_01",
+      "text": "Let's cover the cold start case. A brand new user follows nobody, so their feed is empty."
+    },
+    {
+      "start": 298.758,
+      "end": 306.62,
+      "speaker": "SPEAKER_00",
+      "text": "We fill it with popular and topical content based on declared interests, and gradually shift to graph based content as they follow accounts."
+    },
+    {
+      "start": 306.92,
+      "end": 315.573,
+      "speaker": "SPEAKER_01",
+      "text": "For observability, we should track feed latency, cache hit ratio, fan out lag and the fraction of the feed that comes from the read path merge."
+    },
+    {
+      "start": 315.873,
+      "end": 322.434,
+      "speaker": "SPEAKER_00",
+      "text": "Fan out lag is the key health metric. If it grows, users see stale feeds even though nothing is technically broken."
+    },
+    {
+      "start": 322.734,
+      "end": 329.098,
+      "speaker": "SPEAKER_01",
+      "text": "We should alert on that lag rather than on worker queue depth, because lag directly maps to user experience."
+    },
+    {
+      "start": 329.398,
+      "end": 336.631,
+      "speaker": "SPEAKER_00",
+      "text": "To summarize, hybrid fan out with a celebrity threshold, reference only feed storage with read time hydration and filtering."
+    },
+    {
+      "start": 336.931,
+      "end": 344.953,
+      "speaker": "SPEAKER_01",
+      "text": "Plus a staged ranking funnel, cursor based pagination, activity prioritized fan out and feeds treated as rebuildable cache."
+    },
+    {
+      "start": 345.253,
+      "end": 352.461,
+      "speaker": "SPEAKER_00",
+      "text": "The elegant part is that the feed is disposable. Everything can be reconstructed, which makes the operational story much easier."
+    },
+    {
+      "start": 352.761,
+      "end": 360.125,
+      "speaker": "SPEAKER_01",
+      "text": "Agreed. Treating the derived data as cache rather than as a source of truth removes an entire class of consistency problems."
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+# AGENT_LOG.md — Coding Agent Disclosure
+
+Append-only, one entry per session (`PLAN.md` §16 template). Never edit or delete
+past entries. Created in Session 1 because it was missing (`PLAN.md` §15). Session 0
+(2026-09-25, planning and stack decisions) predates this file and is summarised in
+`PROGRESS.md` → Session History.
+
+---
+
+## Session 1 — 2026-09-26 — Phase 1
+Model/agent: Claude Code (Claude Opus 5.5, `claude-opus-5-5`)
+Prompt summary: "Load the skill and related files" (`skiil.md`, `HANDOFF.md`, `PROGRESS.md`, `PLAN.md` §0/§0B), then "start with Task 1": verify the dataset, record provenance, preserve the ground truth.
+Key decisions:
+- Supplied dataset files are immutable. Any correction is a derived, scripted artifact (Decisions Log 2026-09-26).
+- `all.json` `evidence_time_ranges` are **not** ground truth. Only `supporting_context` quotes, resolved to reference segments by text, are trusted (D2).
+- The Q1 claim of "~9 min observed" was wrong and has been corrected in `PROGRESS.md` (the repo wins).
+Deviations from PLAN: Dataset is 10 files of 1.8–7.4 min rather than 5–6 files of 8–10 min. This is recorded as Open Question Q17 and not resolved by the agent (Rule 2).
+Packages installed: none. Verification used system tools only (`ffprobe`/`ffmpeg` 9.0.2 Homebrew, `jq` 1.7.1, `shasum`), because no venv exists yet (Rule 4).
+Files touched: `dataset/PROVENANCE.md` (new), `dataset/golden_set.json` (new), `.gitignore` (new), `.agent/skills/PROGRESS.md`, `.agent/skills/HANDOFF.md` §4, `.agent/skills/AGENT_LOG.md` (new). No dataset file modified.
+Verified how:
+- Format/duration: `ffprobe -show_entries format=duration:stream=sample_rate,channels,codec_name` on every WAV. All are pcm_s16le 22050 Hz mono, and audio duration equals JSON `duration_seconds`.
+- Segment integrity: `jq` checks for sort order, overlap, zero duration, out-of-bounds, empty text, speaker alternation and gap size. Everything passed except out-of-bounds, where the last segment ends after the audio in all 10 files.
+- D1 drift: `ffmpeg -af silencedetect=noise=-40dB:d=0.1`, with each reference gap midpoint matched to the nearest detected silence and a least-squares fit of drift against boundary index. Result: 0.0820–0.0828 s per boundary, mean residual 3–7 ms, max 38 ms. Hand-checked on file 09's first four boundaries.
+- D2 QA: every `supporting_context` quote was matched against the segments (134/134 unique). `evidence_time_ranges` were compared to segments (0/134 exact). Indices were compared (40/40 correct for 01–08, 9/10 wrong for 09/10). An initial positional speaker check was **wrong**, because `evidence_speakers` is a set; the set comparison gives 49/50 matches.
+- Checksums: `shasum -a 256 dataset/*`, recorded in `dataset/PROVENANCE.md`.
+User decisions (same session, via prompt): Q17 → golden set = files 01–06; Q18 → derived corrected copy; `git init` approved.
+Follow-up work: wrote `dataset/golden_set.json`, verified with `shasum -a 256 -c` (6/6 OK) and a duration cross-check against the reference JSON (6/6). Created a minimal `.gitignore` early so `.DS_Store` and `settings.local.json` stay out of the first commit. Ran `git init` and set a repo-local identity (`ankit <xenaditya1@gmail.com>`), because no global identity existed.
+Open items left: Task 1 is still In Progress. Two items need the venv: the D1 correction script → `dataset/reference_corrected/`, and a pytest data-integrity test. Q20 (generator/voices) is open with the user. The Python version for the venv is undecided: only 3.14.4 and 3.9.6 are installed.

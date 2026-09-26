@@ -1,0 +1,336 @@
+{
+  "dataset": "Synthetic Two-Speaker Golden Audio Dataset",
+  "audio_id": "audio_05_payment_idempotency",
+  "topic": "Payment Processing and Idempotency",
+  "duration_seconds": 379.86,
+  "speakers": [
+    "SPEAKER_00",
+    "SPEAKER_01"
+  ],
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 4.474,
+      "speaker": "SPEAKER_00",
+      "text": "Let's design a payment service that charges cards and never double charges a customer."
+    },
+    {
+      "start": 4.774,
+      "end": 12.272,
+      "speaker": "SPEAKER_01",
+      "text": "The hard requirement is exactly once financial effect, even though the network only gives us at most once or at least once."
+    },
+    {
+      "start": 12.572,
+      "end": 19.882,
+      "speaker": "SPEAKER_00",
+      "text": "Right. The client may time out and retry, and we have no way to distinguish a retry from a genuine second purchase without help."
+    },
+    {
+      "start": 20.182,
+      "end": 27.552,
+      "speaker": "SPEAKER_01",
+      "text": "That help is the idempotency key. The client generates a unique key per logical payment attempt and sends it with every retry."
+    },
+    {
+      "start": 27.852,
+      "end": 34.726,
+      "speaker": "SPEAKER_00",
+      "text": "The server stores the key with the request and the eventual outcome, so a repeat of the same key returns the original result."
+    },
+    {
+      "start": 35.026,
+      "end": 41.832,
+      "speaker": "SPEAKER_01",
+      "text": "We must scope the key to the account, otherwise one customer could guess another customer's key and read their payment result."
+    },
+    {
+      "start": 42.132,
+      "end": 48.456,
+      "speaker": "SPEAKER_00",
+      "text": "And we should hash the request body and compare it, so the same key with different parameters is rejected as a conflict."
+    },
+    {
+      "start": 48.756,
+      "end": 55.964,
+      "speaker": "SPEAKER_01",
+      "text": "That catches client bugs where the key is reused for a different amount, which would otherwise silently return the wrong outcome."
+    },
+    {
+      "start": 56.264,
+      "end": 61.942,
+      "speaker": "SPEAKER_00",
+      "text": "The tricky part is concurrency. Two retries can arrive at the same moment while the first is still in flight."
+    },
+    {
+      "start": 62.242,
+      "end": 71.101,
+      "speaker": "SPEAKER_01",
+      "text": "So the key record needs a state machine. We insert it as in progress with a unique constraint, and the loser of that race waits or returns a conflict."
+    },
+    {
+      "start": 71.401,
+      "end": 77.968,
+      "speaker": "SPEAKER_00",
+      "text": "I would return a four oh nine with a retry hint rather than blocking, because holding a request open ties up resources."
+    },
+    {
+      "start": 78.268,
+      "end": 84.177,
+      "speaker": "SPEAKER_01",
+      "text": "Then when the first attempt completes we update the record to succeeded or failed with the stored response body."
+    },
+    {
+      "start": 84.477,
+      "end": 89.309,
+      "speaker": "SPEAKER_00",
+      "text": "What about the window where we called the payment processor but crashed before recording the result?"
+    },
+    {
+      "start": 89.609,
+      "end": 97.188,
+      "speaker": "SPEAKER_01",
+      "text": "That is the classic dangling state. We must write our intent before the external call, so recovery knows a call may have happened."
+    },
+    {
+      "start": 97.488,
+      "end": 106.14,
+      "speaker": "SPEAKER_00",
+      "text": "So the sequence is, persist intent, call the processor, persist the outcome. Recovery finds intents without outcomes and reconciles."
+    },
+    {
+      "start": 106.44,
+      "end": 114.628,
+      "speaker": "SPEAKER_01",
+      "text": "Reconciliation queries the processor by our own reference identifier, which we must pass on the outbound call for exactly this purpose."
+    },
+    {
+      "start": 114.928,
+      "end": 122.275,
+      "speaker": "SPEAKER_00",
+      "text": "That is why every processor supports a merchant reference. It lets us ask, did you already process this, rather than guessing."
+    },
+    {
+      "start": 122.575,
+      "end": 129.625,
+      "speaker": "SPEAKER_01",
+      "text": "And we should never blindly retry an outbound charge without first checking, because that is the direct path to a double charge."
+    },
+    {
+      "start": 129.925,
+      "end": 138.254,
+      "speaker": "SPEAKER_00",
+      "text": "Let's model the payment lifecycle explicitly. I would use states like created, authorized, captured, failed, refunded and disputed."
+    },
+    {
+      "start": 138.554,
+      "end": 145.746,
+      "speaker": "SPEAKER_01",
+      "text": "Transitions should be strictly validated. You cannot capture a failed payment, and you cannot refund something never captured."
+    },
+    {
+      "start": 146.046,
+      "end": 151.911,
+      "speaker": "SPEAKER_00",
+      "text": "Storing the state machine in the database with a version column gives us optimistic concurrency on transitions."
+    },
+    {
+      "start": 152.211,
+      "end": 158.083,
+      "speaker": "SPEAKER_01",
+      "text": "The version check means two concurrent workers cannot both move the payment forward from the same starting state."
+    },
+    {
+      "start": 158.383,
+      "end": 164.41,
+      "speaker": "SPEAKER_00",
+      "text": "For the money itself, we store amounts as integers in the smallest currency unit, never as floating point."
+    },
+    {
+      "start": 164.71,
+      "end": 171.935,
+      "speaker": "SPEAKER_01",
+      "text": "Absolutely. Floating point rounding in financial code is a guaranteed source of penny discrepancies that auditors will find."
+    },
+    {
+      "start": 172.235,
+      "end": 178.082,
+      "speaker": "SPEAKER_00",
+      "text": "And every amount carries its currency code, because a bare number is meaningless in a multi currency system."
+    },
+    {
+      "start": 178.382,
+      "end": 184.909,
+      "speaker": "SPEAKER_01",
+      "text": "Let's talk about the ledger. The payment state is operational, but the accounting truth should be a double entry ledger."
+    },
+    {
+      "start": 185.209,
+      "end": 191.301,
+      "speaker": "SPEAKER_00",
+      "text": "Every movement writes balanced debit and credit entries, and the ledger is append only with no updates or deletes."
+    },
+    {
+      "start": 191.601,
+      "end": 198.046,
+      "speaker": "SPEAKER_01",
+      "text": "Corrections are made by posting a reversing entry, which preserves the full history and makes audits straightforward."
+    },
+    {
+      "start": 198.346,
+      "end": 204.788,
+      "speaker": "SPEAKER_00",
+      "text": "That immutability is also a good fit for an event sourced design, where the current balance is a projection of the entries."
+    },
+    {
+      "start": 205.088,
+      "end": 212.509,
+      "speaker": "SPEAKER_01",
+      "text": "We should be careful that projections stay consistent. A lagging projection showing a stale balance can authorize an overdraft."
+    },
+    {
+      "start": 212.809,
+      "end": 219.66,
+      "speaker": "SPEAKER_00",
+      "text": "For balance checks we read from the ledger directly with a strongly consistent read, rather than from an eventually consistent view."
+    },
+    {
+      "start": 219.96,
+      "end": 227.591,
+      "speaker": "SPEAKER_01",
+      "text": "Now the distributed transaction problem. A purchase touches inventory, payment and order creation across separate services."
+    },
+    {
+      "start": 227.891,
+      "end": 234.276,
+      "speaker": "SPEAKER_00",
+      "text": "Two phase commit across service boundaries is not practical here, so we use a saga with compensating actions."
+    },
+    {
+      "start": 234.576,
+      "end": 242.608,
+      "speaker": "SPEAKER_01",
+      "text": "The order service orchestrates. Reserve inventory, charge the card, confirm the order, and compensate backwards on any failure."
+    },
+    {
+      "start": 242.908,
+      "end": 250.454,
+      "speaker": "SPEAKER_00",
+      "text": "Compensation for a capture is a refund, and compensation for an inventory reservation is a release. Neither is a true rollback."
+    },
+    {
+      "start": 250.754,
+      "end": 257.334,
+      "speaker": "SPEAKER_01",
+      "text": "That is the key mental shift. Sagas give eventual consistency with business level undo, not atomicity."
+    },
+    {
+      "start": 257.634,
+      "end": 264.137,
+      "speaker": "SPEAKER_00",
+      "text": "For reliability between services we should use the transactional outbox pattern rather than publishing events directly."
+    },
+    {
+      "start": 264.437,
+      "end": 271.508,
+      "speaker": "SPEAKER_01",
+      "text": "So the state change and the outgoing event are written in the same local transaction, and a relay publishes from the outbox."
+    },
+    {
+      "start": 271.808,
+      "end": 276.683,
+      "speaker": "SPEAKER_00",
+      "text": "That eliminates the failure mode where we commit the charge but crash before publishing the event."
+    },
+    {
+      "start": 276.983,
+      "end": 283.556,
+      "speaker": "SPEAKER_01",
+      "text": "Consumers must then be idempotent, because the relay guarantees at least once delivery and duplicates are normal."
+    },
+    {
+      "start": 283.856,
+      "end": 289.245,
+      "speaker": "SPEAKER_00",
+      "text": "Webhooks from the processor have the same property. They retry aggressively and can arrive out of order."
+    },
+    {
+      "start": 289.545,
+      "end": 296.314,
+      "speaker": "SPEAKER_01",
+      "text": "So webhook handlers should be idempotent on the event identifier and should ignore transitions that move the state backwards."
+    },
+    {
+      "start": 296.614,
+      "end": 303.838,
+      "speaker": "SPEAKER_00",
+      "text": "We also need to verify webhook signatures, since the endpoint is publicly reachable and an attacker could forge a success event."
+    },
+    {
+      "start": 304.138,
+      "end": 309.702,
+      "speaker": "SPEAKER_01",
+      "text": "Let's cover security more broadly. We should never store raw card numbers in our own systems."
+    },
+    {
+      "start": 310.002,
+      "end": 316.492,
+      "speaker": "SPEAKER_00",
+      "text": "Tokenization through the processor keeps us out of the strictest compliance scope, and we only hold an opaque token."
+    },
+    {
+      "start": 316.792,
+      "end": 324.236,
+      "speaker": "SPEAKER_01",
+      "text": "We should also encrypt sensitive fields at rest, restrict access by role, and log every read of payment data for audit."
+    },
+    {
+      "start": 324.536,
+      "end": 332.17,
+      "speaker": "SPEAKER_00",
+      "text": "On observability, we need per processor success rates, latency, and a clear alert when the failure rate deviates from baseline."
+    },
+    {
+      "start": 332.47,
+      "end": 338.649,
+      "speaker": "SPEAKER_01",
+      "text": "Declines are normal, so the alert should compare against the historical pattern rather than a fixed threshold."
+    },
+    {
+      "start": 338.949,
+      "end": 345.766,
+      "speaker": "SPEAKER_00",
+      "text": "We should also support multiple processors with failover, since a single processor outage would otherwise stop all revenue."
+    },
+    {
+      "start": 346.066,
+      "end": 353.186,
+      "speaker": "SPEAKER_01",
+      "text": "Routing between them needs care, because an in flight payment must not be retried on a different processor without a status check."
+    },
+    {
+      "start": 353.486,
+      "end": 362.031,
+      "speaker": "SPEAKER_00",
+      "text": "To summarize, scoped idempotency keys with request fingerprinting, intent before external call, and reconciliation by merchant reference."
+    },
+    {
+      "start": 362.331,
+      "end": 370.423,
+      "speaker": "SPEAKER_01",
+      "text": "Plus a validated state machine, an immutable double entry ledger, sagas with compensation and a transactional outbox for events."
+    },
+    {
+      "start": 370.723,
+      "end": 376.912,
+      "speaker": "SPEAKER_00",
+      "text": "The recurring theme is that correctness here comes from durable intent and idempotency, not from distributed locks."
+    },
+    {
+      "start": 377.212,
+      "end": 384.228,
+      "speaker": "SPEAKER_01",
+      "text": "Exactly. You cannot make the network reliable, so you make the operations repeatable without changing the outcome."
+    }
+  ]
+}
