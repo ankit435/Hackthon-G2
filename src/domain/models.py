@@ -114,3 +114,30 @@ class SearchResultItem:
     end_time: float
     text: str
     score: float
+
+
+# --- evaluation (PLAN.md §10): shared by the application metric core and the infra dataset loader ---
+
+@dataclass(frozen=True)
+class RefSegment:
+    index: int
+    start: float
+    end: float
+    speaker: str
+
+
+@dataclass(frozen=True)
+class Hit:
+    """The parts of a search result evaluation needs. `file` is the reference file key (audio_id)."""
+    file: str
+    start: float
+    end: float
+    speaker: str
+
+
+@dataclass(frozen=True)
+class LabeledQuery:
+    id: str
+    text: str
+    kind: str  # "keyword" | "semantic"
+    evidence: tuple[tuple[str, int], ...]  # (audio_id, reference segment index)

@@ -7,6 +7,7 @@ import sys
 
 from api.settings import Settings
 from application.chunking import ChunkingConfig
+from application.evaluation import EvaluationService
 from application.ingest import IngestService
 from application.search import SearchService
 from infra.audio import TorchcodecDecoder
@@ -57,3 +58,9 @@ def build_search_service(settings: Settings, embedder: SentenceTransformerEmbedd
         rrf_k=settings.rrf_k,
         candidate_depth_multiplier=settings.candidate_depth_multiplier,
     )
+
+
+def build_evaluation_service(settings: Settings) -> EvaluationService:
+    search = build_search_service(settings)
+    repo = PostgresRepository(settings.database_url, hnsw_ef_search=settings.hnsw_ef_search)
+    return EvaluationService(search, files=repo, chunks=repo)

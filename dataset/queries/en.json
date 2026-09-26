@@ -1,0 +1,1420 @@
+{
+ "language": "en",
+ "verified": false,
+ "verified_by": null,
+ "counts": {
+  "keyword": 45,
+  "semantic": 45
+ },
+ "evidence_basis": "dataset/reference_corrected segment indices (see application/evaluation.py)",
+ "queries": [
+  {
+   "id": "audio_01_rate_limiter__k1",
+   "kind": "keyword",
+   "text": "Lua script",
+   "evidence": [
+    [
+     "audio_01_rate_limiter",
+     21
+    ],
+    [
+     "audio_01_rate_limiter",
+     54
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_01_rate_limiter__k2",
+   "kind": "keyword",
+   "text": "corporate NAT",
+   "evidence": [
+    [
+     "audio_01_rate_limiter",
+     4
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_01_rate_limiter__k3",
+   "kind": "keyword",
+   "text": "Retry-After header",
+   "evidence": [
+    [
+     "audio_01_rate_limiter",
+     40
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_01_rate_limiter__k4",
+   "kind": "keyword",
+   "text": "sliding window log",
+   "evidence": [
+    [
+     "audio_01_rate_limiter",
+     10
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_01_rate_limiter__k5",
+   "kind": "keyword",
+   "text": "availability zone",
+   "evidence": [
+    [
+     "audio_01_rate_limiter",
+     26
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_01_rate_limiter__k6",
+   "kind": "keyword",
+   "text": "jittered exponential backoff",
+   "evidence": [
+    [
+     "audio_01_rate_limiter",
+     43
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_01_rate_limiter__k7",
+   "kind": "keyword",
+   "text": "sub counters",
+   "evidence": [
+    [
+     "audio_01_rate_limiter",
+     30
+    ],
+    [
+     "audio_01_rate_limiter",
+     31
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_01_rate_limiter__k8",
+   "kind": "keyword",
+   "text": "weighted cost model",
+   "evidence": [
+    [
+     "audio_01_rate_limiter",
+     48
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_01_rate_limiter__s1",
+   "kind": "semantic",
+   "text": "What burst problem does a fixed window counter allow, and how large can the burst be?",
+   "evidence": [
+    [
+     "audio_01_rate_limiter",
+     7
+    ],
+    [
+     "audio_01_rate_limiter",
+     8
+    ]
+   ],
+   "origin": "all.json:audio_01_rate_limiter__q1"
+  },
+  {
+   "id": "audio_01_rate_limiter__s2",
+   "kind": "semantic",
+   "text": "Why is the sliding window counter preferred over the sliding window log for a high volume API?",
+   "evidence": [
+    [
+     "audio_01_rate_limiter",
+     10
+    ],
+    [
+     "audio_01_rate_limiter",
+     12
+    ],
+    [
+     "audio_01_rate_limiter",
+     13
+    ]
+   ],
+   "origin": "all.json:audio_01_rate_limiter__q2"
+  },
+  {
+   "id": "audio_01_rate_limiter__s3",
+   "kind": "semantic",
+   "text": "What token bucket configuration matches the one hundred requests per minute policy, and why is the bucket capped?",
+   "evidence": [
+    [
+     "audio_01_rate_limiter",
+     17
+    ]
+   ],
+   "origin": "all.json:audio_01_rate_limiter__q3"
+  },
+  {
+   "id": "audio_01_rate_limiter__s4",
+   "kind": "semantic",
+   "text": "Why is a Lua script needed on Redis, and what specific race does it prevent?",
+   "evidence": [
+    [
+     "audio_01_rate_limiter",
+     21
+    ],
+    [
+     "audio_01_rate_limiter",
+     22
+    ],
+    [
+     "audio_01_rate_limiter",
+     23
+    ]
+   ],
+   "origin": "all.json:audio_01_rate_limiter__q4"
+  },
+  {
+   "id": "audio_01_rate_limiter__s5",
+   "kind": "semantic",
+   "text": "What is the fail open versus fail closed policy when Redis is unreachable, and what is the risk of the local fallback?",
+   "evidence": [
+    [
+     "audio_01_rate_limiter",
+     37
+    ],
+    [
+     "audio_01_rate_limiter",
+     38
+    ],
+    [
+     "audio_01_rate_limiter",
+     39
+    ]
+   ],
+   "origin": "all.json:audio_01_rate_limiter__q5"
+  },
+  {
+   "id": "audio_01_rate_limiter__s6",
+   "kind": "semantic",
+   "text": "how do we stop one misbehaving customer from overloading a single server",
+   "evidence": [
+    [
+     "audio_01_rate_limiter",
+     29
+    ],
+    [
+     "audio_01_rate_limiter",
+     30
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_01_rate_limiter__s7",
+   "kind": "semantic",
+   "text": "what should happen when many rejected clients all come back at the same moment",
+   "evidence": [
+    [
+     "audio_01_rate_limiter",
+     43
+    ],
+    [
+     "audio_01_rate_limiter",
+     44
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_02_url_shortener__k1",
+   "kind": "keyword",
+   "text": "Feistel network",
+   "evidence": [
+    [
+     "audio_02_url_shortener",
+     15
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_02_url_shortener__k2",
+   "kind": "keyword",
+   "text": "power law",
+   "evidence": [
+    [
+     "audio_02_url_shortener",
+     26
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_02_url_shortener__k3",
+   "kind": "keyword",
+   "text": "interstitial warning page",
+   "evidence": [
+    [
+     "audio_02_url_shortener",
+     40
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_02_url_shortener__k4",
+   "kind": "keyword",
+   "text": "custom aliases",
+   "evidence": [
+    [
+     "audio_02_url_shortener",
+     6
+    ],
+    [
+     "audio_02_url_shortener",
+     46
+    ],
+    [
+     "audio_02_url_shortener",
+     47
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_02_url_shortener__k5",
+   "kind": "keyword",
+   "text": "range allocator",
+   "evidence": [
+    [
+     "audio_02_url_shortener",
+     18
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_02_url_shortener__k6",
+   "kind": "keyword",
+   "text": "reputation service",
+   "evidence": [
+    [
+     "audio_02_url_shortener",
+     39
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_02_url_shortener__k7",
+   "kind": "keyword",
+   "text": "read replicas",
+   "evidence": [
+    [
+     "audio_02_url_shortener",
+     42
+    ],
+    [
+     "audio_02_url_shortener",
+     49
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_02_url_shortener__s1",
+   "kind": "semantic",
+   "text": "What encoding and code length are chosen, and how many combinations does that provide?",
+   "evidence": [
+    [
+     "audio_02_url_shortener",
+     9
+    ],
+    [
+     "audio_02_url_shortener",
+     10
+    ]
+   ],
+   "origin": "all.json:audio_02_url_shortener__q1"
+  },
+  {
+   "id": "audio_02_url_shortener__s2",
+   "kind": "semantic",
+   "text": "Why is a temporary redirect used instead of a permanent one?",
+   "evidence": [
+    [
+     "audio_02_url_shortener",
+     32
+    ],
+    [
+     "audio_02_url_shortener",
+     33
+    ]
+   ],
+   "origin": "all.json:audio_02_url_shortener__q2"
+  },
+  {
+   "id": "audio_02_url_shortener__s3",
+   "kind": "semantic",
+   "text": "What is the drawback of encoding a sequential counter, and how is it mitigated while staying collision free?",
+   "evidence": [
+    [
+     "audio_02_url_shortener",
+     13
+    ],
+    [
+     "audio_02_url_shortener",
+     14
+    ],
+    [
+     "audio_02_url_shortener",
+     15
+    ]
+   ],
+   "origin": "all.json:audio_02_url_shortener__q3"
+  },
+  {
+   "id": "audio_02_url_shortener__s4",
+   "kind": "semantic",
+   "text": "How does the range allocator assign identifiers, and what is its accepted cost?",
+   "evidence": [
+    [
+     "audio_02_url_shortener",
+     18
+    ],
+    [
+     "audio_02_url_shortener",
+     20
+    ]
+   ],
+   "origin": "all.json:audio_02_url_shortener__q4"
+  },
+  {
+   "id": "audio_02_url_shortener__s5",
+   "kind": "semantic",
+   "text": "Why is cache invalidation treated as urgent rather than relying on expiry alone?",
+   "evidence": [
+    [
+     "audio_02_url_shortener",
+     29
+    ],
+    [
+     "audio_02_url_shortener",
+     30
+    ]
+   ],
+   "origin": "all.json:audio_02_url_shortener__q5"
+  },
+  {
+   "id": "audio_02_url_shortener__s6",
+   "kind": "semantic",
+   "text": "why not write click statistics to the database while redirecting the user",
+   "evidence": [
+    [
+     "audio_02_url_shortener",
+     34
+    ],
+    [
+     "audio_02_url_shortener",
+     35
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_02_url_shortener__s7",
+   "kind": "semantic",
+   "text": "how do we keep bad actors from using short links to spread scams",
+   "evidence": [
+    [
+     "audio_02_url_shortener",
+     38
+    ],
+    [
+     "audio_02_url_shortener",
+     39
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_02_url_shortener__s8",
+   "kind": "semantic",
+   "text": "how much disk space does the link data need each year",
+   "evidence": [
+    [
+     "audio_02_url_shortener",
+     24
+    ],
+    [
+     "audio_02_url_shortener",
+     25
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_03_chat_system__k1",
+   "kind": "keyword",
+   "text": "WebSocket",
+   "evidence": [
+    [
+     "audio_03_chat_system",
+     5
+    ],
+    [
+     "audio_03_chat_system",
+     6
+    ],
+    [
+     "audio_03_chat_system",
+     49
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_03_chat_system__k2",
+   "kind": "keyword",
+   "text": "session registry",
+   "evidence": [
+    [
+     "audio_03_chat_system",
+     8
+    ],
+    [
+     "audio_03_chat_system",
+     39
+    ],
+    [
+     "audio_03_chat_system",
+     49
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_03_chat_system__k3",
+   "kind": "keyword",
+   "text": "thundering herd",
+   "evidence": [
+    [
+     "audio_03_chat_system",
+     46
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_03_chat_system__k4",
+   "kind": "keyword",
+   "text": "typing indicators",
+   "evidence": [
+    [
+     "audio_03_chat_system",
+     30
+    ],
+    [
+     "audio_03_chat_system",
+     31
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_03_chat_system__k5",
+   "kind": "keyword",
+   "text": "read receipts",
+   "evidence": [
+    [
+     "audio_03_chat_system",
+     30
+    ],
+    [
+     "audio_03_chat_system",
+     32
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_03_chat_system__k6",
+   "kind": "keyword",
+   "text": "end to end encryption",
+   "evidence": [
+    [
+     "audio_03_chat_system",
+     41
+    ],
+    [
+     "audio_03_chat_system",
+     42
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_03_chat_system__k7",
+   "kind": "keyword",
+   "text": "long polling",
+   "evidence": [
+    [
+     "audio_03_chat_system",
+     6
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_03_chat_system__k8",
+   "kind": "keyword",
+   "text": "clustering key",
+   "evidence": [
+    [
+     "audio_03_chat_system",
+     18
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_03_chat_system__s1",
+   "kind": "semantic",
+   "text": "What is the required ordering between persisting a message and acknowledging the sender, and why?",
+   "evidence": [
+    [
+     "audio_03_chat_system",
+     3
+    ],
+    [
+     "audio_03_chat_system",
+     4
+    ]
+   ],
+   "origin": "all.json:audio_03_chat_system__q1"
+  },
+  {
+   "id": "audio_03_chat_system__s2",
+   "kind": "semantic",
+   "text": "What happens when a message is forwarded to a gateway node that no longer owns the user's connection?",
+   "evidence": [
+    [
+     "audio_03_chat_system",
+     14
+    ],
+    [
+     "audio_03_chat_system",
+     15
+    ],
+    [
+     "audio_03_chat_system",
+     16
+    ]
+   ],
+   "origin": "all.json:audio_03_chat_system__q2"
+  },
+  {
+   "id": "audio_03_chat_system__s3",
+   "kind": "semantic",
+   "text": "How are group messages fanned out, and what determines the approach?",
+   "evidence": [
+    [
+     "audio_03_chat_system",
+     28
+    ],
+    [
+     "audio_03_chat_system",
+     29
+    ]
+   ],
+   "origin": "all.json:audio_03_chat_system__q3"
+  },
+  {
+   "id": "audio_03_chat_system__s4",
+   "kind": "semantic",
+   "text": "How are typing indicators and read receipts made cheap, given they generate more traffic than messages?",
+   "evidence": [
+    [
+     "audio_03_chat_system",
+     31
+    ],
+    [
+     "audio_03_chat_system",
+     32
+    ],
+    [
+     "audio_03_chat_system",
+     33
+    ]
+   ],
+   "origin": "all.json:audio_03_chat_system__q4"
+  },
+  {
+   "id": "audio_03_chat_system__s5",
+   "kind": "semantic",
+   "text": "Why can messages not be ordered by the sender's timestamp, and what is used instead?",
+   "evidence": [
+    [
+     "audio_03_chat_system",
+     22
+    ],
+    [
+     "audio_03_chat_system",
+     23
+    ],
+    [
+     "audio_03_chat_system",
+     25
+    ]
+   ],
+   "origin": "all.json:audio_03_chat_system__q5"
+  },
+  {
+   "id": "audio_03_chat_system__s6",
+   "kind": "semantic",
+   "text": "what if the person receiving the message is not online",
+   "evidence": [
+    [
+     "audio_03_chat_system",
+     12
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_03_chat_system__s7",
+   "kind": "semantic",
+   "text": "how does it work when someone uses the app on their phone and laptop at once",
+   "evidence": [
+    [
+     "audio_03_chat_system",
+     38
+    ],
+    [
+     "audio_03_chat_system",
+     39
+    ],
+    [
+     "audio_03_chat_system",
+     40
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_04_news_feed__k1",
+   "kind": "keyword",
+   "text": "reverse chronological",
+   "evidence": [
+    [
+     "audio_04_news_feed",
+     18
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_04_news_feed__k2",
+   "kind": "keyword",
+   "text": "adjacency lists",
+   "evidence": [
+    [
+     "audio_04_news_feed",
+     39
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_04_news_feed__k3",
+   "kind": "keyword",
+   "text": "cold start",
+   "evidence": [
+    [
+     "audio_04_news_feed",
+     41
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_04_news_feed__k4",
+   "kind": "keyword",
+   "text": "fan out lag",
+   "evidence": [
+    [
+     "audio_04_news_feed",
+     43
+    ],
+    [
+     "audio_04_news_feed",
+     44
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_04_news_feed__k5",
+   "kind": "keyword",
+   "text": "candidate generation",
+   "evidence": [
+    [
+     "audio_04_news_feed",
+     20
+    ],
+    [
+     "audio_04_news_feed",
+     21
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_04_news_feed__k6",
+   "kind": "keyword",
+   "text": "diversity rules",
+   "evidence": [
+    [
+     "audio_04_news_feed",
+     24
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_04_news_feed__k7",
+   "kind": "keyword",
+   "text": "stable cursor",
+   "evidence": [
+    [
+     "audio_04_news_feed",
+     28
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_04_news_feed__s1",
+   "kind": "semantic",
+   "text": "What follower threshold flags an account as a celebrity, and how are those accounts handled?",
+   "evidence": [
+    [
+     "audio_04_news_feed",
+     8
+    ],
+    [
+     "audio_04_news_feed",
+     9
+    ],
+    [
+     "audio_04_news_feed",
+     11
+    ]
+   ],
+   "origin": "all.json:audio_04_news_feed__q1"
+  },
+  {
+   "id": "audio_04_news_feed__s2",
+   "kind": "semantic",
+   "text": "Why does the feed store only post references instead of post content?",
+   "evidence": [
+    [
+     "audio_04_news_feed",
+     14
+    ],
+    [
+     "audio_04_news_feed",
+     15
+    ],
+    [
+     "audio_04_news_feed",
+     17
+    ]
+   ],
+   "origin": "all.json:audio_04_news_feed__q2"
+  },
+  {
+   "id": "audio_04_news_feed__s3",
+   "kind": "semantic",
+   "text": "Describe the ranking funnel and explain why it keeps latency acceptable.",
+   "evidence": [
+    [
+     "audio_04_news_feed",
+     20
+    ],
+    [
+     "audio_04_news_feed",
+     22
+    ],
+    [
+     "audio_04_news_feed",
+     24
+    ]
+   ],
+   "origin": "all.json:audio_04_news_feed__q3"
+  },
+  {
+   "id": "audio_04_news_feed__s4",
+   "kind": "semantic",
+   "text": "How is fan out work reduced for users who rarely open the app?",
+   "evidence": [
+    [
+     "audio_04_news_feed",
+     32
+    ],
+    [
+     "audio_04_news_feed",
+     34
+    ]
+   ],
+   "origin": "all.json:audio_04_news_feed__q4"
+  },
+  {
+   "id": "audio_04_news_feed__s5",
+   "kind": "semantic",
+   "text": "Why are feeds treated as cache, and which metric is recommended for alerting?",
+   "evidence": [
+    [
+     "audio_04_news_feed",
+     36
+    ],
+    [
+     "audio_04_news_feed",
+     45
+    ]
+   ],
+   "origin": "all.json:audio_04_news_feed__q5"
+  },
+  {
+   "id": "audio_04_news_feed__s6",
+   "kind": "semantic",
+   "text": "what does a new user see before following anyone",
+   "evidence": [
+    [
+     "audio_04_news_feed",
+     41
+    ],
+    [
+     "audio_04_news_feed",
+     42
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_04_news_feed__s7",
+   "kind": "semantic",
+   "text": "how do we avoid showing the same post twice while scrolling",
+   "evidence": [
+    [
+     "audio_04_news_feed",
+     28
+    ],
+    [
+     "audio_04_news_feed",
+     29
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_04_news_feed__s8",
+   "kind": "semantic",
+   "text": "what happens to a removed post that was already pushed to many timelines",
+   "evidence": [
+    [
+     "audio_04_news_feed",
+     14
+    ],
+    [
+     "audio_04_news_feed",
+     16
+    ],
+    [
+     "audio_04_news_feed",
+     17
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_05_payment_idempotency__k1",
+   "kind": "keyword",
+   "text": "idempotency key",
+   "evidence": [
+    [
+     "audio_05_payment_idempotency",
+     3
+    ],
+    [
+     "audio_05_payment_idempotency",
+     50
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_05_payment_idempotency__k2",
+   "kind": "keyword",
+   "text": "double entry ledger",
+   "evidence": [
+    [
+     "audio_05_payment_idempotency",
+     25
+    ],
+    [
+     "audio_05_payment_idempotency",
+     51
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_05_payment_idempotency__k3",
+   "kind": "keyword",
+   "text": "transactional outbox",
+   "evidence": [
+    [
+     "audio_05_payment_idempotency",
+     36
+    ],
+    [
+     "audio_05_payment_idempotency",
+     51
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_05_payment_idempotency__k4",
+   "kind": "keyword",
+   "text": "merchant reference",
+   "evidence": [
+    [
+     "audio_05_payment_idempotency",
+     16
+    ],
+    [
+     "audio_05_payment_idempotency",
+     50
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_05_payment_idempotency__k5",
+   "kind": "keyword",
+   "text": "optimistic concurrency",
+   "evidence": [
+    [
+     "audio_05_payment_idempotency",
+     20
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_05_payment_idempotency__k6",
+   "kind": "keyword",
+   "text": "tokenization",
+   "evidence": [
+    [
+     "audio_05_payment_idempotency",
+     44
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_05_payment_idempotency__k7",
+   "kind": "keyword",
+   "text": "webhook signatures",
+   "evidence": [
+    [
+     "audio_05_payment_idempotency",
+     42
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_05_payment_idempotency__k8",
+   "kind": "keyword",
+   "text": "floating point",
+   "evidence": [
+    [
+     "audio_05_payment_idempotency",
+     22
+    ],
+    [
+     "audio_05_payment_idempotency",
+     23
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_05_payment_idempotency__s1",
+   "kind": "semantic",
+   "text": "How must an idempotency key be scoped and validated?",
+   "evidence": [
+    [
+     "audio_05_payment_idempotency",
+     5
+    ],
+    [
+     "audio_05_payment_idempotency",
+     6
+    ]
+   ],
+   "origin": "all.json:audio_05_payment_idempotency__q1"
+  },
+  {
+   "id": "audio_05_payment_idempotency__s2",
+   "kind": "semantic",
+   "text": "What is the correct ordering around the external processor call, and how is a crash recovered?",
+   "evidence": [
+    [
+     "audio_05_payment_idempotency",
+     14
+    ],
+    [
+     "audio_05_payment_idempotency",
+     15
+    ],
+    [
+     "audio_05_payment_idempotency",
+     17
+    ]
+   ],
+   "origin": "all.json:audio_05_payment_idempotency__q2"
+  },
+  {
+   "id": "audio_05_payment_idempotency__s3",
+   "kind": "semantic",
+   "text": "How are concurrent retries with the same key handled?",
+   "evidence": [
+    [
+     "audio_05_payment_idempotency",
+     9
+    ],
+    [
+     "audio_05_payment_idempotency",
+     10
+    ]
+   ],
+   "origin": "all.json:audio_05_payment_idempotency__q3"
+  },
+  {
+   "id": "audio_05_payment_idempotency__s4",
+   "kind": "semantic",
+   "text": "Why is a saga used instead of two phase commit, and what does compensation actually mean here?",
+   "evidence": [
+    [
+     "audio_05_payment_idempotency",
+     32
+    ],
+    [
+     "audio_05_payment_idempotency",
+     34
+    ],
+    [
+     "audio_05_payment_idempotency",
+     35
+    ]
+   ],
+   "origin": "all.json:audio_05_payment_idempotency__q4"
+  },
+  {
+   "id": "audio_05_payment_idempotency__s5",
+   "kind": "semantic",
+   "text": "What does the transactional outbox solve, and what does it require of consumers?",
+   "evidence": [
+    [
+     "audio_05_payment_idempotency",
+     37
+    ],
+    [
+     "audio_05_payment_idempotency",
+     38
+    ],
+    [
+     "audio_05_payment_idempotency",
+     39
+    ]
+   ],
+   "origin": "all.json:audio_05_payment_idempotency__q5"
+  },
+  {
+   "id": "audio_05_payment_idempotency__s6",
+   "kind": "semantic",
+   "text": "why should money never be stored as numbers with fractional decimals",
+   "evidence": [
+    [
+     "audio_05_payment_idempotency",
+     22
+    ],
+    [
+     "audio_05_payment_idempotency",
+     23
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_05_payment_idempotency__s7",
+   "kind": "semantic",
+   "text": "what if our card processor goes down entirely",
+   "evidence": [
+    [
+     "audio_05_payment_idempotency",
+     48
+    ],
+    [
+     "audio_05_payment_idempotency",
+     49
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_06_video_streaming__k1",
+   "kind": "keyword",
+   "text": "pre signed URL",
+   "evidence": [
+    [
+     "audio_06_video_streaming",
+     4
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_06_video_streaming__k2",
+   "kind": "keyword",
+   "text": "fixed keyframe interval",
+   "evidence": [
+    [
+     "audio_06_video_streaming",
+     12
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_06_video_streaming__k3",
+   "kind": "keyword",
+   "text": "RTMP",
+   "evidence": [
+    [
+     "audio_06_video_streaming",
+     34
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_06_video_streaming__k4",
+   "kind": "keyword",
+   "text": "rebuffer ratio",
+   "evidence": [
+    [
+     "audio_06_video_streaming",
+     42
+    ],
+    [
+     "audio_06_video_streaming",
+     43
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_06_video_streaming__k5",
+   "kind": "keyword",
+   "text": "digital rights management",
+   "evidence": [
+    [
+     "audio_06_video_streaming",
+     30
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_06_video_streaming__k6",
+   "kind": "keyword",
+   "text": "preemptible instances",
+   "evidence": [
+    [
+     "audio_06_video_streaming",
+     22
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_06_video_streaming__k7",
+   "kind": "keyword",
+   "text": "directed graph",
+   "evidence": [
+    [
+     "audio_06_video_streaming",
+     15
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_06_video_streaming__s1",
+   "kind": "semantic",
+   "text": "Why upload directly to storage with a pre signed URL instead of through application servers?",
+   "evidence": [
+    [
+     "audio_06_video_streaming",
+     4
+    ],
+    [
+     "audio_06_video_streaming",
+     5
+    ]
+   ],
+   "origin": "all.json:audio_06_video_streaming__q1"
+  },
+  {
+   "id": "audio_06_video_streaming__s2",
+   "kind": "semantic",
+   "text": "What makes adaptive bitrate switching work correctly across renditions?",
+   "evidence": [
+    [
+     "audio_06_video_streaming",
+     9
+    ],
+    [
+     "audio_06_video_streaming",
+     11
+    ],
+    [
+     "audio_06_video_streaming",
+     12
+    ]
+   ],
+   "origin": "all.json:audio_06_video_streaming__q2"
+  },
+  {
+   "id": "audio_06_video_streaming__s3",
+   "kind": "semantic",
+   "text": "How is transcoding cost controlled for unpopular content?",
+   "evidence": [
+    [
+     "audio_06_video_streaming",
+     20
+    ],
+    [
+     "audio_06_video_streaming",
+     21
+    ],
+    [
+     "audio_06_video_streaming",
+     22
+    ]
+   ],
+   "origin": "all.json:audio_06_video_streaming__q3"
+  },
+  {
+   "id": "audio_06_video_streaming__s4",
+   "kind": "semantic",
+   "text": "How do caching requirements differ between segments and manifests?",
+   "evidence": [
+    [
+     "audio_06_video_streaming",
+     26
+    ],
+    [
+     "audio_06_video_streaming",
+     27
+    ],
+    [
+     "audio_06_video_streaming",
+     28
+    ]
+   ],
+   "origin": "all.json:audio_06_video_streaming__q4"
+  },
+  {
+   "id": "audio_06_video_streaming__s5",
+   "kind": "semantic",
+   "text": "Which client side metrics describe playback quality, and which matters most?",
+   "evidence": [
+    [
+     "audio_06_video_streaming",
+     42
+    ],
+    [
+     "audio_06_video_streaming",
+     44
+    ]
+   ],
+   "origin": "all.json:audio_06_video_streaming__q5"
+  },
+  {
+   "id": "audio_06_video_streaming__s6",
+   "kind": "semantic",
+   "text": "how do we survive a huge premiere when everyone starts watching at once",
+   "evidence": [
+    [
+     "audio_06_video_streaming",
+     31
+    ],
+    [
+     "audio_06_video_streaming",
+     32
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_06_video_streaming__s7",
+   "kind": "semantic",
+   "text": "how can live broadcasts get closer to real time",
+   "evidence": [
+    [
+     "audio_06_video_streaming",
+     36
+    ],
+    [
+     "audio_06_video_streaming",
+     37
+    ],
+    [
+     "audio_06_video_streaming",
+     38
+    ]
+   ],
+   "origin": "drafted"
+  },
+  {
+   "id": "audio_06_video_streaming__s8",
+   "kind": "semantic",
+   "text": "what keeps a live broadcast running if the streamer's connection drops",
+   "evidence": [
+    [
+     "audio_06_video_streaming",
+     39
+    ],
+    [
+     "audio_06_video_streaming",
+     40
+    ]
+   ],
+   "origin": "drafted"
+  }
+ ]
+}

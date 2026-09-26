@@ -54,3 +54,7 @@ Continuation (same session), Task 5 merge ("reset now check": read as "check the
 - Found: keyword branch empty for 17/34 ad-hoc queries (AND semantics); recorded for Task 7.
 - **Found uncommitted edits by someone else**: `PLAN.md` (12:06, multilingual scope made compulsory) and a new `MULTILINGUAL_UPDATE_PLAN.md` (12:22), plus `.vscode/`. Not committed and not acted on; asked the user to confirm.
 - Staging accidentally picked up the agent worktree as an embedded repo; unstaged it and added `.claude/worktrees/` to `.gitignore`.
+Continuation (same session), Tasks 6 + 7 (user: "other agent did, can you continue where you left off"; the multilingual PLAN edits were confirmed as made by another agent, and committed as b66ca24):
+- Task 7: metric core with definitions fixed before any run, 12 hand-computed tests, 5/5 inflation mutants killed; EvaluationService over the same SearchService methods; evaluation types moved to `domain` after the architecture rule flagged infra→application.
+- Task 6: drafted 90 English queries (LLM-drafted by this agent). Keyword evidence computed by phrase match, semantic evidence from all.json + hand-picked paraphrase targets. **Human verification pending**: review sheet generated.
+- English baseline (Task 17 step 1): keyword queries pass; semantic recall misses (0.600/0.667, hit@10 0.933 → partial multi-segment coverage). The keyword branch is empty for every natural-language query. Speaker 1.000, p95 15.5 ms. Nothing tuned.

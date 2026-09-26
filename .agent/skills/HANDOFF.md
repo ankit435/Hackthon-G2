@@ -120,7 +120,7 @@ semantic-split soft minimum and cap. **All ship at defaults** — change any
 of them only with a before/after measurement.
 
 
-**Next task:** ⚠️ **First confirm with the user the multilingual scope change** (`PLAN.md` was edited at 12:06 on 2026-09-26 to make multilingual support compulsory, Task 17, plus `MULTILINGUAL_UPDATE_PLAN.md`; both are uncommitted and not yet acted on). It changes the embedder (bge-m3), the schema dimension, keyword config per chunk, and Whisper language detection. Otherwise: Task 7 (recall@k tests) and Task 6 (query set). Task 5 is merged. Task 4 is Done: the DB holds run 3 (313 chunks, word-level alignment). Re-ingest with `python scripts/ingest.py` (≈ 25 min, CPU-heavy). Old runs are snapshotted in `logs/chunks-run{1,2}-*.json` (gitignored). **Do not use the `AUDIO_SEARCH_ANSWER_*` / NVIDIA / OpenAI vars in the user's `.env`**: they are stretch item #1 and the gate is closed.
+**Next task:** Task 17 (multilingual, user-confirmed; checklist `MULTILINGUAL_UPDATE_PLAN.md`; step 1 baseline done) starting at M1. **Blocked on the user:** human verification of `dataset/queries/en.review.md` (Task 6). Primary misses so far: semantic recall (0.60/0.67). Diagnose them (Task 10) **after** the M4 embedder swap, since bge-m3 changes the semantic branch; compare English before/after. Run the eval with `python scripts/evaluate.py` or `pytest -m eval`. Task 4 is Done: the DB holds run 3 (313 chunks, word-level alignment). Re-ingest with `python scripts/ingest.py` (≈ 25 min, CPU-heavy). Old runs are snapshotted in `logs/chunks-run{1,2}-*.json` (gitignored). **Do not use the `AUDIO_SEARCH_ANSWER_*` / NVIDIA / OpenAI vars in the user's `.env`**: they are stretch item #1 and the gate is closed.
 
 
 **Do this next:**
