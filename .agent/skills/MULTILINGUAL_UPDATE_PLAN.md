@@ -40,7 +40,7 @@
 
 ## 2. Step order
 
-1. ☐ **Baseline:** English recall and p95 on the current build. This needs Tasks 4 and 5 working. If Task 5 isn't done, record WER/DER/speaker accuracy as the baseline instead.
+1. ☑ **Baseline** (2026-09-26, provisional pending query-set verification): overall r@5 0.778 / r@10 0.811, keyword 0.956 / 0.956, semantic 0.600 / 0.667, speaker 1.000, p95 15.5 ms. MiniLM, 313 chunks. Report: `logs/eval-en-20260926-125019.json` (gitignored); numbers in PROGRESS.md. **English recall and p95 on the current build.** This needs Tasks 4 and 5 working. If Task 5 isn't done, record WER/DER/speaker accuracy as the baseline instead.
 2. ☐ **M1** language detection + storage (§3.1–3.3)
 3. ☐ **M3** sentence splitter (§3.4)
 4. ☐ **M4** embedder → bge-m3, `vector(1024)`, re-ingest (§3.5)

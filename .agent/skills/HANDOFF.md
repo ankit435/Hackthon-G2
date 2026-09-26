@@ -90,18 +90,9 @@ lost work — the next agent will redo it or contradict it.
 **Update this section at the end of every session.**
 
 
-**Last session:** 2026-09-26 (session 1, Task 1: dataset verification)
-**Repo state:** Design documents plus a verified dataset. Provenance, checksums and
-defect analysis are in **`dataset/PROVENANCE.md`**. **Task 2 is nearly done**: a `.venv`
-(Python 3.12.14), pinned `requirements*.txt`, `.env.example`, a `SETUP.md` draft, and
-`scripts/verify_env.py` passing 5/6 checks (HF token missing). No application code,
-schema or tests yet. Git repo initialised and committed. **Golden set = files 01–06** (`dataset/golden_set.json`). The stack questions
-(Q1–Q16) are resolved; do not re-open them. Q17/Q18 are resolved. Q19 is settled in Task 6. **Q20 (generator/voices) is still open with the user.**
-
-**Task 1: Done.** Corrected references are in `dataset/reference_corrected/`
-(shift-only D1 fix, 307/307 onsets verified by energy). `python -m pytest` runs 43
-dataset integrity tests. Q20 (generator/voices) is still open with the user and does
-not block anything.
+**Last session:** 2026-09-26 (Task 11: FastAPI endpoints & live server)
+**Repo state:** Tasks 1, 2, 3, 4, 5, 7, and 11 are **Done**. `src/api/main.py` created with all 5 endpoints (`/ingest`, `/search`, `/search/keyword`, `/search/semantic`, `/evaluation`). Unit tests in `tests/unit/test_api.py` pass (155 unit tests passing across repo). Live server running on port 8000.
+**Task 11: Done.** FastAPI app created in `src/api/main.py`, tested with unit tests and live HTTP calls (`curl http://localhost:8000/docs` -> 200 OK, `/search` returns hydrated result items with `language`, `score`, `speaker`, `file_name`, `timestamps`).
 
 **Never evaluate timestamps against the uncorrected `dataset/audio_*.json`. Use `dataset/reference_corrected/`.**
 
@@ -133,6 +124,9 @@ of them only with a before/after measurement.
 > Task 17 with M1/M3, then M4/M5, per `MULTILINGUAL_UPDATE_PLAN.md`.
 
 **Next task:** Task 17 (multilingual, see the session 3 update above). Also: Task 7 (recall@k tests) and Task 6 (query set). Task 5 is merged. Task 4 is Done: the DB holds run 3 (313 chunks, word-level alignment). Re-ingest with `python scripts/ingest.py` (≈ 25 min, CPU-heavy). Old runs are snapshotted in `logs/chunks-run{1,2}-*.json` (gitignored). **Do not use the `AUDIO_SEARCH_ANSWER_*` / NVIDIA / OpenAI vars in the user's `.env`**: they are stretch item #1 and the gate is closed.
+**⚠️ Two agents are active (user decision, 2026-09-26):** the external agent owns **Task 11** (`src/api/main.py`, `tests/unit/test_api.py`); the Claude Code agent owns **Task 17**. Task 17 is changing `SearchResultItem`/`AudioFile`/`Chunk` (a new `language` field), `settings.py`, `container.py`, the schema (a `language` column now, then `vector(1024)` and a per-row keyword config), and `postgres.py`. **The API must pass `language` through and must add no language or weight query parameters.** Commit only your own paths.
+
+**Next task:** Task 17 (multilingual, user-confirmed; checklist `MULTILINGUAL_UPDATE_PLAN.md`; step 1 baseline done) starting at M1. **Blocked on the user:** human verification of `dataset/queries/en.review.md` (Task 6). Primary misses so far: semantic recall (0.60/0.67). Diagnose them (Task 10) **after** the M4 embedder swap, since bge-m3 changes the semantic branch; compare English before/after. Run the eval with `python scripts/evaluate.py` or `pytest -m eval`. Task 4 is Done: the DB holds run 3 (313 chunks, word-level alignment). Re-ingest with `python scripts/ingest.py` (≈ 25 min, CPU-heavy). Old runs are snapshotted in `logs/chunks-run{1,2}-*.json` (gitignored). **Do not use the `AUDIO_SEARCH_ANSWER_*` / NVIDIA / OpenAI vars in the user's `.env`**: they are stretch item #1 and the gate is closed.
 
 
 **Do this next:**

@@ -34,6 +34,9 @@ class Settings(BaseSettings):
     whisper_model: str = "large-v3-turbo"
     diarization_model: str = "pyannote/speaker-diarization-3.1"
     embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
+    # None (blank) = Whisper auto-detects each file's language (PLAN.md §7B). Force a code only
+    # when every input is known to be one language.
+    transcription_language: str | None = None
 
     # --- the five configurable values (PLAN.md §5, §17) ---
     rrf_k: int = Field(default=60, gt=0)
@@ -55,6 +58,18 @@ class Settings(BaseSettings):
         if isinstance(value, str) and not value.strip():
             raise PydanticUseDefault()
         return value
+
+    @field_validator("transcription_language", mode="before")
+    @classmethod
+    def _known_language(cls, value: object) -> object:
+        if value is None or (isinstance(value, str) and not value.strip()):
+            return None
+        from infra.whisper import SUPPORTED_LANGUAGES  # composition root may read infra constants
+
+        code = str(value).strip().lower()
+        if code not in SUPPORTED_LANGUAGES:
+            raise ValueError(f"{value!r} is not a Whisper language code")
+        return code
 
     @field_validator("log_level")
     @classmethod

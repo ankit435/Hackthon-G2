@@ -28,7 +28,10 @@ log = logging.getLogger(__name__)
 MERGE_TARGET_SECONDS = 15.0
 MERGE_CAP_SECONDS = 30.0
 OVERLAP_MAX_SECONDS = 3.0  # deterministic split only
-_SENTENCE_END = re.compile(r"(?<=[.!?])\s+")
+# Sentence ends per script (PLAN.md §7B, M3): Latin . ! ?, Devanagari danda । and double danda ॥,
+# Arabic/Urdu question mark ؟ and full stop ۔ — all followed by whitespace. CJK full-width 。！？
+# are usually NOT followed by a space, so whitespace after them is optional.
+_SENTENCE_END = re.compile(r"(?<=[.!?।॥؟۔])\s+|(?<=[。！？])\s*")
 
 
 @dataclass(frozen=True)
@@ -111,6 +114,10 @@ def sentences(turn: Sequence[Piece]) -> list[Piece]:
     Sentence k of a segment [s, e] with character lengths L_1..L_n gets
     [s + (e-s)*sum(L_<k)/sum(L), s + (e-s)*sum(L_<=k)/sum(L)]. The last sentence's end is set
     to exactly e, so floating-point error never shifts a segment boundary.
+
+    Character length is a per-script approximation of speaking time: one Han character carries
+    roughly a syllable, one Latin letter much less. That is fine because apportionment only ever
+    happens within a single segment, and one segment is one language.
     """
     out: list[Piece] = []
     for seg in turn:

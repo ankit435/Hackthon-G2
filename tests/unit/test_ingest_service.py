@@ -7,7 +7,7 @@ import pytest
 from application.chunking import ChunkingConfig
 from application.ingest import IngestService, IngestStatus, sha256_file
 from domain.errors import TranscriptionError
-from domain.models import DecodedAudio, SpeakerTurn, TranscriptSegment
+from domain.models import DecodedAudio, SpeakerTurn, Transcript, TranscriptSegment
 
 CFG = ChunkingConfig(20, 45)
 
@@ -18,14 +18,14 @@ class FakeDecoder:
 
 
 class FakeTranscriber:
-    def __init__(self, fail_on=()):
-        self.fail_on = set(fail_on)
+    def __init__(self, fail_on=(), language="es", probability=0.93):
+        self.fail_on, self.language, self.probability = set(fail_on), language, probability
 
     def transcribe(self, audio):
         if audio.path.name in self.fail_on:
             raise TranscriptionError("boom", stage="transcribe", file=audio.path.name)
-        return [TranscriptSegment(0, 5, " Hello there."), TranscriptSegment(5.2, 9, " General Kenobi."),
-                TranscriptSegment(9.1, 9.1, "  ")]
+        return Transcript([TranscriptSegment(0, 5, " Hello there."), TranscriptSegment(5.2, 9, " General Kenobi."),
+                           TranscriptSegment(9.1, 9.1, "  ")], self.language, self.probability)
 
 
 class FakeDiarizer:
@@ -54,7 +54,7 @@ class FakeRepo:
 
     async def find_by_checksum(self, checksum):
         from domain.models import AudioFile
-        return AudioFile("x.wav", "/x.wav", checksum, 30.0) if checksum in self.existing else None
+        return AudioFile("x.wav", "/x.wav", checksum, 30.0, "en", 1.0) if checksum in self.existing else None
 
     async def add_with_chunks(self, audio_file, chunks):
         self.saved.append((audio_file, list(chunks)))
@@ -91,6 +91,10 @@ def test_ingests_file_end_to_end_with_linked_chunks(wavs):
     assert embedder.calls == 1  # one batched call for all chunk texts (no long turns here)
     assert out.chunking["dropped_empty_segments"] == 1
     assert set(out.stage_seconds) == {"validate", "decode", "transcribe", "diarize", "align", "chunk", "embed", "persist"}
+    # language detected by the transcriber reaches the outcome, the file record and every chunk
+    assert (out.language, out.language_probability) == ("es", 0.93)
+    assert (audio_file.language, audio_file.language_probability) == ("es", 0.93)
+    assert {c.language for c in chunks} == {"es"}
 
 
 def test_one_failure_does_not_abort_the_batch(wavs):
@@ -127,3 +131,17 @@ def test_oversized_chunk_logs_truncation_warning(wavs, caplog):
 
     asyncio.run(service(FakeRepo(), embedder=TinyWindow()).ingest(wavs[:1]))
     assert any(getattr(r, "event", "") == "ingest.chunk.truncated" for r in caplog.records)
+
+
+def test_low_confidence_language_is_logged_and_kept(wavs, caplog):
+    repo = FakeRepo()
+    [out] = asyncio.run(service(repo, transcriber=FakeTranscriber(language="hi", probability=0.31)).ingest(wavs[:1]))
+    assert out.status is IngestStatus.INGESTED and out.language == "hi" and out.language_probability == 0.31
+    warn = [r for r in caplog.records if getattr(r, "event", "") == "ingest.language.low_confidence"]
+    assert len(warn) == 1 and warn[0].levelname == "WARNING" and warn[0].language == "hi"
+    assert repo.saved[0][0].language == "hi"  # ingest proceeds; the doubt is recorded, not hidden
+
+
+def test_confident_language_does_not_warn(wavs, caplog):
+    asyncio.run(service(FakeRepo(), transcriber=FakeTranscriber(language="en", probability=0.99)).ingest(wavs[:1]))
+    assert not [r for r in caplog.records if getattr(r, "event", "") == "ingest.language.low_confidence"]

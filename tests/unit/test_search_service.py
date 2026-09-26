@@ -31,8 +31,9 @@ class FakeRepo:
     async def hydrate(self, chunk_ids):
         self.calls.append(("hydrate", list(chunk_ids)))
         name = {v: k for k, v in ids.items()}
-        return [SearchResultItem(cid, UUID(int=0), f"{name[cid]}.wav", f"/{name[cid]}.wav", "SPEAKER_00",
-                                 0.0, 1.0, name[cid], 0.0) for cid in reversed(chunk_ids)]  # order scrambled on purpose
+        return [SearchResultItem(chunk_id=cid, audio_file_id=UUID(int=0), file_name=f"{name[cid]}.wav",
+                                 file_path=f"/{name[cid]}.wav", speaker="SPEAKER_00", start_time=0.0, end_time=1.0,
+                                 text=name[cid], language="en", score=0.0) for cid in reversed(chunk_ids)]  # order scrambled on purpose
 
 
 class FakeEmbedder:

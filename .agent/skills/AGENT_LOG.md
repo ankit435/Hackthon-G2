@@ -73,3 +73,26 @@ Verified how:
 - Kokoro 0.9.4 API read from the wheel (lang codes `e`/`h`/`z`, `load_voice`, `Result.audio`, espeak path needs `\n` splitting); the voice names are **not** verified (Hugging Face blocked), and the script loads every voice before it synthesises anything.
 - Restored the Task 17 row, Q21–Q24 and the related entries in `PROGRESS.md`/`HANDOFF.md`, which the "Sync complete local agent folder" commit had overwritten.
 Open items left: human review of the translations; run the synthesis on the Mac and commit the updated references + manifest (timings, sha256); then Task 17 M1/M3/M4/M5.
+Continuation (same session), Tasks 6 + 7 (user: "other agent did, can you continue where you left off"; the multilingual PLAN edits were confirmed as made by another agent, and committed as b66ca24):
+- Task 7: metric core with definitions fixed before any run, 12 hand-computed tests, 5/5 inflation mutants killed; EvaluationService over the same SearchService methods; evaluation types moved to `domain` after the architecture rule flagged infra→application.
+- Task 6: drafted 90 English queries (LLM-drafted by this agent). Keyword evidence computed by phrase match, semantic evidence from all.json + hand-picked paraphrase targets. **Human verification pending**: review sheet generated.
+- English baseline (Task 17 step 1): keyword queries pass; semantic recall misses (0.600/0.667, hit@10 0.933 → partial multi-segment coverage). The keyword branch is empty for every natural-language query. Speaker 1.000, p95 15.5 ms. Nothing tuned.
+
+---
+
+## Session 2 — 2026-09-26 — Phase 3 (Task 11)
+Model/agent: Antigravity (Gemini 3.6 Flash High)
+Prompt summary: "undetand the code base and live the fast api", then "once you done udate the skill what you udated or tested"
+Key decisions:
+- Task 11: Created `src/api/main.py` implementing all 5 required endpoints (`/ingest`, `/search`, `/search/keyword`, `/search/semantic`, `/evaluation`) according to PLAN.md §7A.
+- Maintained strict 4-layer architecture: API maps endpoints to Application Services (`IngestService`, `SearchService`, `EvaluationService`) with lifespan dependency initialization in composition root.
+- Created `tests/unit/test_api.py` with mock lifespan to fast-test FastAPI endpoints without loading heavy AI models.
+Packages installed: none (used existing dependencies `fastapi`, `uvicorn`, `httpx`, `pytest`).
+Files touched: `src/api/main.py` (new), `tests/unit/test_api.py` (new), `.agent/skills/PROGRESS.md`, `.agent/skills/HANDOFF.md`, `.agent/skills/AGENT_LOG.md`.
+Verified how:
+- `PYTHONPATH=src .venv/bin/python -m pytest tests/unit` → 155 unit tests passed in 0.58s (including 6 new API unit tests).
+- Launched FastAPI live server using Uvicorn daemon process (`PYTHONPATH=src .venv/bin/uvicorn api.main:app --host 0.0.0.0 --port 8000`).
+- Tested live HTTP endpoints with `curl`:
+  - `curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/docs` → `200` OK.
+  - `curl -s "http://localhost:8000/search?query=rate+limiting&top_k=2"` → returned hydrated search hits from live Postgres database with correct timestamps, speaker tags, score, and text.
+

@@ -1,3 +1,5 @@
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
+markers = ["eval: primary-criteria evaluation against the live index (run with -m eval)"]
+addopts = "-m 'not eval'"
