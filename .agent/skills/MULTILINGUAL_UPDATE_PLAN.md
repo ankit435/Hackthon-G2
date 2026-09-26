@@ -41,8 +41,8 @@
 ## 2. Step order
 
 1. ☑ **Baseline** (2026-09-26, provisional pending query-set verification): overall r@5 0.778 / r@10 0.811, keyword 0.956 / 0.956, semantic 0.600 / 0.667, speaker 1.000, p95 15.5 ms. MiniLM, 313 chunks. Report: `logs/eval-en-20260926-125019.json` (gitignored); numbers in PROGRESS.md. **English recall and p95 on the current build.** This needs Tasks 4 and 5 working. If Task 5 isn't done, record WER/DER/speaker accuracy as the baseline instead.
-2. ☐ **M1** language detection + storage (§3.1–3.3)
-3. ☐ **M3** sentence splitter (§3.4)
+2. ☑ **M1** language detection + storage (§3.1–3.3). 2026-09-26: run 4 detected `en` at 0.9996–0.9998 on all 6 files; transcripts byte-identical to run 3 (313/313); English eval unchanged (r@5 0.778 / r@10 0.811, p95 18.4 ms). Schema `language` columns were added in M1, not M5 (storage needs them)
+3. ☑ **M3** sentence splitter (§3.4). 2026-09-26: 36 chunking tests incl. zh/hi/ar; English unchanged (no long turns in the golden set)
 4. ☐ **M4** embedder → bge-m3, `vector(1024)`, re-ingest (§3.5)
 5. ☐ **M5** per-row keyword config + bigrams, **together with Task 5's keyword branch** (§3.6)
 6. ☐ **M6** API, settings, docs (§3.7–3.8)
