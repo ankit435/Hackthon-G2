@@ -209,3 +209,14 @@ An evaluator or developer can test any custom or arbitrary audio file (`.wav`, `
 
 6. **Trigger Automated Evaluation via `/evaluation`**:
    - `curl "http://localhost:8000/evaluation"` (GET)
+
+## 10. Multilingual Cross-Lingual Live Search Demonstration
+
+Below is a live API test execution demonstrating real-time multilingual cross-lingual retrieval via `GET /search`:
+
+![Live API Multilingual Search Response](presentation_screenshot.png)
+
+### Key Features Demonstrated in the Live Execution:
+- **HTTP Status & Performance**: Returns **`HTTP 200 OK`** in **`194 ms`** latency.
+- **Cross-Lingual Matching**: A Hindi query (`"फिक्स्ड विंडों काउंटर किस बर्स्ट समस्या की अनुमति देता है..."`) seamlessly retrieves both Hindi transcript chunks (`audio_02_url_shortener_hi.wav`) and English reference chunks (`audio_01_rate_limiter.wav`).
+- **Granular Speaker & Timestamps**: Returns exact speaker attribution (`SPEAKER_01`), precise start/end timestamps (`53.78s - 59.58s`), language tags (`"hi"`, `"en"`), and Reciprocal Rank Fusion (RRF) scores.
