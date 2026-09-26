@@ -1,0 +1,52 @@
+El problema de hoy es un acortador de URL que sirve mil millones de redirecciones al mes.
+Fijemos primero la proporción entre lecturas y escrituras, porque ese único número determina la mayor parte de la arquitectura.
+Supongamos cien lecturas por cada escritura. Es decir, unos diez millones de enlaces nuevos al mes y mil millones de redirecciones.
+Eso son unas cuatrocientas redirecciones por segundo de media, y deberíamos prever picos de quizá cinco veces eso durante los eventos virales.
+La ruta de escritura es lo bastante pequeña como para que una sola base de datos primaria la maneje, pero la ruta de lectura necesita una caché agresiva.
+De acuerdo. Los requisitos funcionales son sencillos. Crear un código corto para una URL larga, redirigir al consultarlo y, opcionalmente, hacer que el enlace caduque.
+También deberíamos admitir alias personalizados, porque los equipos de marketing siempre quieren un código legible en lugar de una cadena aleatoria.
+Y analíticas. El número de clics, el referente y la geografía aproximada son lo que los clientes realmente pagan en esta categoría de producto.
+Empecemos por la generación de códigos. ¿Qué longitud debería tener el código corto y qué alfabeto usamos?
+Base sesenta y dos, con dígitos y letras en mayúsculas y minúsculas. Siete caracteres dan unos tres coma cinco billones de combinaciones, mucho más de lo que necesitamos.
+Siete es un buen valor por defecto, pero podríamos empezar con seis e ir creciendo. Seis caracteres ya son cincuenta y seis mil millones de posibilidades.
+La verdadera pregunta es cómo elegimos un código. Hay dos familias: la generación aleatoria con comprobación de colisiones y la codificación determinista de un contador.
+La codificación de un contador es atractiva porque no tiene colisiones por construcción. Tomamos un entero globalmente único y lo codificamos en base sesenta y dos.
+Pero los enteros secuenciales filtran información. Cualquiera puede enumerar los códigos y recorrer toda la base de datos de enlaces, lo cual es un problema de privacidad.
+Podemos mitigarlo mezclando el contador con una permutación reversible antes de codificarlo, para que los códigos parezcan aleatorios pero sigan siendo únicos.
+Una red de Feistel o un simple inverso multiplicativo módulo el espacio de claves funciona bien para eso. Únicos, imposibles de adivinar en la práctica y sin necesidad de comprobar colisiones.
+La alternativa son códigos aleatorios con una inserción que falla si hay duplicado. Con tasas de ocupación bajas las colisiones son raras y un reintento no cuesta casi nada.
+Eso es más fácil de razonar y probablemente es lo que lanzaría primero. La inserción condicional convierte la corrección en trabajo de la base de datos.
+Para el contador único podríamos usar un asignador de rangos. Cada nodo de la aplicación toma un bloque de un millón de identificadores y los sirve localmente.
+Eso evita una fila caliente y sobrevive a una breve caída del asignador, ya que cada nodo tiene un millón de identificadores en reserva.
+El coste son huecos en la secuencia cuando un nodo se reinicia, pero los huecos no importan en absoluto para nuestro caso de uso.
+Hablemos del almacenamiento. La tabla principal tiene el código corto como clave primaria, la URL larga, el propietario, la fecha de creación y la caducidad.
+Es un patrón de acceso puramente de clave valor, así que funcionan tanto un almacén distribuido de clave valor como una base de datos relacional con el código como clave primaria.
+Yo elegiría un almacén de clave valor particionado por el código corto, porque nuestras consultas nunca recorren la tabla ni hacen joins en la ruta crítica.
+Diez millones de enlaces al mes son ciento veinte millones al año, y cada fila ocupa quizá quinientos bytes con la URL.
+Así que unos sesenta gigabytes al año de datos principales, lo cual es poco. Los eventos de analítica serán mucho más grandes que la tabla de enlaces.
+Para la ruta de lectura, una caché delante del almacén es esencial. La popularidad de los enlaces sigue una fuerte ley de potencia.
+Una pequeña fracción de los códigos genera la inmensa mayoría de las redirecciones, así que incluso una caché modesta consigue una tasa de aciertos muy alta.
+Deberíamos cachear la URL larga resuelta con el código corto como clave, con un tiempo de vida y una invalidación explícita cuando un enlace se edita o se elimina.
+Los enlaces eliminados importan. Si alguien retira un enlace malicioso, una entrada obsoleta en la caché lo sigue sirviendo, así que la invalidación tiene que ser rápida.
+Podemos publicar eventos de invalidación en un bus de mensajes y hacer que cada nodo de caché se suscriba, en lugar de depender solo de la caducidad.
+Para la redirección en sí, ¿devolvemos un tres cero uno permanente o un tres cero dos temporal?
+Tres cero dos, porque el navegador guarda en caché una redirección permanente y nunca veríamos los clics posteriores.
+Exacto, y perderíamos por completo la analítica de los visitantes recurrentes. La pequeña carga extra vale la pena para conservar los datos.
+Ahora el pipeline de analítica. No deberíamos escribir en la base de datos de forma síncrona en la ruta de redirección.
+Desde luego que no. Emitimos un evento de clic a una cola, devolvemos la redirección inmediatamente y dejamos que un consumidor agregue de forma asíncrona.
+El consumidor puede acumular los eventos en contadores por enlace y por hora, y guardamos los eventos en bruto en almacenamiento barato durante un periodo limitado.
+Deberíamos hacer que el consumidor sea idempotente, usando un identificador de evento como clave, porque la entrega al menos una vez implica que habrá duplicados.
+Veamos el abuso, ya que los acortadores de URL son una herramienta favorita para el phishing y la distribución de malware.
+Tenemos que comprobar las URL enviadas contra un servicio de reputación en el momento de la creación, y volver a comprobarlas periódicamente, porque un dominio limpio puede volverse malicioso más tarde.
+También deberíamos admitir una página intermedia de advertencia para los enlaces marcados como sospechosos, en lugar de un bloqueo total en todos los casos.
+Y limitar la tasa de creación de enlaces por cuenta, porque la creación masiva de miles de enlaces es una fuerte señal de abuso.
+En cuanto a la disponibilidad, la ruta de redirección debe sobrevivir a un fallo regional. Eso aconseja tener réplicas de lectura en varias regiones.
+Como en la mayoría de los casos los enlaces son inmutables después de crearse, la replicación asíncrona es perfectamente aceptable para las lecturas.
+La ruta de escritura puede quedarse en una sola región principal, y aceptamos una latencia de creación algo mayor para los usuarios lejanos.
+Esa asimetría es la decisión correcta. La creación ocurre una vez y las redirecciones ocurren cien veces, así que optimizamos para la redirección.
+¿Y los alias personalizados que colisionan con códigos generados? Necesitamos un único espacio de nombres y un mecanismo de reserva.
+Yo reservaría un prefijo o una longitud distintos para los alias personalizados, de modo que los códigos generados nunca puedan colisionar con los que elige el usuario.
+Bien. Resumo. Códigos en base sesenta y dos a partir de un contador mezclado, almacenamiento de clave valor y una caché intensiva con invalidación dirigida por eventos.
+Además de redirecciones temporales para conservar la analítica, un pipeline asíncrono de clics, réplicas de lectura en varias regiones y una capa de detección de abuso.
+Creo que lo interesante de este problema es lo pequeño que es el almacenamiento y hasta qué punto el diseño trata en realidad de la caché y del abuso.
+Exacto. La versión ingenua es un proyecto de fin de semana. La versión de producción consiste sobre todo en cuestiones operativas de seguridad y de escala de lectura.

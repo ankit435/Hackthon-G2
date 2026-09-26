@@ -143,3 +143,19 @@ Question Q19.
 System tools only (`ffprobe`, `ffmpeg`, `jq`, `shasum`). The commands are in
 `AGENT_LOG.md` Session 1. They are now automated in
 `tests/data/test_dataset_integrity.py` (43 tests, run with `python -m pytest`).
+
+## Multilingual evaluation set — translations of golden 01–06 (Task 17, `PLAN.md` §7B)
+
+Added 2026-09-26 (cloud session 3). **Derived data; the English originals are untouched.**
+
+| Item | Value |
+|---|---|
+| Languages | Spanish (`es`), Hindi (`hi`), Mandarin Chinese (`zh`). One per code path: Latin script with a Snowball stemmer, a non-Latin script, CJK |
+| Source | `dataset/reference_corrected/audio_0{1..6}_*.json` (sha256 recorded in every output's `translation` block) |
+| Translation | LLM-drafted by the coding agent, **segment by segment**: segment *i* in every language is the same utterance as English segment *i*, with the same speaker. **Pending human verification.** Proper nouns (Redis, Lua, WebSocket, RTMP, Feistel, Saga, API, URL) stay in Latin script. Numbers are spelled out as spoken, as in the English |
+| Size | 6 files × 3 languages = 18 references; 313 segments per language; 30 QA items per language |
+| Reviewable sources | `multilingual/translations/<lang>/<audio_id>.txt` (one line per segment), `multilingual/translations/qa.json` |
+| Generated (do not hand-edit) | `multilingual/<lang>/<audio_id>_<lang>.json`, `multilingual/<lang>/qa.json`, `multilingual/manifest.json`, built by `scripts/build_multilingual_dataset.py` (deterministic; guarded by `tests/data/test_multilingual_dataset.py`) |
+| QA evidence | Resolved from the English `supporting_context` quotes (D2: the reliable link) to segment indices; `supporting_context` in each language is the translated text of those segments. Agrees with `all.json` indices for 30/30 items (one duplicate index removed) |
+| Audio | **Not yet synthesised.** `scripts/synthesize_multilingual.py`: Kokoro-82M (`kokoro==0.9.4`, Apache-2.0), 24 kHz mono PCM, 0.25 s digital silence between segments, voices SPEAKER_00/01 = es `ef_dora`/`em_alex`, hi `hf_alpha`/`hm_omega`, zh `zf_xiaobei`/`zm_yunjian`. Timings are exact sample offsets, written back into each reference together with the WAV sha256 (so no D1-style drift). WAVs are gitignored, like the English audio |
+| Limitations | Translated, synthetic speech: cleaner than real recordings, and one TTS voice pair per language rather than per file (Q20 analogue). Machine-drafted translation quality must be checked before metrics are reported |

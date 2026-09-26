@@ -1,0 +1,380 @@
+{
+  "dataset": "Synthetic Two-Speaker Golden Audio Dataset — multilingual translations",
+  "audio_id": "audio_03_chat_system_zh",
+  "source_audio_id": "audio_03_chat_system",
+  "language": "zh",
+  "topic": "实时聊天与消息系统",
+  "source_topic": "Real-Time Chat and Messaging System",
+  "duration_seconds": null,
+  "speakers": [
+    "SPEAKER_00",
+    "SPEAKER_01"
+  ],
+  "segments": [
+    {
+      "index": 0,
+      "speaker": "SPEAKER_00",
+      "text": "我们来设计一个实时聊天系统，支持一对一消息和群聊。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 1,
+      "speaker": "SPEAKER_01",
+      "text": "在谈架构之前，我们的目标规模是多少，向用户承诺什么样的投递保证？",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 2,
+      "speaker": "SPEAKER_00",
+      "text": "假设每天五千万活跃用户，而且服务器一旦确认收到，消息就绝对不能丢。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 3,
+      "speaker": "SPEAKER_01",
+      "text": "所以要先持久化再确认。服务器先把消息写入持久化存储，然后再向发送方返回确认。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 4,
+      "speaker": "SPEAKER_00",
+      "text": "这就是关键的顺序。如果先确认后写入，一旦崩溃，用户以为已经发出的消息就会丢失。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 5,
+      "speaker": "SPEAKER_01",
+      "text": "我们从连接层开始。实时投递需要一个持久连接，所以 WebSocket 是很自然的选择。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 6,
+      "speaker": "SPEAKER_00",
+      "text": "长轮询是受限网络下的备选方案，不过走四四三端口、基于 TLS 的 WebSocket 能穿过大多数企业代理。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 7,
+      "speaker": "SPEAKER_01",
+      "text": "这样每个网关节点会维持几万甚至几十万个打开的连接，连接状态就成了扩展的核心问题。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 8,
+      "speaker": "SPEAKER_00",
+      "text": "我们需要一个会话注册表，把每个用户映射到当前持有其连接的网关节点。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 9,
+      "speaker": "SPEAKER_01",
+      "text": "这个注册表放在一个快速的共享存储里，以用户标识为键，记录节点地址，并通过心跳来控制过期。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 10,
+      "speaker": "SPEAKER_00",
+      "text": "当用户 A 给用户 B 发消息时，接收消息的网关先写入消息，然后查找 B 连接在哪里。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 11,
+      "speaker": "SPEAKER_01",
+      "text": "如果 B 在线，我们就通过内部通道把消息转发到那个具体的网关节点，由它通过套接字推送下去。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 12,
+      "speaker": "SPEAKER_00",
+      "text": "如果 B 离线，我们就跳过推送，依靠已存储的消息，再通过平台服务发一条手机推送通知。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 13,
+      "speaker": "SPEAKER_01",
+      "text": "我们要注意注册表的一致性。网络抖动时，用户可能会重新连接到另一个节点。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 14,
+      "speaker": "SPEAKER_00",
+      "text": "过期的条目会导致消息被转发到一个已经不再持有该连接的节点，所以那个节点必须丢弃消息，交给存储来处理。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 15,
+      "speaker": "SPEAKER_01",
+      "text": "由于消息已经持久化了，一次推送丢失只是延迟问题。客户端重连时会把它拉下来，什么都不会真正丢失。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 16,
+      "speaker": "SPEAKER_00",
+      "text": "这就是那个重要的不变式。实时投递只是建立在持久化日志之上的尽力而为，而不是事实的来源。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 17,
+      "speaker": "SPEAKER_01",
+      "text": "我们来谈谈存储。消息表长什么样，又该怎么分区？",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 18,
+      "speaker": "SPEAKER_00",
+      "text": "我会按会话来建模消息。分区键是会话标识，聚簇键是单调递增的消息序号。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 19,
+      "speaker": "SPEAKER_01",
+      "text": "这样加载历史记录时就能高效地做范围读取，而这正是用户打开一个会话时的访问模式。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 20,
+      "speaker": "SPEAKER_00",
+      "text": "对于收件箱视图，也就是最近会话列表，我们为每个用户单独维护一张按最后活跃时间排序的表。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 21,
+      "speaker": "SPEAKER_01",
+      "text": "这种反范式设计是必要的，因为这两种访问模式不同，我们不想为了生成列表而去扫描所有会话。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 22,
+      "speaker": "SPEAKER_00",
+      "text": "会话内部的排序很微妙。客户端的时钟不可靠，所以我们不能按发送方的时间戳排序。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 23,
+      "speaker": "SPEAKER_01",
+      "text": "服务器为每个会话分配序号，这样就得到了一个所有参与者都认同的全序。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 24,
+      "speaker": "SPEAKER_00",
+      "text": "对一对一聊天来说这很便宜。对大群来说，我们需要每个会话只有一个写入者，或者一个原子计数器。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 25,
+      "speaker": "SPEAKER_01",
+      "text": "客户端还需要妥善处理乱序到达的消息，按序号而不是按到达时间来插入。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 26,
+      "speaker": "SPEAKER_00",
+      "text": "现在说群消息。我们是在写入时扇出到每个成员的收件箱，还是在读取时从共享会话扇出？",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 27,
+      "speaker": "SPEAKER_01",
+      "text": "对小群来说，写扩散没问题，还能让读取变得非常简单。对超大群来说，它会让写入成本成倍增长。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 28,
+      "speaker": "SPEAKER_00",
+      "text": "所以采用混合方案。成员数低于某个阈值时，我们为每个用户写一条记录；超过阈值时只保存一份，让客户端直接读取会话。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 29,
+      "speaker": "SPEAKER_01",
+      "text": "这和社交信息流里用的方法类似，而那个阈值就成了一个可以通过配置调整的参数。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 30,
+      "speaker": "SPEAKER_00",
+      "text": "我们来讲讲已读回执和正在输入提示，因为它们产生的流量远远超过消息本身。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 31,
+      "speaker": "SPEAKER_01",
+      "text": "正在输入提示应该是临时的，永远不要持久化。通过套接字发送，设一个很短的过期时间，负载高时直接丢弃。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 32,
+      "speaker": "SPEAKER_00",
+      "text": "已读回执可以批量处理。客户端不必为每条消息发一个事件，而是报告它已读到的最大序号。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 33,
+      "speaker": "SPEAKER_01",
+      "text": "这样就把一百个事件合并成一个，而且完全等价，因为在一个会话里阅读进度只会往前推进。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 34,
+      "speaker": "SPEAKER_00",
+      "text": "在线状态是另一个昂贵的功能。简单地把每次状态变化广播给每个联系人，开销是平方级的。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 35,
+      "speaker": "SPEAKER_01",
+      "text": "我们只应该为用户当前打开的会话推送在线状态，其余的都在需要时再去查询。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 36,
+      "speaker": "SPEAKER_00",
+      "text": "对于离线投递，客户端为每个会话记住它看到的最后一个序号，重连时请求之后的所有消息。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 37,
+      "speaker": "SPEAKER_01",
+      "text": "这一个机制既能处理短暂断线，也能处理关机一周的手机，让协议保持简单。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 38,
+      "speaker": "SPEAKER_00",
+      "text": "我们还应该考虑多设备。同一个用户可能同时连着手机、平板和桌面客户端。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 39,
+      "speaker": "SPEAKER_01",
+      "text": "那么会话注册表就要把一个用户映射到一组连接，投递时扇出到所有在线的设备。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 40,
+      "speaker": "SPEAKER_00",
+      "text": "已读状态也变成按用户而不是按设备记录，所以在手机上把消息标为已读，笔记本上也会同步清除。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 41,
+      "speaker": "SPEAKER_01",
+      "text": "那端到端加密呢？这会大大改变服务器的角色。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 42,
+      "speaker": "SPEAKER_00",
+      "text": "有了端到端加密，服务器只保存密文，无法在消息正文上做服务端搜索或内容审核。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 43,
+      "speaker": "SPEAKER_01",
+      "text": "它也会让多设备变得复杂，因为每个设备都需要自己的密钥材料，发送方必须为每个接收设备分别加密。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 44,
+      "speaker": "SPEAKER_00",
+      "text": "这本身就是一个很大的设计，所以我们把它记为一个重要分支，当前设计先保持传输层加密。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 45,
+      "speaker": "SPEAKER_01",
+      "text": "好。最后我们来谈故障模式。如果一个带着十万个连接的网关节点挂了，会怎么样？",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 46,
+      "speaker": "SPEAKER_00",
+      "text": "所有这些客户端会同时重连，所以我们需要随机的重连延迟，否则就会对剩下的节点造成惊群效应。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 47,
+      "speaker": "SPEAKER_01",
+      "text": "在部署期间，负载均衡器也应该逐步摘除连接，而不是一次性全部断开。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 48,
+      "speaker": "SPEAKER_00",
+      "text": "我们还应该在网关上限制重连速率，主动丢弃部分负载，而不是在洪峰下整体崩溃。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 49,
+      "speaker": "SPEAKER_01",
+      "text": "总结一下：先持久化再确认，带会话注册表的 WebSocket 网关，按会话分区的存储，以及由客户端驱动的追赶同步。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 50,
+      "speaker": "SPEAKER_00",
+      "text": "再加上群聊的混合扇出、批量回执、限定范围的在线状态，以及谨慎的重连策略。这是一个扎实的基础。",
+      "start": null,
+      "end": null
+    }
+  ],
+  "translation": {
+    "method": "LLM-drafted by the coding agent (session 2), segment-aligned; PENDING human verification (PLAN.md §7B). Proper nouns (Redis, Lua, WebSocket, RTMP, Feistel, Saga, API, URL) are kept in Latin script in every language.",
+    "source_reference": "reference_corrected/audio_03_chat_system.json",
+    "source_reference_sha256": "721893f5c3750fab4e53d9fc8873cb45cea39cb7d77240b4b268940343c24712",
+    "translation_file": "multilingual/translations/zh/audio_03_chat_system.txt",
+    "translation_sha256": "0953d52ab991c67834ba3b03b9a6570dff49acd6e251c9b294649266867ade69"
+  },
+  "synthesis": null
+}

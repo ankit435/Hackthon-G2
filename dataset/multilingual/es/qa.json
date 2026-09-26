@@ -1,0 +1,717 @@
+[
+  {
+    "qa_id": "audio_01_rate_limiter__q1_es",
+    "source_qa_id": "audio_01_rate_limiter__q1",
+    "audio_id": "audio_01_rate_limiter_es",
+    "language": "es",
+    "question": "¿Qué problema de ráfagas permite un contador de ventana fija y qué tamaño puede tener la ráfaga?",
+    "ground_truth_answer": "Un contador de ventana fija permite una ráfaga del doble del límite en el borde de la ventana. Un cliente puede enviar cien solicitudes en el último segundo de un minuto y otras cien en el primer segundo del siguiente, así que el backend recibe doscientas solicitudes en unos dos segundos aunque la política sea de cien por minuto.",
+    "question_en": "What burst problem does a fixed window counter allow, and how large can the burst be?",
+    "question_type": "factual",
+    "difficulty": "easy",
+    "evidence_segment_indices": [
+      7,
+      8
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00",
+      "SPEAKER_01"
+    ],
+    "supporting_context": [
+      "Las ventanas fijas son baratas y fáciles de razonar, pero permiten una ráfaga del doble del límite en el borde de la ventana.",
+      "Exactamente. Un cliente puede enviar cien solicitudes en el último segundo de un minuto y otras cien en el primer segundo del siguiente."
+    ]
+  },
+  {
+    "qa_id": "audio_01_rate_limiter__q2_es",
+    "source_qa_id": "audio_01_rate_limiter__q2",
+    "audio_id": "audio_01_rate_limiter_es",
+    "language": "es",
+    "question": "¿Por qué se prefiere el contador de ventana deslizante al registro de ventana deslizante para una API de alto volumen?",
+    "ground_truth_answer": "El registro de ventana deslizante guarda una marca de tiempo por cada solicitud, así que la memoria crece linealmente con el tráfico: una clave con cien solicitudes por minuto guarda cien marcas de tiempo. El contador de ventana deslizante combina la ventana anterior y la actual con una media ponderada, lo que da precisión dentro de un pequeño margen de error guardando solo dos enteros por clave, un mejor compromiso con mucho volumen.",
+    "question_en": "Why is the sliding window counter preferred over the sliding window log for a high volume API?",
+    "question_type": "comparative",
+    "difficulty": "medium",
+    "evidence_segment_indices": [
+      10,
+      12,
+      13
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00",
+      "SPEAKER_01"
+    ],
+    "supporting_context": [
+      "El registro de ventana deslizante lo resuelve con precisión. Guardamos una marca de tiempo por cada solicitud y contamos las entradas de los últimos sesenta segundos.",
+      "Así que el término medio práctico es el contador de ventana deslizante, donde combinamos la ventana anterior y la actual mediante una media ponderada.",
+      "Eso nos da precisión dentro de un pequeño margen de error guardando solo dos enteros por clave, lo cual es un buen compromiso para una API de alto volumen."
+    ]
+  },
+  {
+    "qa_id": "audio_01_rate_limiter__q3_es",
+    "source_qa_id": "audio_01_rate_limiter__q3",
+    "audio_id": "audio_01_rate_limiter_es",
+    "language": "es",
+    "question": "¿Qué configuración del cubo de tokens coincide con la política de cien solicitudes por minuto y por qué se limita el cubo?",
+    "ground_truth_answer": "Una capacidad de cien tokens con una recarga de uno coma sesenta y siete tokens por segundo coincide con la política. El cubo se limita para que los clientes inactivos no acumulen una ráfaga ilimitada; un cliente que ha estado inactivo acumula tokens y puede enviar una ráfaga corta, acotada por la capacidad.",
+    "question_en": "What token bucket configuration matches the one hundred requests per minute policy, and why is the bucket capped?",
+    "question_type": "numerical",
+    "difficulty": "medium",
+    "evidence_segment_indices": [
+      17
+    ],
+    "evidence_speakers": [
+      "SPEAKER_01"
+    ],
+    "supporting_context": [
+      "Deberíamos limitar el cubo para que los clientes inactivos no acumulen una ráfaga ilimitada. Una capacidad de cien con una recarga de uno coma sesenta y siete tokens por segundo coincide con nuestra política."
+    ]
+  },
+  {
+    "qa_id": "audio_01_rate_limiter__q4_es",
+    "source_qa_id": "audio_01_rate_limiter__q4",
+    "audio_id": "audio_01_rate_limiter_es",
+    "language": "es",
+    "question": "¿Por qué hace falta un script de Lua en Redis y qué condición de carrera concreta evita?",
+    "ground_truth_answer": "Toda la comprobación y el decremento se ejecutan dentro de un único script de Lua para que la lectura, la comparación y la escritura sean atómicas en el lado de Redis. Así se evita la carrera en la que dos nodos de pasarela leen noventa y nueve y ambos deciden permitir la solicitud. Para el cubo de tokens, el script calcula el tiempo transcurrido desde la última recarga, suma los tokens ganados, los limita a la capacidad e intenta gastar uno, todo en un solo viaje de ida y vuelta.",
+    "question_en": "Why is a Lua script needed on Redis, and what specific race does it prevent?",
+    "question_type": "multi_hop",
+    "difficulty": "hard",
+    "evidence_segment_indices": [
+      21,
+      22,
+      23
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00",
+      "SPEAKER_01"
+    ],
+    "supporting_context": [
+      "Deberíamos hacer toda la comprobación y el decremento dentro de un único script de Lua, para que la lectura, la comparación y la escritura sean atómicas en el lado de Redis.",
+      "Eso evita la condición de carrera clásica en la que dos nodos de pasarela leen noventa y nueve y ambos deciden permitir la solicitud.",
+      "Para el cubo de tokens, el script calcularía el tiempo transcurrido desde la última recarga, sumaría los tokens ganados, los limitaría a la capacidad y luego intentaría gastar uno."
+    ]
+  },
+  {
+    "qa_id": "audio_01_rate_limiter__q5_es",
+    "source_qa_id": "audio_01_rate_limiter__q5",
+    "audio_id": "audio_01_rate_limiter_es",
+    "language": "es",
+    "question": "¿Cuál es la política de fallar abierto frente a fallar cerrado cuando Redis no está disponible y cuál es el riesgo del respaldo local?",
+    "ground_truth_answer": "Se falla abierto en los endpoints normales para proteger la disponibilidad, pero se falla cerrado en los endpoints costosos o sensibles, como la creación de cuentas y la exportación masiva. También se degrada a un limitador local en memoria para que quede algún techo. El riesgo es que cada nodo aplica el límite local de forma independiente, así que el total efectivo se multiplica por el tamaño de la flota; por eso el límite de respaldo debe ser conservador.",
+    "question_en": "What is the fail open versus fail closed policy when Redis is unreachable, and what is the risk of the local fallback?",
+    "question_type": "reasoning",
+    "difficulty": "hard",
+    "evidence_segment_indices": [
+      37,
+      38,
+      39
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00",
+      "SPEAKER_01"
+    ],
+    "supporting_context": [
+      "Para una API pública yo fallaría abierto en los endpoints normales, pero fallaría cerrado en los costosos o sensibles, como la creación de cuentas y la exportación masiva.",
+      "También deberíamos degradar a un limitador local en memoria cuando el almacén compartido esté caído, para que siga habiendo algún techo en lugar de ninguno.",
+      "Bien. El respaldo local debería usar un límite conservador, ya que cada nodo lo aplica de forma independiente y el total efectivo se multiplica por el tamaño de la flota."
+    ]
+  },
+  {
+    "qa_id": "audio_02_url_shortener__q1_es",
+    "source_qa_id": "audio_02_url_shortener__q1",
+    "audio_id": "audio_02_url_shortener_es",
+    "language": "es",
+    "question": "¿Qué codificación y qué longitud de código se eligen y cuántas combinaciones ofrece eso?",
+    "ground_truth_answer": "Base sesenta y dos, con dígitos y letras mayúsculas y minúsculas. Siete caracteres dan unos tres coma cinco billones de combinaciones, mucho más de lo necesario. Se mencionaron seis caracteres como posible punto de partida, con unos cincuenta y seis mil millones de posibilidades.",
+    "question_en": "What encoding and code length are chosen, and how many combinations does that provide?",
+    "question_type": "numerical",
+    "difficulty": "easy",
+    "evidence_segment_indices": [
+      9,
+      10
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00",
+      "SPEAKER_01"
+    ],
+    "supporting_context": [
+      "Base sesenta y dos, con dígitos y letras en mayúsculas y minúsculas. Siete caracteres dan unos tres coma cinco billones de combinaciones, mucho más de lo que necesitamos.",
+      "Siete es un buen valor por defecto, pero podríamos empezar con seis e ir creciendo. Seis caracteres ya son cincuenta y seis mil millones de posibilidades."
+    ]
+  },
+  {
+    "qa_id": "audio_02_url_shortener__q2_es",
+    "source_qa_id": "audio_02_url_shortener__q2",
+    "audio_id": "audio_02_url_shortener_es",
+    "language": "es",
+    "question": "¿Por qué se usa una redirección temporal en lugar de una permanente?",
+    "ground_truth_answer": "Se usa una redirección temporal tres cero dos porque el navegador guarda en caché una redirección permanente tres cero uno, así que los clics posteriores nunca llegarían al servicio. Eso haría perder por completo la analítica de los visitantes recurrentes, y la pequeña carga extra se considera un precio que vale la pena para conservar los datos.",
+    "question_en": "Why is a temporary redirect used instead of a permanent one?",
+    "question_type": "reasoning",
+    "difficulty": "medium",
+    "evidence_segment_indices": [
+      32,
+      33
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00",
+      "SPEAKER_01"
+    ],
+    "supporting_context": [
+      "Tres cero dos, porque el navegador guarda en caché una redirección permanente y nunca veríamos los clics posteriores.",
+      "Exacto, y perderíamos por completo la analítica de los visitantes recurrentes. La pequeña carga extra vale la pena para conservar los datos."
+    ]
+  },
+  {
+    "qa_id": "audio_02_url_shortener__q3_es",
+    "source_qa_id": "audio_02_url_shortener__q3",
+    "audio_id": "audio_02_url_shortener_es",
+    "language": "es",
+    "question": "¿Cuál es el inconveniente de codificar un contador secuencial y cómo se mitiga sin perder la ausencia de colisiones?",
+    "ground_truth_answer": "Los enteros secuenciales filtran información: cualquiera puede enumerar los códigos y recorrer toda la base de datos de enlaces, lo cual es un problema de privacidad. Se mitiga mezclando el contador con una permutación reversible antes de codificarlo en base sesenta y dos, por ejemplo una red de Feistel o un inverso multiplicativo módulo el espacio de claves, de modo que los códigos parecen aleatorios pero siguen siendo únicos y no necesitan comprobar colisiones.",
+    "question_en": "What is the drawback of encoding a sequential counter, and how is it mitigated while staying collision free?",
+    "question_type": "multi_hop",
+    "difficulty": "hard",
+    "evidence_segment_indices": [
+      13,
+      14,
+      15
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00",
+      "SPEAKER_01"
+    ],
+    "supporting_context": [
+      "Pero los enteros secuenciales filtran información. Cualquiera puede enumerar los códigos y recorrer toda la base de datos de enlaces, lo cual es un problema de privacidad.",
+      "Podemos mitigarlo mezclando el contador con una permutación reversible antes de codificarlo, para que los códigos parezcan aleatorios pero sigan siendo únicos.",
+      "Una red de Feistel o un simple inverso multiplicativo módulo el espacio de claves funciona bien para eso. Únicos, imposibles de adivinar en la práctica y sin necesidad de comprobar colisiones."
+    ]
+  },
+  {
+    "qa_id": "audio_02_url_shortener__q4_es",
+    "source_qa_id": "audio_02_url_shortener__q4",
+    "audio_id": "audio_02_url_shortener_es",
+    "language": "es",
+    "question": "¿Cómo asigna identificadores el asignador de rangos y cuál es su coste aceptado?",
+    "ground_truth_answer": "Cada nodo de la aplicación toma del asignador un bloque de un millón de identificadores y los sirve localmente, lo que evita una fila caliente y sobrevive a una breve caída del asignador, ya que cada nodo tiene un millón de identificadores en reserva. El coste son huecos en la secuencia cuando un nodo se reinicia, lo que no importa para este caso de uso.",
+    "question_en": "How does the range allocator assign identifiers, and what is its accepted cost?",
+    "question_type": "factual",
+    "difficulty": "medium",
+    "evidence_segment_indices": [
+      18,
+      20
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00"
+    ],
+    "supporting_context": [
+      "Para el contador único podríamos usar un asignador de rangos. Cada nodo de la aplicación toma un bloque de un millón de identificadores y los sirve localmente.",
+      "El coste son huecos en la secuencia cuando un nodo se reinicia, pero los huecos no importan en absoluto para nuestro caso de uso."
+    ]
+  },
+  {
+    "qa_id": "audio_02_url_shortener__q5_es",
+    "source_qa_id": "audio_02_url_shortener__q5",
+    "audio_id": "audio_02_url_shortener_es",
+    "language": "es",
+    "question": "¿Por qué la invalidación de la caché se trata como urgente en lugar de depender solo de la caducidad?",
+    "ground_truth_answer": "Porque si alguien retira un enlace malicioso, una entrada obsoleta en la caché lo sigue sirviendo. Depender solo del tiempo de vida dejaría activa la redirección dañina, así que los eventos de invalidación se publican en un bus de mensajes al que se suscribe cada nodo de caché, en lugar de esperar a que caduquen.",
+    "question_en": "Why is cache invalidation treated as urgent rather than relying on expiry alone?",
+    "question_type": "inferential",
+    "difficulty": "hard",
+    "evidence_segment_indices": [
+      29,
+      30
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00",
+      "SPEAKER_01"
+    ],
+    "supporting_context": [
+      "Los enlaces eliminados importan. Si alguien retira un enlace malicioso, una entrada obsoleta en la caché lo sigue sirviendo, así que la invalidación tiene que ser rápida.",
+      "Podemos publicar eventos de invalidación en un bus de mensajes y hacer que cada nodo de caché se suscriba, en lugar de depender solo de la caducidad."
+    ]
+  },
+  {
+    "qa_id": "audio_03_chat_system__q1_es",
+    "source_qa_id": "audio_03_chat_system__q1",
+    "audio_id": "audio_03_chat_system_es",
+    "language": "es",
+    "question": "¿Qué orden se exige entre persistir un mensaje y confirmar al remitente, y por qué?",
+    "ground_truth_answer": "El servidor debe escribir primero el mensaje en almacenamiento persistente y solo después devolver una confirmación al remitente. Si confirmara primero y escribiera después, una caída perdería mensajes que el usuario cree que se enviaron.",
+    "question_en": "What is the required ordering between persisting a message and acknowledging the sender, and why?",
+    "question_type": "factual",
+    "difficulty": "easy",
+    "evidence_segment_indices": [
+      3,
+      4
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00",
+      "SPEAKER_01"
+    ],
+    "supporting_context": [
+      "Entonces, durabilidad antes de la confirmación. El servidor escribe primero el mensaje en almacenamiento persistente y luego devuelve una confirmación al remitente.",
+      "Ese es el orden clave. Si confirmamos primero y escribimos después, una caída pierde mensajes que el usuario cree que se enviaron."
+    ]
+  },
+  {
+    "qa_id": "audio_03_chat_system__q2_es",
+    "source_qa_id": "audio_03_chat_system__q2",
+    "audio_id": "audio_03_chat_system_es",
+    "language": "es",
+    "question": "¿Qué ocurre cuando un mensaje se reenvía a un nodo de pasarela que ya no tiene la conexión del usuario?",
+    "ground_truth_answer": "Un usuario puede reconectarse a otro nodo durante una intermitencia de la red, dejando una entrada obsoleta en el registro de sesiones. El nodo que recibe el reenvío lo descarta. Como el mensaje ya es duradero, un envío perdido es solo un problema de latencia: el cliente lo recupera al reconectarse y nada se pierde de verdad. La entrega en tiempo real es de mejor esfuerzo sobre un registro duradero, no la fuente de verdad.",
+    "question_en": "What happens when a message is forwarded to a gateway node that no longer owns the user's connection?",
+    "question_type": "multi_hop",
+    "difficulty": "hard",
+    "evidence_segment_indices": [
+      14,
+      15,
+      16
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00",
+      "SPEAKER_01"
+    ],
+    "supporting_context": [
+      "Las entradas obsoletas hacen que los mensajes se reenvíen a un nodo que ya no tiene la conexión, así que ese nodo debe descartarlos y dejar que el almacén se encargue.",
+      "Como el mensaje ya es duradero, un envío perdido es solo un problema de latencia. El cliente lo recuperará al reconectarse y nada se pierde de verdad.",
+      "Ese es el invariante importante. La entrega en tiempo real es de mejor esfuerzo sobre un registro duradero, no la fuente de verdad."
+    ]
+  },
+  {
+    "qa_id": "audio_03_chat_system__q3_es",
+    "source_qa_id": "audio_03_chat_system__q3",
+    "audio_id": "audio_03_chat_system_es",
+    "language": "es",
+    "question": "¿Cómo se hace el fan out de los mensajes de grupo y qué determina el enfoque?",
+    "ground_truth_answer": "Se usa un híbrido. Por debajo de un umbral de miembros, los mensajes se escriben como entradas en la bandeja de cada usuario (fan out en escritura), lo que hace triviales las lecturas. Por encima del umbral se guarda una sola copia y los clientes leen la conversación directamente, porque el fan out en escritura multiplica enormemente el coste de escritura en grupos muy grandes. El umbral es un valor configurable.",
+    "question_en": "How are group messages fanned out, and what determines the approach?",
+    "question_type": "comparative",
+    "difficulty": "medium",
+    "evidence_segment_indices": [
+      28,
+      29
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00",
+      "SPEAKER_01"
+    ],
+    "supporting_context": [
+      "Así que un híbrido. Por debajo de un umbral de miembros escribimos entradas por usuario, y por encima guardamos una sola copia y los clientes leen la conversación directamente.",
+      "Eso refleja el enfoque que se usa en los feeds sociales, y el umbral se convierte en un parámetro de ajuste que podemos cambiar desde la configuración."
+    ]
+  },
+  {
+    "qa_id": "audio_03_chat_system__q4_es",
+    "source_qa_id": "audio_03_chat_system__q4",
+    "audio_id": "audio_03_chat_system_es",
+    "language": "es",
+    "question": "¿Cómo se abaratan los indicadores de escritura y las confirmaciones de lectura, dado que generan más tráfico que los mensajes?",
+    "ground_truth_answer": "Los indicadores de escritura son efímeros, nunca se persisten, se envían por el socket con una caducidad corta y se descartan bajo carga. Las confirmaciones de lectura se agrupan: en lugar de un evento por mensaje, el cliente informa de la secuencia más alta que ha leído, lo que reduce cien eventos a uno y es equivalente porque la lectura es monótona dentro de una conversación.",
+    "question_en": "How are typing indicators and read receipts made cheap, given they generate more traffic than messages?",
+    "question_type": "reasoning",
+    "difficulty": "medium",
+    "evidence_segment_indices": [
+      31,
+      32,
+      33
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00",
+      "SPEAKER_01"
+    ],
+    "supporting_context": [
+      "Los indicadores de escritura deberían ser efímeros y no persistirse nunca. Se envían por el socket con una caducidad corta y se descartan bajo carga.",
+      "Las confirmaciones de lectura se pueden agrupar. En lugar de un evento por mensaje, el cliente informa de la secuencia más alta que ha leído.",
+      "Eso reduce cien eventos a uno y es exactamente equivalente, ya que la lectura es monótona dentro de una conversación."
+    ]
+  },
+  {
+    "qa_id": "audio_03_chat_system__q5_es",
+    "source_qa_id": "audio_03_chat_system__q5",
+    "audio_id": "audio_03_chat_system_es",
+    "language": "es",
+    "question": "¿Por qué no se pueden ordenar los mensajes por la marca de tiempo del remitente y qué se usa en su lugar?",
+    "ground_truth_answer": "Los relojes de los clientes no son fiables, así que las marcas de tiempo del remitente no pueden definir el orden. El servidor asigna un número de secuencia por conversación, lo que da un orden total en el que coinciden todos los participantes. En grupos grandes esto requiere un único escritor o un contador atómico por conversación, y los clientes deben insertar por secuencia y no por hora de llegada.",
+    "question_en": "Why can messages not be ordered by the sender's timestamp, and what is used instead?",
+    "question_type": "inferential",
+    "difficulty": "hard",
+    "evidence_segment_indices": [
+      22,
+      23,
+      25
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00",
+      "SPEAKER_01"
+    ],
+    "supporting_context": [
+      "La secuenciación dentro de una conversación es sutil. Los relojes de los clientes no son fiables, así que no podemos ordenar por la marca de tiempo del remitente.",
+      "El servidor asigna el número de secuencia por conversación, lo que da un orden total en el que todos los participantes coinciden.",
+      "Y los clientes tienen que manejar bien la llegada fuera de orden, insertando por secuencia y no por hora de llegada."
+    ]
+  },
+  {
+    "qa_id": "audio_04_news_feed__q1_es",
+    "source_qa_id": "audio_04_news_feed__q1",
+    "audio_id": "audio_04_news_feed_es",
+    "language": "es",
+    "question": "¿Qué umbral de seguidores marca una cuenta como celebridad y cómo se tratan esas cuentas?",
+    "ground_truth_answer": "Alrededor de cien mil seguidores. Las cuentas por encima de ese umbral se marcan como celebridades y se excluyen del fan out en escritura. En la lectura se traen sus publicaciones recientes y se combinan con el feed precalculado del usuario, y sus líneas de tiempo se cachean de forma agresiva porque millones de usuarios piden las mismas pocas líneas de tiempo de autores.",
+    "question_en": "What follower threshold flags an account as a celebrity, and how are those accounts handled?",
+    "question_type": "factual",
+    "difficulty": "easy",
+    "evidence_segment_indices": [
+      8,
+      9,
+      11
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00",
+      "SPEAKER_01"
+    ],
+    "supporting_context": [
+      "Fijamos un umbral, quizá cien mil seguidores, por encima del cual una cuenta se marca como celebridad y se excluye del envío.",
+      "En la lectura tomamos el feed precalculado, traemos las publicaciones recientes de las celebridades que sigue el usuario y combinamos las dos listas.",
+      "Deberíamos cachear de forma agresiva las líneas de tiempo de las celebridades, ya que millones de usuarios piden las mismas pocas líneas de tiempo de autores."
+    ]
+  },
+  {
+    "qa_id": "audio_04_news_feed__q2_es",
+    "source_qa_id": "audio_04_news_feed__q2",
+    "audio_id": "audio_04_news_feed_es",
+    "language": "es",
+    "question": "¿Por qué el feed guarda solo referencias a las publicaciones en lugar de su contenido?",
+    "ground_truth_answer": "Guardar solo los identificadores hace que una edición o un borrado surtan efecto en todas partes de inmediato. El contenido se hidrata en la lectura por lotes, lo que además permite filtrar en la lectura a los autores bloqueados, las publicaciones eliminadas y los cambios de privacidad. Si no, una publicación eliminada permanecería en millones de feeds precalculados y habría que perseguirla con borrados.",
+    "question_en": "Why does the feed store only post references instead of post content?",
+    "question_type": "reasoning",
+    "difficulty": "medium",
+    "evidence_segment_indices": [
+      14,
+      15,
+      17
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00",
+      "SPEAKER_01"
+    ],
+    "supporting_context": [
+      "No guardamos el contenido de la publicación en el feed, solo referencias, así que una edición o un borrado surten efecto en todas partes de inmediato.",
+      "La hidratación ocurre en el momento de la lectura, obteniendo en lote los objetos reales de las publicaciones desde el almacén de publicaciones o la caché.",
+      "Sin eso, una publicación eliminada permanecería en millones de feeds precalculados y tendríamos que perseguirla con borrados."
+    ]
+  },
+  {
+    "qa_id": "audio_04_news_feed__q3_es",
+    "source_qa_id": "audio_04_news_feed__q3",
+    "audio_id": "audio_04_news_feed_es",
+    "language": "es",
+    "question": "Describe el embudo de ranking y explica por qué mantiene la latencia aceptable.",
+    "ground_truth_answer": "Tiene tres etapas: la generación de candidatos produce unos pocos miles de publicaciones, una pasada de ranking ligera las reduce a unos pocos cientos y un modelo más pesado ordena la página final. El embudo por etapas mantiene la latencia aceptable porque el modelo costoso solo ve un conjunto pequeño de candidatos. Después del ranking se aplican reglas de diversidad y filtros de integridad.",
+    "question_en": "Describe the ranking funnel and explain why it keeps latency acceptable.",
+    "question_type": "multi_hop",
+    "difficulty": "hard",
+    "evidence_segment_indices": [
+      20,
+      22,
+      24
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00"
+    ],
+    "supporting_context": [
+      "El pipeline típico tiene tres etapas. Generación de candidatos, luego una pasada de ranking ligera y luego un modelo más pesado sobre los supervivientes.",
+      "Ese embudo por etapas es lo que mantiene la latencia aceptable, porque el modelo costoso solo ve un conjunto pequeño de candidatos.",
+      "También deberíamos aplicar reglas de diversidad después del ranking, para que el feed no muestre diez publicaciones seguidas del mismo autor."
+    ]
+  },
+  {
+    "qa_id": "audio_04_news_feed__q4_es",
+    "source_qa_id": "audio_04_news_feed__q4",
+    "audio_id": "audio_04_news_feed_es",
+    "language": "es",
+    "question": "¿Cómo se reduce el trabajo de fan out para los usuarios que casi nunca abren la aplicación?",
+    "ground_truth_answer": "Primero se prioriza a los seguidores activos para que los que probablemente la abran reciban pronto la publicación, lo que reduce la latencia de fan out percibida aunque el fan out completo tarde minutos. Para los usuarios inactivos se puede omitir el envío por completo y reconstruir su feed en la lectura cuando vuelvan, lo que ahorra mucho volumen de escritura porque muchas cuentas registradas están inactivas en un día cualquiera.",
+    "question_en": "How is fan out work reduced for users who rarely open the app?",
+    "question_type": "inferential",
+    "difficulty": "medium",
+    "evidence_segment_indices": [
+      32,
+      34
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00"
+    ],
+    "supporting_context": [
+      "Deberíamos dar prioridad primero a los seguidores activos, para que las personas que probablemente abran pronto la aplicación reciban la publicación antes que las cuentas inactivas.",
+      "De hecho, para los usuarios inactivos podríamos omitir el envío por completo y reconstruir su feed en la lectura cuando por fin vuelvan."
+    ]
+  },
+  {
+    "qa_id": "audio_04_news_feed__q5_es",
+    "source_qa_id": "audio_04_news_feed__q5",
+    "audio_id": "audio_04_news_feed_es",
+    "language": "es",
+    "question": "¿Por qué los feeds se tratan como caché y qué métrica se recomienda para las alertas?",
+    "ground_truth_answer": "Los feeds son pura caché porque siempre se pueden reconstruir a partir de las publicaciones y del grafo de seguimiento, así que pueden mantenerse en memoria con una longitud acotada y reconstruirse cuando falten. El retraso del fan out es la métrica de salud clave para alertar, en lugar de la profundidad de la cola de los workers, porque el retraso se corresponde directamente con que los usuarios vean feeds desactualizados.",
+    "question_en": "Why are feeds treated as cache, and which metric is recommended for alerting?",
+    "question_type": "reasoning",
+    "difficulty": "hard",
+    "evidence_segment_indices": [
+      36,
+      45
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00",
+      "SPEAKER_01"
+    ],
+    "supporting_context": [
+      "En cuanto al almacenamiento, los feeds son pura caché. Siempre podemos reconstruirlos a partir de las publicaciones y del grafo de seguimiento si los perdemos.",
+      "Deberíamos alertar por ese retraso y no por la profundidad de la cola de los workers, porque el retraso se corresponde directamente con la experiencia del usuario."
+    ]
+  },
+  {
+    "qa_id": "audio_05_payment_idempotency__q1_es",
+    "source_qa_id": "audio_05_payment_idempotency__q1",
+    "audio_id": "audio_05_payment_idempotency_es",
+    "language": "es",
+    "question": "¿Cómo debe limitarse el alcance de una clave de idempotencia y cómo se valida?",
+    "ground_truth_answer": "La clave debe limitarse a la cuenta; si no, un cliente podría adivinar la clave de otro y leer el resultado de su pago. Además se calcula un hash del cuerpo de la solicitud y se compara, de modo que la misma clave enviada con parámetros distintos se rechaza como conflicto, lo que detecta errores del cliente en los que una clave se reutiliza para otro importe.",
+    "question_en": "How must an idempotency key be scoped and validated?",
+    "question_type": "factual",
+    "difficulty": "easy",
+    "evidence_segment_indices": [
+      5,
+      6
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00",
+      "SPEAKER_01"
+    ],
+    "supporting_context": [
+      "Debemos limitar el alcance de la clave a la cuenta; si no, un cliente podría adivinar la clave de otro y leer el resultado de su pago.",
+      "Y deberíamos calcular un hash del cuerpo de la solicitud y compararlo, para que la misma clave con parámetros distintos se rechace como conflicto."
+    ]
+  },
+  {
+    "qa_id": "audio_05_payment_idempotency__q2_es",
+    "source_qa_id": "audio_05_payment_idempotency__q2",
+    "audio_id": "audio_05_payment_idempotency_es",
+    "language": "es",
+    "question": "¿Cuál es el orden correcto alrededor de la llamada al procesador externo y cómo se recupera una caída?",
+    "ground_truth_answer": "La secuencia es persistir la intención, llamar al procesador y persistir el resultado. Escribir la intención antes de la llamada externa hace que la recuperación sepa que la llamada pudo ocurrir. La recuperación encuentra intenciones sin resultado y las concilia consultando al procesador con nuestro propio identificador de referencia del comercio, que debe enviarse en la llamada saliente. Nunca hay que reintentar a ciegas un cobro saliente sin esa comprobación, porque es el camino directo a un cobro doble.",
+    "question_en": "What is the correct ordering around the external processor call, and how is a crash recovered?",
+    "question_type": "multi_hop",
+    "difficulty": "hard",
+    "evidence_segment_indices": [
+      14,
+      15,
+      17
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00",
+      "SPEAKER_01"
+    ],
+    "supporting_context": [
+      "Así que la secuencia es: persistir la intención, llamar al procesador y persistir el resultado. La recuperación encuentra intenciones sin resultado y las concilia.",
+      "La conciliación consulta al procesador por nuestro propio identificador de referencia, que debemos enviar en la llamada saliente precisamente con este fin.",
+      "Y nunca deberíamos reintentar a ciegas un cobro saliente sin comprobar primero, porque ese es el camino directo a un cobro doble."
+    ]
+  },
+  {
+    "qa_id": "audio_05_payment_idempotency__q3_es",
+    "source_qa_id": "audio_05_payment_idempotency__q3",
+    "audio_id": "audio_05_payment_idempotency_es",
+    "language": "es",
+    "question": "¿Cómo se manejan los reintentos concurrentes con la misma clave?",
+    "ground_truth_answer": "El registro de la clave usa una máquina de estados. Se inserta como en curso con una restricción de unicidad, y quien pierde esa carrera recibe un conflicto cuatro cero nueve con una indicación de reintento en lugar de quedar bloqueado, porque mantener una solicitud abierta consume recursos. Cuando el primer intento termina, el registro se actualiza a exitoso o fallido con el cuerpo de la respuesta guardado.",
+    "question_en": "How are concurrent retries with the same key handled?",
+    "question_type": "factual",
+    "difficulty": "medium",
+    "evidence_segment_indices": [
+      9,
+      10
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00",
+      "SPEAKER_01"
+    ],
+    "supporting_context": [
+      "Así que el registro de la clave necesita una máquina de estados. Lo insertamos como en curso con una restricción de unicidad, y el que pierde esa carrera espera o devuelve un conflicto.",
+      "Yo devolvería un cuatro cero nueve con una indicación de reintento en lugar de bloquear, porque mantener una solicitud abierta consume recursos."
+    ]
+  },
+  {
+    "qa_id": "audio_05_payment_idempotency__q4_es",
+    "source_qa_id": "audio_05_payment_idempotency__q4",
+    "audio_id": "audio_05_payment_idempotency_es",
+    "language": "es",
+    "question": "¿Por qué se usa una saga en lugar del commit en dos fases y qué significa aquí realmente compensar?",
+    "ground_truth_answer": "El commit en dos fases entre servicios no es práctico, así que se usa una saga con acciones de compensación orquestada por el servicio de pedidos: reservar inventario, cobrar la tarjeta, confirmar el pedido y compensar hacia atrás ante un fallo. La compensación de una captura es un reembolso y la de una reserva de inventario es una liberación; ninguna es un verdadero rollback. Las sagas dan consistencia eventual con deshacer a nivel de negocio, no atomicidad.",
+    "question_en": "Why is a saga used instead of two phase commit, and what does compensation actually mean here?",
+    "question_type": "comparative",
+    "difficulty": "medium",
+    "evidence_segment_indices": [
+      32,
+      34,
+      35
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00",
+      "SPEAKER_01"
+    ],
+    "supporting_context": [
+      "El commit en dos fases entre servicios no es práctico aquí, así que usamos una saga con acciones de compensación.",
+      "La compensación de una captura es un reembolso, y la compensación de una reserva de inventario es una liberación. Ninguna es un verdadero rollback.",
+      "Ese es el cambio mental clave. Las sagas dan consistencia eventual con deshacer a nivel de negocio, no atomicidad."
+    ]
+  },
+  {
+    "qa_id": "audio_05_payment_idempotency__q5_es",
+    "source_qa_id": "audio_05_payment_idempotency__q5",
+    "audio_id": "audio_05_payment_idempotency_es",
+    "language": "es",
+    "question": "¿Qué resuelve el outbox transaccional y qué exige a los consumidores?",
+    "ground_truth_answer": "El cambio de estado y el evento saliente se escriben en la misma transacción local, y un relé publica desde el outbox. Así se elimina el modo de fallo en el que se confirma el cobro pero se cae antes de publicar el evento. Como el relé garantiza entrega al menos una vez, los consumidores deben ser idempotentes, ya que los duplicados son normales.",
+    "question_en": "What does the transactional outbox solve, and what does it require of consumers?",
+    "question_type": "reasoning",
+    "difficulty": "hard",
+    "evidence_segment_indices": [
+      37,
+      38,
+      39
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00",
+      "SPEAKER_01"
+    ],
+    "supporting_context": [
+      "Así, el cambio de estado y el evento saliente se escriben en la misma transacción local, y un relé publica desde el outbox.",
+      "Eso elimina el modo de fallo en el que confirmamos el cobro pero caemos antes de publicar el evento.",
+      "Los consumidores deben ser idempotentes, porque el relé garantiza entrega al menos una vez y los duplicados son normales."
+    ]
+  },
+  {
+    "qa_id": "audio_06_video_streaming__q1_es",
+    "source_qa_id": "audio_06_video_streaming__q1",
+    "audio_id": "audio_06_video_streaming_es",
+    "language": "es",
+    "question": "¿Por qué subir directamente al almacenamiento con una URL prefirmada en lugar de pasar por los servidores de aplicación?",
+    "ground_truth_answer": "La subida directa al almacenamiento mantiene los bytes del archivo completamente fuera de los servidores de aplicación. Hacer pasar archivos de varios gigabytes por los nodos de aplicación desperdicia ancho de banda y ocupa conexiones durante mucho tiempo. Cuando llegan todas las partes, el almacenamiento ensambla el objeto y un evento pone en marcha el procesamiento.",
+    "question_en": "Why upload directly to storage with a pre signed URL instead of through application servers?",
+    "question_type": "reasoning",
+    "difficulty": "medium",
+    "evidence_segment_indices": [
+      4,
+      5
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00",
+      "SPEAKER_01"
+    ],
+    "supporting_context": [
+      "La subida directa al almacenamiento con una URL prefirmada mantiene los bytes del archivo completamente fuera de nuestros servidores de aplicación.",
+      "Eso es importante. Hacer pasar archivos de varios gigabytes por los nodos de aplicación desperdicia ancho de banda y ocupa conexiones durante mucho tiempo."
+    ]
+  },
+  {
+    "qa_id": "audio_06_video_streaming__q2_es",
+    "source_qa_id": "audio_06_video_streaming__q2",
+    "audio_id": "audio_06_video_streaming_es",
+    "language": "es",
+    "question": "¿Qué hace que el cambio de tasa de bits adaptativa funcione correctamente entre versiones?",
+    "ground_truth_answer": "Cada versión de la escalera se divide en fragmentos cortos, normalmente de dos a seis segundos, con un manifiesto que enumera las variantes, y el reproductor cambia según el rendimiento medido y el nivel del búfer. El cambio solo funciona si los segmentos están alineados entre versiones con fotogramas clave en marcas de tiempo idénticas, así que el codificador debe usar un intervalo fijo de fotogramas clave; los fotogramas clave desalineados provocan fallos visibles o cambios fallidos.",
+    "question_en": "What makes adaptive bitrate switching work correctly across renditions?",
+    "question_type": "multi_hop",
+    "difficulty": "hard",
+    "evidence_segment_indices": [
+      9,
+      11,
+      12
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00",
+      "SPEAKER_01"
+    ],
+    "supporting_context": [
+      "Y cada versión se divide en fragmentos cortos, normalmente de dos a seis segundos, con un manifiesto que enumera las variantes disponibles.",
+      "Ese cambio solo funciona si los segmentos están alineados entre versiones, con fotogramas clave en marcas de tiempo idénticas.",
+      "Exacto. Los fotogramas clave desalineados provocan fallos visibles o cambios fallidos, así que el codificador debe configurarse con un intervalo fijo de fotogramas clave."
+    ]
+  },
+  {
+    "qa_id": "audio_06_video_streaming__q3_es",
+    "source_qa_id": "audio_06_video_streaming__q3",
+    "audio_id": "audio_06_video_streaming_es",
+    "language": "es",
+    "question": "¿Cómo se controla el coste de transcodificación para el contenido poco popular?",
+    "ground_truth_answer": "La escalera completa se codifica de forma perezosa. Solo se genera por adelantado la versión más común, y las demás se completan bajo demanda si el vídeo gana tracción, lo que evita pagar por contenido que nadie ve. Las instancias spot o interrumpibles también encajan porque los reintentos a nivel de segmento hacen que una interrupción sea barata.",
+    "question_en": "How is transcoding cost controlled for unpopular content?",
+    "question_type": "factual",
+    "difficulty": "medium",
+    "evidence_segment_indices": [
+      20,
+      21,
+      22
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00",
+      "SPEAKER_01"
+    ],
+    "supporting_context": [
+      "Así que deberíamos codificar la escalera completa de forma perezosa para el contenido poco popular, generando por adelantado solo la versión más común.",
+      "Luego, si un vídeo gana tracción, completamos las demás versiones bajo demanda, lo que evita pagar por contenido que nadie ve.",
+      "Las instancias spot o interrumpibles también encajan bien con esta carga de trabajo, porque los reintentos a nivel de segmento hacen que una interrupción sea barata."
+    ]
+  },
+  {
+    "qa_id": "audio_06_video_streaming__q4_es",
+    "source_qa_id": "audio_06_video_streaming__q4",
+    "audio_id": "audio_06_video_streaming_es",
+    "language": "es",
+    "question": "¿En qué se diferencian los requisitos de caché de los segmentos y de los manifiestos?",
+    "ground_truth_answer": "Las URL de los segmentos son estables e inmutables, lo que las hace perfectamente cacheables con un tiempo de vida muy largo. Los manifiestos son volátiles: en el contenido en directo se actualizan constantemente y necesitan una vida en caché muy corta. Esa separación entre segmentos inmutables y manifiestos volátiles se describe como la idea central de la caché para el streaming.",
+    "question_en": "How do caching requirements differ between segments and manifests?",
+    "question_type": "comparative",
+    "difficulty": "hard",
+    "evidence_segment_indices": [
+      26,
+      27,
+      28
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00",
+      "SPEAKER_01"
+    ],
+    "supporting_context": [
+      "Las URL de los segmentos deberían ser estables e inmutables, lo que las hace perfectamente cacheables con un tiempo de vida muy largo.",
+      "Los manifiestos son distintos. En el contenido en directo el manifiesto se actualiza constantemente y necesita una vida en caché muy corta.",
+      "Esa separación, segmentos inmutables y manifiestos volátiles, es la idea central de la caché para el streaming."
+    ]
+  },
+  {
+    "qa_id": "audio_06_video_streaming__q5_es",
+    "source_qa_id": "audio_06_video_streaming__q5",
+    "audio_id": "audio_06_video_streaming_es",
+    "language": "es",
+    "question": "¿Qué métricas del lado del cliente describen la calidad de reproducción y cuál importa más?",
+    "ground_truth_answer": "El tiempo de arranque, la proporción de rebuffering, la tasa de bits media y los fallos de reproducción son los cuatro números que describen la experiencia. La proporción de rebuffering es la que más notan los usuarios, porque una tasa de bits un poco más baja casi siempre es mejor que un parón; por eso el reproductor se adapta de forma conservadora al subir y agresiva al bajar.",
+    "question_en": "Which client side metrics describe playback quality, and which matters most?",
+    "question_type": "factual",
+    "difficulty": "medium",
+    "evidence_segment_indices": [
+      42,
+      44
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00"
+    ],
+    "supporting_context": [
+      "El tiempo de arranque, la proporción de rebuffering, la tasa de bits media y los fallos de reproducción son los cuatro números que realmente describen la experiencia.",
+      "Por eso el algoritmo de adaptación del reproductor debería ser conservador al subir y agresivo al bajar."
+    ]
+  }
+]

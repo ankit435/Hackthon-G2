@@ -1,0 +1,717 @@
+[
+  {
+    "qa_id": "audio_01_rate_limiter__q1_zh",
+    "source_qa_id": "audio_01_rate_limiter__q1",
+    "audio_id": "audio_01_rate_limiter_zh",
+    "language": "zh",
+    "question": "固定窗口计数器会允许什么样的突发问题？突发量最大能有多大？",
+    "ground_truth_answer": "固定窗口计数器会在窗口边界允许两倍于限额的突发流量。客户端可以在一分钟的最后一秒发一百个请求，再在下一分钟的第一秒发一百个，所以后端在大约两秒内收到两百个请求，而策略是每分钟一百个。",
+    "question_en": "What burst problem does a fixed window counter allow, and how large can the burst be?",
+    "question_type": "factual",
+    "difficulty": "easy",
+    "evidence_segment_indices": [
+      7,
+      8
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00",
+      "SPEAKER_01"
+    ],
+    "supporting_context": [
+      "固定窗口成本低，也容易理解，但它会在窗口边界允许两倍于限额的突发流量。",
+      "没错。一个客户端可以在一分钟的最后一秒发一百个请求，再在下一分钟的第一秒发一百个。"
+    ]
+  },
+  {
+    "qa_id": "audio_01_rate_limiter__q2_zh",
+    "source_qa_id": "audio_01_rate_limiter__q2",
+    "audio_id": "audio_01_rate_limiter_zh",
+    "language": "zh",
+    "question": "对于高流量 API，为什么滑动窗口计数器比滑动窗口日志更好？",
+    "ground_truth_answer": "滑动窗口日志为每个请求保存一个时间戳，内存随流量线性增长，一个每分钟一百个请求的密钥就要保存一百个时间戳。滑动窗口计数器则用加权平均把上一个窗口和当前窗口结合起来，每个密钥只存两个整数，就能把精度控制在很小的误差范围内，在高流量下是更好的权衡。",
+    "question_en": "Why is the sliding window counter preferred over the sliding window log for a high volume API?",
+    "question_type": "comparative",
+    "difficulty": "medium",
+    "evidence_segment_indices": [
+      10,
+      12,
+      13
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00",
+      "SPEAKER_01"
+    ],
+    "supporting_context": [
+      "滑动窗口日志可以精确地解决这个问题。我们为每个请求保存一个时间戳，然后统计最近六十秒内的记录。",
+      "所以实际可行的折中方案是滑动窗口计数器，用加权平均把上一个窗口和当前窗口结合起来。",
+      "这样只需为每个密钥保存两个整数，就能把精度控制在很小的误差范围内，对高流量 API 来说是个不错的权衡。"
+    ]
+  },
+  {
+    "qa_id": "audio_01_rate_limiter__q3_zh",
+    "source_qa_id": "audio_01_rate_limiter__q3",
+    "audio_id": "audio_01_rate_limiter_zh",
+    "language": "zh",
+    "question": "什么样的令牌桶配置符合每分钟一百个请求的策略？为什么要给桶设上限？",
+    "ground_truth_answer": "容量一百个令牌、每秒补充一点六七个令牌的配置符合这个策略。给桶设上限是为了让闲置的客户端不能积累无限的突发量；一直安静的客户端会积累令牌并可以发一小波突发请求，但突发量受容量限制。",
+    "question_en": "What token bucket configuration matches the one hundred requests per minute policy, and why is the bucket capped?",
+    "question_type": "numerical",
+    "difficulty": "medium",
+    "evidence_segment_indices": [
+      17
+    ],
+    "evidence_speakers": [
+      "SPEAKER_01"
+    ],
+    "supporting_context": [
+      "我们应该给桶设上限，这样闲置的客户端就不能积累无限的突发量。容量一百、每秒补充一点六七个令牌，正好符合我们的策略。"
+    ]
+  },
+  {
+    "qa_id": "audio_01_rate_limiter__q4_zh",
+    "source_qa_id": "audio_01_rate_limiter__q4",
+    "audio_id": "audio_01_rate_limiter_zh",
+    "language": "zh",
+    "question": "为什么需要在 Redis 上用 Lua 脚本？它具体防止了哪种竞态？",
+    "ground_truth_answer": "整个检查和扣减都放在同一个 Lua 脚本里执行，这样读取、比较和写入在 Redis 这边都是原子的。它防止了两个网关节点都读到九十九、然后都决定放行请求的竞态。对于令牌桶，脚本会计算距上次补充的时间，加上应得的令牌，限制在容量以内，再尝试消耗一个，全部在一次往返中完成。",
+    "question_en": "Why is a Lua script needed on Redis, and what specific race does it prevent?",
+    "question_type": "multi_hop",
+    "difficulty": "hard",
+    "evidence_segment_indices": [
+      21,
+      22,
+      23
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00",
+      "SPEAKER_01"
+    ],
+    "supporting_context": [
+      "我们应该把整个检查和扣减放在同一个 Lua 脚本里，这样读取、比较和写入在 Redis 这边都是原子的。",
+      "这就避免了经典的竞态条件，也就是两个网关节点都读到九十九，然后都决定放行这个请求。",
+      "对于令牌桶，脚本会计算距离上次补充过去了多少时间，加上这段时间应得的令牌，限制在容量以内，然后尝试消耗一个。"
+    ]
+  },
+  {
+    "qa_id": "audio_01_rate_limiter__q5_zh",
+    "source_qa_id": "audio_01_rate_limiter__q5",
+    "audio_id": "audio_01_rate_limiter_zh",
+    "language": "zh",
+    "question": "当 Redis 无法访问时，失败放行和失败拒绝的策略是什么？本地降级有什么风险？",
+    "ground_truth_answer": "普通接口失败放行以保护可用性，而创建账号、批量导出这类昂贵或敏感的接口失败拒绝。同时降级到本地内存限流器，保留一定的上限。风险在于每个节点独立执行本地限额，实际总量会乘以集群节点数，所以本地降级的限额必须保守。",
+    "question_en": "What is the fail open versus fail closed policy when Redis is unreachable, and what is the risk of the local fallback?",
+    "question_type": "reasoning",
+    "difficulty": "hard",
+    "evidence_segment_indices": [
+      37,
+      38,
+      39
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00",
+      "SPEAKER_01"
+    ],
+    "supporting_context": [
+      "对公开 API，我会让普通接口失败放行，而对创建账号、批量导出这类昂贵或敏感的接口失败拒绝。",
+      "当共享存储不可用时，我们还应该降级到本地内存限流器，这样至少还有一个上限，而不是完全没有。",
+      "很好。本地降级应该使用保守的限额，因为每个节点都独立执行，实际总量会乘以集群的节点数。"
+    ]
+  },
+  {
+    "qa_id": "audio_02_url_shortener__q1_zh",
+    "source_qa_id": "audio_02_url_shortener__q1",
+    "audio_id": "audio_02_url_shortener_zh",
+    "language": "zh",
+    "question": "选择了什么编码和多长的短码？能提供多少种组合？",
+    "ground_truth_answer": "六十二进制，使用数字和大小写字母。七个字符大约有三点五万亿种组合，远远超出需要。也提到可以从六个字符起步，大约有五百六十亿种可能。",
+    "question_en": "What encoding and code length are chosen, and how many combinations does that provide?",
+    "question_type": "numerical",
+    "difficulty": "easy",
+    "evidence_segment_indices": [
+      9,
+      10
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00",
+      "SPEAKER_01"
+    ],
+    "supporting_context": [
+      "六十二进制，用数字和大小写字母。七个字符大约有三点五万亿种组合，远远超出我们的需要。",
+      "七是个不错的默认值，不过我们也可以从六开始再逐步增加。六个字符就已经有五百六十亿种可能。"
+    ]
+  },
+  {
+    "qa_id": "audio_02_url_shortener__q2_zh",
+    "source_qa_id": "audio_02_url_shortener__q2",
+    "audio_id": "audio_02_url_shortener_zh",
+    "language": "zh",
+    "question": "为什么使用临时跳转而不是永久跳转？",
+    "ground_truth_answer": "使用三零二临时跳转，是因为永久的三零一会被浏览器缓存，之后的点击就永远到不了服务端。这样会完全丢失回访用户的分析数据，而为了保留这些数据，多一点负载被认为是值得的。",
+    "question_en": "Why is a temporary redirect used instead of a permanent one?",
+    "question_type": "reasoning",
+    "difficulty": "medium",
+    "evidence_segment_indices": [
+      32,
+      33
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00",
+      "SPEAKER_01"
+    ],
+    "supporting_context": [
+      "三零二，因为永久跳转会被浏览器缓存，我们就再也看不到之后的点击了。",
+      "对，而且回访用户的数据分析会完全丢失。为了保留这些数据，多一点负载是值得的。"
+    ]
+  },
+  {
+    "qa_id": "audio_02_url_shortener__q3_zh",
+    "source_qa_id": "audio_02_url_shortener__q3",
+    "audio_id": "audio_02_url_shortener_zh",
+    "language": "zh",
+    "question": "对顺序计数器做编码有什么缺点？如何在保持无冲突的同时缓解它？",
+    "ground_truth_answer": "顺序整数会泄露信息，任何人都能枚举短码并遍历整个链接数据库，这是隐私问题。缓解方法是在做六十二进制编码之前，用可逆置换打乱计数器，比如 Feistel 网络或键空间上的模乘法逆元，这样短码看起来是随机的，但仍然唯一，也不需要冲突检查。",
+    "question_en": "What is the drawback of encoding a sequential counter, and how is it mitigated while staying collision free?",
+    "question_type": "multi_hop",
+    "difficulty": "hard",
+    "evidence_segment_indices": [
+      13,
+      14,
+      15
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00",
+      "SPEAKER_01"
+    ],
+    "supporting_context": [
+      "但顺序递增的整数会泄露信息。任何人都能枚举短码，把整个链接数据库遍历一遍，这是个隐私问题。",
+      "我们可以在编码前用一个可逆的置换把计数器打乱，这样短码看起来是随机的，但仍然唯一。",
+      "用 Feistel 网络，或者简单地取键空间上的模乘法逆元，都能很好地做到这一点。唯一，实际上无法猜测，也不需要冲突检查。"
+    ]
+  },
+  {
+    "qa_id": "audio_02_url_shortener__q4_zh",
+    "source_qa_id": "audio_02_url_shortener__q4",
+    "audio_id": "audio_02_url_shortener_zh",
+    "language": "zh",
+    "question": "号段分配器如何分配标识符？它可以接受的代价是什么？",
+    "ground_truth_answer": "每个应用节点从分配器领取一段一百万个标识符，在本地发放，这样可以避免热点行，分配器短暂宕机也不受影响，因为每个节点都缓冲了一百万个标识符。代价是节点重启时序列会出现空洞，这对当前场景没有影响。",
+    "question_en": "How does the range allocator assign identifiers, and what is its accepted cost?",
+    "question_type": "factual",
+    "difficulty": "medium",
+    "evidence_segment_indices": [
+      18,
+      20
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00"
+    ],
+    "supporting_context": [
+      "对于唯一计数器，我们可以用号段分配器。每个应用节点领取一段一百万个标识符，在本地发放。",
+      "代价是节点重启时序列里会出现空洞，但对我们的场景来说，这些空洞完全没有影响。"
+    ]
+  },
+  {
+    "qa_id": "audio_02_url_shortener__q5_zh",
+    "source_qa_id": "audio_02_url_shortener__q5",
+    "audio_id": "audio_02_url_shortener_zh",
+    "language": "zh",
+    "question": "为什么要把缓存失效当作紧急的事，而不是只依赖过期？",
+    "ground_truth_answer": "因为如果有人下架了一个恶意链接，缓存里的旧条目还会继续提供它。只依赖过期时间会让有害的跳转继续生效，所以失效事件会发布到消息总线上，每个缓存节点都订阅，而不是等待过期。",
+    "question_en": "Why is cache invalidation treated as urgent rather than relying on expiry alone?",
+    "question_type": "inferential",
+    "difficulty": "hard",
+    "evidence_segment_indices": [
+      29,
+      30
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00",
+      "SPEAKER_01"
+    ],
+    "supporting_context": [
+      "被删除的链接很重要。如果有人下架了一个恶意链接，缓存里的旧条目还会继续提供它，所以失效必须及时。",
+      "我们可以把失效事件发布到消息总线上，让每个缓存节点都订阅，而不是只依赖过期。"
+    ]
+  },
+  {
+    "qa_id": "audio_03_chat_system__q1_zh",
+    "source_qa_id": "audio_03_chat_system__q1",
+    "audio_id": "audio_03_chat_system_zh",
+    "language": "zh",
+    "question": "持久化消息和向发送方确认之间必须是什么顺序？为什么？",
+    "ground_truth_answer": "服务器必须先把消息写入持久化存储，然后才向发送方返回确认。如果先确认后写入，一旦崩溃，用户以为已经发出的消息就会丢失。",
+    "question_en": "What is the required ordering between persisting a message and acknowledging the sender, and why?",
+    "question_type": "factual",
+    "difficulty": "easy",
+    "evidence_segment_indices": [
+      3,
+      4
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00",
+      "SPEAKER_01"
+    ],
+    "supporting_context": [
+      "所以要先持久化再确认。服务器先把消息写入持久化存储，然后再向发送方返回确认。",
+      "这就是关键的顺序。如果先确认后写入，一旦崩溃，用户以为已经发出的消息就会丢失。"
+    ]
+  },
+  {
+    "qa_id": "audio_03_chat_system__q2_zh",
+    "source_qa_id": "audio_03_chat_system__q2",
+    "audio_id": "audio_03_chat_system_zh",
+    "language": "zh",
+    "question": "当消息被转发到一个已经不再持有该用户连接的网关节点时，会发生什么？",
+    "ground_truth_answer": "网络抖动时用户可能重新连接到另一个节点，会话注册表里就留下了过期的条目。收到转发的节点会丢弃这条消息。由于消息已经持久化，一次推送丢失只是延迟问题，客户端重连时会把它拉下来，什么都不会真正丢失。实时投递只是建立在持久化日志之上的尽力而为，而不是事实的来源。",
+    "question_en": "What happens when a message is forwarded to a gateway node that no longer owns the user's connection?",
+    "question_type": "multi_hop",
+    "difficulty": "hard",
+    "evidence_segment_indices": [
+      14,
+      15,
+      16
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00",
+      "SPEAKER_01"
+    ],
+    "supporting_context": [
+      "过期的条目会导致消息被转发到一个已经不再持有该连接的节点，所以那个节点必须丢弃消息，交给存储来处理。",
+      "由于消息已经持久化了，一次推送丢失只是延迟问题。客户端重连时会把它拉下来，什么都不会真正丢失。",
+      "这就是那个重要的不变式。实时投递只是建立在持久化日志之上的尽力而为，而不是事实的来源。"
+    ]
+  },
+  {
+    "qa_id": "audio_03_chat_system__q3_zh",
+    "source_qa_id": "audio_03_chat_system__q3",
+    "audio_id": "audio_03_chat_system_zh",
+    "language": "zh",
+    "question": "群消息是如何扇出的？采用哪种方式由什么决定？",
+    "ground_truth_answer": "采用混合方案。成员数低于某个阈值时，消息写入每个用户的收件箱条目，也就是写扩散，这让读取非常简单。超过阈值时只保存一份，客户端直接读取会话，因为对超大群来说写扩散会让写入成本成倍增长。这个阈值是一个可以配置的参数。",
+    "question_en": "How are group messages fanned out, and what determines the approach?",
+    "question_type": "comparative",
+    "difficulty": "medium",
+    "evidence_segment_indices": [
+      28,
+      29
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00",
+      "SPEAKER_01"
+    ],
+    "supporting_context": [
+      "所以采用混合方案。成员数低于某个阈值时，我们为每个用户写一条记录；超过阈值时只保存一份，让客户端直接读取会话。",
+      "这和社交信息流里用的方法类似，而那个阈值就成了一个可以通过配置调整的参数。"
+    ]
+  },
+  {
+    "qa_id": "audio_03_chat_system__q4_zh",
+    "source_qa_id": "audio_03_chat_system__q4",
+    "audio_id": "audio_03_chat_system_zh",
+    "language": "zh",
+    "question": "正在输入提示和已读回执产生的流量比消息还多，如何让它们变得便宜？",
+    "ground_truth_answer": "正在输入提示是临时的，从不持久化，通过套接字发送并设很短的过期时间，负载高时直接丢弃。已读回执批量处理：客户端不为每条消息发一个事件，而是报告已读到的最大序号，把一百个事件合并成一个，而且完全等价，因为在一个会话里阅读进度只会往前推进。",
+    "question_en": "How are typing indicators and read receipts made cheap, given they generate more traffic than messages?",
+    "question_type": "reasoning",
+    "difficulty": "medium",
+    "evidence_segment_indices": [
+      31,
+      32,
+      33
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00",
+      "SPEAKER_01"
+    ],
+    "supporting_context": [
+      "正在输入提示应该是临时的，永远不要持久化。通过套接字发送，设一个很短的过期时间，负载高时直接丢弃。",
+      "已读回执可以批量处理。客户端不必为每条消息发一个事件，而是报告它已读到的最大序号。",
+      "这样就把一百个事件合并成一个，而且完全等价，因为在一个会话里阅读进度只会往前推进。"
+    ]
+  },
+  {
+    "qa_id": "audio_03_chat_system__q5_zh",
+    "source_qa_id": "audio_03_chat_system__q5",
+    "audio_id": "audio_03_chat_system_zh",
+    "language": "zh",
+    "question": "为什么不能按发送方的时间戳给消息排序？用什么来代替？",
+    "ground_truth_answer": "客户端的时钟不可靠，所以发送方的时间戳不能决定顺序。服务器为每个会话分配序号，得到一个所有参与者都认同的全序。对大群来说，这需要每个会话只有一个写入者或一个原子计数器，客户端必须按序号而不是按到达时间插入消息。",
+    "question_en": "Why can messages not be ordered by the sender's timestamp, and what is used instead?",
+    "question_type": "inferential",
+    "difficulty": "hard",
+    "evidence_segment_indices": [
+      22,
+      23,
+      25
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00",
+      "SPEAKER_01"
+    ],
+    "supporting_context": [
+      "会话内部的排序很微妙。客户端的时钟不可靠，所以我们不能按发送方的时间戳排序。",
+      "服务器为每个会话分配序号，这样就得到了一个所有参与者都认同的全序。",
+      "客户端还需要妥善处理乱序到达的消息，按序号而不是按到达时间来插入。"
+    ]
+  },
+  {
+    "qa_id": "audio_04_news_feed__q1_zh",
+    "source_qa_id": "audio_04_news_feed__q1",
+    "audio_id": "audio_04_news_feed_zh",
+    "language": "zh",
+    "question": "粉丝数达到什么阈值会被标记为大V？这些账号如何处理？",
+    "ground_truth_answer": "大约十万粉丝。超过这个阈值的账号被标记为大V，不参与写扩散。读取时再拉取他们的最新帖子，合并到浏览者预计算的信息流里，而且他们的时间线会被积极缓存，因为几百万浏览者拉取的都是同样那几个作者的时间线。",
+    "question_en": "What follower threshold flags an account as a celebrity, and how are those accounts handled?",
+    "question_type": "factual",
+    "difficulty": "easy",
+    "evidence_segment_indices": [
+      8,
+      9,
+      11
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00",
+      "SPEAKER_01"
+    ],
+    "supporting_context": [
+      "我们设一个阈值，比如十万粉丝，超过这个数的账号就被标记为大V，不参与推送。",
+      "读取时，我们拿到预先计算好的信息流，再拉取浏览者关注的大V的最新帖子，把两个列表合并起来。",
+      "我们应该积极缓存大V的时间线，因为几百万浏览者拉取的都是同样那几个作者的时间线。"
+    ]
+  },
+  {
+    "qa_id": "audio_04_news_feed__q2_zh",
+    "source_qa_id": "audio_04_news_feed__q2",
+    "audio_id": "audio_04_news_feed_zh",
+    "language": "zh",
+    "question": "为什么信息流只存帖子的引用，而不存帖子内容？",
+    "ground_truth_answer": "只存标识符意味着编辑或删除会立刻在所有地方生效。内容在读取时批量填充，这也让读取时可以过滤被屏蔽的作者、已删除的帖子和修改过的隐私设置。否则一条已删除的帖子会留在几百万份预计算的信息流里，还得发删除请求去一一清理。",
+    "question_en": "Why does the feed store only post references instead of post content?",
+    "question_type": "reasoning",
+    "difficulty": "medium",
+    "evidence_segment_indices": [
+      14,
+      15,
+      17
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00",
+      "SPEAKER_01"
+    ],
+    "supporting_context": [
+      "信息流里不存帖子内容，只存引用，所以编辑或删除会立刻在所有地方生效。",
+      "内容填充在读取时进行，从帖子存储或缓存中批量获取真正的帖子对象。",
+      "如果不这样做，一条已删除的帖子会留在几百万份预计算的信息流里，我们还得发删除请求去一一清理。"
+    ]
+  },
+  {
+    "qa_id": "audio_04_news_feed__q3_zh",
+    "source_qa_id": "audio_04_news_feed__q3",
+    "audio_id": "audio_04_news_feed_zh",
+    "language": "zh",
+    "question": "描述一下排序漏斗，并解释它为什么能让延迟保持在可接受范围内。",
+    "ground_truth_answer": "它有三个阶段：候选生成产出几千条帖子，一轮轻量排序把它们削减到几百条，再由一个更重的模型确定最终一页的顺序。分阶段的漏斗让延迟保持可接受，因为昂贵的模型只会看到很小的候选集合。排序之后还会应用多样性规则和内容安全过滤。",
+    "question_en": "Describe the ranking funnel and explain why it keeps latency acceptable.",
+    "question_type": "multi_hop",
+    "difficulty": "hard",
+    "evidence_segment_indices": [
+      20,
+      22,
+      24
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00"
+    ],
+    "supporting_context": [
+      "典型的流水线有三个阶段。候选生成，然后是一轮轻量排序，再用一个更重的模型处理剩下的候选。",
+      "正是这种分阶段的漏斗让延迟保持在可接受范围内，因为昂贵的模型只会看到很小的候选集合。",
+      "排序之后我们还应该应用多样性规则，这样信息流就不会连续展示同一个作者的十条帖子。"
+    ]
+  },
+  {
+    "qa_id": "audio_04_news_feed__q4_zh",
+    "source_qa_id": "audio_04_news_feed__q4",
+    "audio_id": "audio_04_news_feed_zh",
+    "language": "zh",
+    "question": "对于很少打开应用的用户，如何减少扩散的工作量？",
+    "ground_truth_answer": "先优先处理活跃粉丝，让可能马上打开应用的人尽快收到帖子，即使完整扩散需要几分钟，用户感知到的扩散延迟也会降低。对于不活跃的用户，可以完全跳过推送，等他们回来时在读取时重建信息流，这能节省大量写入，因为在任何一天都有很多注册账号是不活跃的。",
+    "question_en": "How is fan out work reduced for users who rarely open the app?",
+    "question_type": "inferential",
+    "difficulty": "medium",
+    "evidence_segment_indices": [
+      32,
+      34
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00"
+    ],
+    "supporting_context": [
+      "我们应该优先处理活跃粉丝，让很可能马上打开应用的人比不活跃的账号更早收到帖子。",
+      "实际上，对于不活跃的用户，我们可以完全跳过推送，等他们最终回来时再在读取时重建信息流。"
+    ]
+  },
+  {
+    "qa_id": "audio_04_news_feed__q5_zh",
+    "source_qa_id": "audio_04_news_feed__q5",
+    "audio_id": "audio_04_news_feed_zh",
+    "language": "zh",
+    "question": "为什么把信息流当作缓存？推荐用哪个指标来告警？",
+    "ground_truth_answer": "信息流纯粹是缓存，因为总能根据帖子和关注关系图重建，所以可以放在内存里、限制长度，未命中时再重建。告警应该针对扩散延迟这个关键健康指标，而不是任务队列的深度，因为延迟直接对应用户看到过时的信息流。",
+    "question_en": "Why are feeds treated as cache, and which metric is recommended for alerting?",
+    "question_type": "reasoning",
+    "difficulty": "hard",
+    "evidence_segment_indices": [
+      36,
+      45
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00",
+      "SPEAKER_01"
+    ],
+    "supporting_context": [
+      "在存储上，信息流纯粹是缓存。就算丢了，我们也总能根据帖子和关注关系图重新构建出来。",
+      "我们应该针对这个延迟告警，而不是针对任务队列的深度，因为延迟直接对应用户体验。"
+    ]
+  },
+  {
+    "qa_id": "audio_05_payment_idempotency__q1_zh",
+    "source_qa_id": "audio_05_payment_idempotency__q1",
+    "audio_id": "audio_05_payment_idempotency_zh",
+    "language": "zh",
+    "question": "幂等键应该如何限定作用域并进行校验？",
+    "ground_truth_answer": "键必须限定在账户范围内，否则一个客户可能猜到另一个客户的键并读取他的支付结果。还要对请求体做哈希并比较，这样同一个键带着不同参数发来时会被当作冲突拒绝，从而发现把同一个键复用在另一个金额上的客户端错误。",
+    "question_en": "How must an idempotency key be scoped and validated?",
+    "question_type": "factual",
+    "difficulty": "easy",
+    "evidence_segment_indices": [
+      5,
+      6
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00",
+      "SPEAKER_01"
+    ],
+    "supporting_context": [
+      "我们必须把键的作用域限定在账户内，否则一个客户可能猜到另一个客户的键，读取他的支付结果。",
+      "我们还应该对请求体做哈希并进行比较，这样同一个键带着不同参数过来时，就会被当作冲突拒绝。"
+    ]
+  },
+  {
+    "qa_id": "audio_05_payment_idempotency__q2_zh",
+    "source_qa_id": "audio_05_payment_idempotency__q2",
+    "audio_id": "audio_05_payment_idempotency_zh",
+    "language": "zh",
+    "question": "围绕外部支付处理方的调用，正确的顺序是什么？崩溃后如何恢复？",
+    "ground_truth_answer": "顺序是先持久化意图，再调用处理方，然后持久化结果。在外部调用之前写下意图，恢复程序就知道这次调用可能已经发生。恢复程序会找出只有意图没有结果的记录，用我们自己的商户参考号去查询处理方来对账，而这个参考号必须在对外调用时传过去。没有这个检查就绝不能盲目重试对外扣款，因为那正是导致重复扣款的直接途径。",
+    "question_en": "What is the correct ordering around the external processor call, and how is a crash recovered?",
+    "question_type": "multi_hop",
+    "difficulty": "hard",
+    "evidence_segment_indices": [
+      14,
+      15,
+      17
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00",
+      "SPEAKER_01"
+    ],
+    "supporting_context": [
+      "所以顺序是：先持久化意图，再调用处理方，然后持久化结果。恢复程序会找出只有意图没有结果的记录，去做对账。",
+      "对账时用我们自己的参考标识去查询处理方，而这个标识正是为了这个目的，我们必须在对外调用时传过去。",
+      "而且我们绝不应该不先检查就盲目重试一笔对外扣款，因为那正是导致重复扣款的直接途径。"
+    ]
+  },
+  {
+    "qa_id": "audio_05_payment_idempotency__q3_zh",
+    "source_qa_id": "audio_05_payment_idempotency__q3",
+    "audio_id": "audio_05_payment_idempotency_zh",
+    "language": "zh",
+    "question": "带着同一个键的并发重试是如何处理的？",
+    "ground_truth_answer": "键的记录使用一个状态机。它在唯一约束下被插入为处理中状态，竞争失败的一方不会被阻塞，而是收到带重试提示的四零九冲突，因为让请求一直挂着会占用资源。第一次请求完成后，记录会被更新为成功或失败，并保存响应体。",
+    "question_en": "How are concurrent retries with the same key handled?",
+    "question_type": "factual",
+    "difficulty": "medium",
+    "evidence_segment_indices": [
+      9,
+      10
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00",
+      "SPEAKER_01"
+    ],
+    "supporting_context": [
+      "所以键的记录需要一个状态机。我们用唯一约束把它插入为处理中状态，竞争失败的一方要么等待，要么返回冲突。",
+      "我会返回四零九并附带重试提示，而不是阻塞等待，因为让请求一直挂着会占用资源。"
+    ]
+  },
+  {
+    "qa_id": "audio_05_payment_idempotency__q4_zh",
+    "source_qa_id": "audio_05_payment_idempotency__q4",
+    "audio_id": "audio_05_payment_idempotency_zh",
+    "language": "zh",
+    "question": "为什么用 Saga 而不是两阶段提交？这里的补偿究竟是什么意思？",
+    "ground_truth_answer": "在服务边界之间做两阶段提交不现实，所以使用由订单服务编排、带补偿操作的 Saga：预留库存，扣款，确认订单，失败时反向补偿。请款的补偿是退款，库存预留的补偿是释放，它们都不是真正的回滚。Saga 提供的是带业务层面撤销的最终一致性，而不是原子性。",
+    "question_en": "Why is a saga used instead of two phase commit, and what does compensation actually mean here?",
+    "question_type": "comparative",
+    "difficulty": "medium",
+    "evidence_segment_indices": [
+      32,
+      34,
+      35
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00",
+      "SPEAKER_01"
+    ],
+    "supporting_context": [
+      "在服务边界之间做两阶段提交在这里并不现实，所以我们使用带补偿操作的 Saga。",
+      "请款的补偿是退款，库存预留的补偿是释放。它们都不是真正的回滚。",
+      "这是思维方式上最关键的转变。Saga 提供的是带业务层面撤销的最终一致性，而不是原子性。"
+    ]
+  },
+  {
+    "qa_id": "audio_05_payment_idempotency__q5_zh",
+    "source_qa_id": "audio_05_payment_idempotency__q5",
+    "audio_id": "audio_05_payment_idempotency_zh",
+    "language": "zh",
+    "question": "事务性发件箱解决了什么问题？它对消费者有什么要求？",
+    "ground_truth_answer": "状态变更和要发出的事件写在同一个本地事务里，由中继程序从发件箱发布。这消除了扣款已经提交、却在发布事件之前崩溃的故障模式。由于中继只保证至少一次投递，消费者必须是幂等的，因为出现重复是正常的。",
+    "question_en": "What does the transactional outbox solve, and what does it require of consumers?",
+    "question_type": "reasoning",
+    "difficulty": "hard",
+    "evidence_segment_indices": [
+      37,
+      38,
+      39
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00",
+      "SPEAKER_01"
+    ],
+    "supporting_context": [
+      "也就是说，状态变更和要发出的事件写在同一个本地事务里，再由一个中继程序从发件箱发布出去。",
+      "这就消除了那种扣款已经提交、却在发布事件之前崩溃的故障模式。",
+      "然后消费者必须是幂等的，因为中继只保证至少一次投递，出现重复是正常的。"
+    ]
+  },
+  {
+    "qa_id": "audio_06_video_streaming__q1_zh",
+    "source_qa_id": "audio_06_video_streaming__q1",
+    "audio_id": "audio_06_video_streaming_zh",
+    "language": "zh",
+    "question": "为什么要用预签名网址直接上传到存储，而不是经过应用服务器？",
+    "ground_truth_answer": "直接上传到存储，文件的字节就完全不会经过应用服务器。让好几 GB 的文件经过应用节点转发，既浪费带宽，又会长时间占用连接。所有分片到齐后，存储把对象组装好，再由一个事件启动处理流程。",
+    "question_en": "Why upload directly to storage with a pre signed URL instead of through application servers?",
+    "question_type": "reasoning",
+    "difficulty": "medium",
+    "evidence_segment_indices": [
+      4,
+      5
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00",
+      "SPEAKER_01"
+    ],
+    "supporting_context": [
+      "使用预签名网址直接上传到存储，文件的字节就完全不会经过我们的应用服务器。",
+      "这很重要。让好几 GB 的文件经过应用节点转发，既浪费带宽，又会长时间占用连接。"
+    ]
+  },
+  {
+    "qa_id": "audio_06_video_streaming__q2_zh",
+    "source_qa_id": "audio_06_video_streaming__q2",
+    "audio_id": "audio_06_video_streaming_zh",
+    "language": "zh",
+    "question": "是什么让自适应码率在不同版本之间正确切换？",
+    "ground_truth_answer": "码率阶梯里的每个版本都切成很短的分段，通常两到六秒，并配有列出各版本的清单文件，播放器根据测得的吞吐量和缓冲区水位切换。只有各版本的分段对齐、关键帧位于完全相同的时间戳时切换才能生效，所以编码器必须使用固定的关键帧间隔；关键帧不对齐会导致明显的画面异常或切换失败。",
+    "question_en": "What makes adaptive bitrate switching work correctly across renditions?",
+    "question_type": "multi_hop",
+    "difficulty": "hard",
+    "evidence_segment_indices": [
+      9,
+      11,
+      12
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00",
+      "SPEAKER_01"
+    ],
+    "supporting_context": [
+      "每个版本再切成很短的分段，通常是两到六秒，并配上一个列出所有可用版本的清单文件。",
+      "这种切换只有在各个版本的分段对齐、关键帧位于完全相同的时间戳时才能生效。",
+      "没错。关键帧不对齐会导致明显的画面异常或切换失败，所以编码器必须配置固定的关键帧间隔。"
+    ]
+  },
+  {
+    "qa_id": "audio_06_video_streaming__q3_zh",
+    "source_qa_id": "audio_06_video_streaming__q3",
+    "audio_id": "audio_06_video_streaming_zh",
+    "language": "zh",
+    "question": "对于不热门的内容，如何控制转码成本？",
+    "ground_truth_answer": "完整的码率阶梯延迟生成。一开始只生成最常用的那个版本，如果视频火了再按需补齐其余版本，这样就不用为没人看的内容付费。竞价实例或可抢占实例也很合适，因为分段级别的重试让中断的代价很小。",
+    "question_en": "How is transcoding cost controlled for unpopular content?",
+    "question_type": "factual",
+    "difficulty": "medium",
+    "evidence_segment_indices": [
+      20,
+      21,
+      22
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00",
+      "SPEAKER_01"
+    ],
+    "supporting_context": [
+      "所以对不热门的内容，我们应该延迟生成完整的码率阶梯，一开始只生成最常用的那个版本。",
+      "之后如果某个视频火了，再按需补齐其余版本，这样就不用为没人看的内容付费。",
+      "竞价实例或可抢占实例也很适合这种工作负载，因为分段级别的重试让中断的代价很小。"
+    ]
+  },
+  {
+    "qa_id": "audio_06_video_streaming__q4_zh",
+    "source_qa_id": "audio_06_video_streaming__q4",
+    "audio_id": "audio_06_video_streaming_zh",
+    "language": "zh",
+    "question": "分段和清单文件在缓存需求上有什么不同？",
+    "ground_truth_answer": "分段的网址稳定且不可变，可以用很长的过期时间被完美缓存。清单文件是易变的，对于直播内容它会不断更新，需要很短的缓存时间。这种不可变的分段与易变的清单之间的区分，被称为流媒体缓存的核心思路。",
+    "question_en": "How do caching requirements differ between segments and manifests?",
+    "question_type": "comparative",
+    "difficulty": "hard",
+    "evidence_segment_indices": [
+      26,
+      27,
+      28
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00",
+      "SPEAKER_01"
+    ],
+    "supporting_context": [
+      "分段的网址应该稳定且不可变，这样就能以很长的过期时间被完美缓存。",
+      "清单文件就不一样了。对于直播内容，清单会不断更新，需要很短的缓存时间。",
+      "这种区分，也就是不可变的分段和易变的清单，是流媒体缓存的核心思路。"
+    ]
+  },
+  {
+    "qa_id": "audio_06_video_streaming__q5_zh",
+    "source_qa_id": "audio_06_video_streaming__q5",
+    "audio_id": "audio_06_video_streaming_zh",
+    "language": "zh",
+    "question": "哪些客户端指标描述了播放质量？其中哪个最重要？",
+    "ground_truth_answer": "起播时间、卡顿率、平均码率和播放失败，这四个数字描述了用户体验。卡顿率是用户感受最明显的，因为码率稍低一点几乎总比卡住要好，所以播放器往上切时保守，往下切时果断。",
+    "question_en": "Which client side metrics describe playback quality, and which matters most?",
+    "question_type": "factual",
+    "difficulty": "medium",
+    "evidence_segment_indices": [
+      42,
+      44
+    ],
+    "evidence_speakers": [
+      "SPEAKER_00"
+    ],
+    "supporting_context": [
+      "起播时间、卡顿率、平均码率和播放失败，这四个数字才真正描述了用户体验。",
+      "因此播放器的自适应算法应该在往上切时保守，往下切时果断。"
+    ]
+  }
+]

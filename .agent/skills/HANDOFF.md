@@ -120,7 +120,19 @@ semantic-split soft minimum and cap. **All ship at defaults** — change any
 of them only with a before/after measurement.
 
 
-**Next task:** ⚠️ **First confirm with the user the multilingual scope change** (`PLAN.md` was edited at 12:06 on 2026-09-26 to make multilingual support compulsory, Task 17, plus `MULTILINGUAL_UPDATE_PLAN.md`; both are uncommitted and not yet acted on). It changes the embedder (bge-m3), the schema dimension, keyword config per chunk, and Whisper language detection. Otherwise: Task 7 (recall@k tests) and Task 6 (query set). Task 5 is merged. Task 4 is Done: the DB holds run 3 (313 chunks, word-level alignment). Re-ingest with `python scripts/ingest.py` (≈ 25 min, CPU-heavy). Old runs are snapshotted in `logs/chunks-run{1,2}-*.json` (gitignored). **Do not use the `AUDIO_SEARCH_ANSWER_*` / NVIDIA / OpenAI vars in the user's `.env`**: they are stretch item #1 and the gate is closed.
+> **Session 3 update (2026-09-26, cloud branch `claude/upbeat-bell-4zoza6`).** **Multilingual support
+> is confirmed by the user and compulsory** (Task 17). Those `PLAN.md` / `MULTILINGUAL_UPDATE_PLAN.md` edits
+> were not "someone else's": they came from cloud session 2, were merged in PRs #1 and #2, and the user
+> answered Q21–Q24 (see `PROGRESS.md`). Session 3 built the **M8 translated dataset** in
+> `dataset/multilingual/`: es/hi/zh translations of 01–06, per-language QA, a manifest,
+> `scripts/build_multilingual_dataset.py`, `scripts/synthesize_multilingual.py` and
+> `tests/data/test_multilingual_dataset.py`.
+> **On the Mac, next:** (1) `pip install -r requirements-dev.txt` and `brew install espeak-ng`, then
+> `python scripts/synthesize_multilingual.py` (downloads Kokoro-82M, writes 18 WAVs plus exact timings), then
+> listen to one file per language. (2) Have a human review the translations (Known Issues). (3) Continue
+> Task 17 with M1/M3, then M4/M5, per `MULTILINGUAL_UPDATE_PLAN.md`.
+
+**Next task:** Task 17 (multilingual, see the session 3 update above). Also: Task 7 (recall@k tests) and Task 6 (query set). Task 5 is merged. Task 4 is Done: the DB holds run 3 (313 chunks, word-level alignment). Re-ingest with `python scripts/ingest.py` (≈ 25 min, CPU-heavy). Old runs are snapshotted in `logs/chunks-run{1,2}-*.json` (gitignored). **Do not use the `AUDIO_SEARCH_ANSWER_*` / NVIDIA / OpenAI vars in the user's `.env`**: they are stretch item #1 and the gate is closed.
 
 
 **Do this next:**

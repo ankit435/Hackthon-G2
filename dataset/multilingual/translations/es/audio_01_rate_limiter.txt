@@ -1,0 +1,56 @@
+Diseñemos un limitador de tasa distribuido para una API pública.
+El primer requisito es cien solicitudes por minuto para cada cliente normal, y también necesitamos un nivel superior para los socios que han firmado un contrato con nosotros.
+Entonces necesitamos al menos dos niveles de política. ¿Aplicamos el límite por la clave de API, por la identidad del usuario o por la dirección IP de origen?
+Yo lo aplicaría por la clave de API como identidad principal, y recurriría a la dirección IP solo para los endpoints no autenticados, como el inicio de sesión y el restablecimiento de contraseña.
+Tiene sentido. Limitar solo por IP falla gravemente detrás de un NAT corporativo, donde miles de usuarios comparten una única dirección de salida.
+Exacto, y también falla con los operadores móviles. Una sola pasarela de operador puede dar servicio a una población enorme, así que castigaríamos tráfico legítimo.
+Hablemos del algoritmo. El punto de partida obvio es un contador de ventana fija, un contador por clave y por minuto.
+Las ventanas fijas son baratas y fáciles de razonar, pero permiten una ráfaga del doble del límite en el borde de la ventana.
+Exactamente. Un cliente puede enviar cien solicitudes en el último segundo de un minuto y otras cien en el primer segundo del siguiente.
+Para una API pública eso es un problema real, porque el backend recibe doscientas solicitudes en un intervalo de dos segundos aunque la política diga cien por minuto.
+El registro de ventana deslizante lo resuelve con precisión. Guardamos una marca de tiempo por cada solicitud y contamos las entradas de los últimos sesenta segundos.
+Preciso, pero caro. Para una clave que hace cien solicitudes por minuto guardamos cien marcas de tiempo, y la memoria crece linealmente con el tráfico.
+Así que el término medio práctico es el contador de ventana deslizante, donde combinamos la ventana anterior y la actual mediante una media ponderada.
+Eso nos da precisión dentro de un pequeño margen de error guardando solo dos enteros por clave, lo cual es un buen compromiso para una API de alto volumen.
+También está el cubo de tokens, que me gusta porque expresa la capacidad de ráfaga como un concepto de primera clase.
+De acuerdo. El cubo contiene un número máximo de tokens, los tokens se recargan a un ritmo constante y una solicitud solo se permite si puede retirar un token.
+Así que un cliente que ha estado inactivo acumula tokens y puede enviar una ráfaga corta, que suele ser justo lo que quieren los consumidores de la API.
+Deberíamos limitar el cubo para que los clientes inactivos no acumulen una ráfaga ilimitada. Una capacidad de cien con una recarga de uno coma sesenta y siete tokens por segundo coincide con nuestra política.
+Pasemos a la parte distribuida. Vamos a ejecutar muchos nodos de pasarela de API sin estado, así que el contador no puede vivir en la memoria local.
+Si cada nodo mantiene su propio contador, con diez nodos un cliente obtiene en la práctica diez veces el límite, suponiendo que el balanceador de carga reparte el tráfico de forma uniforme.
+Así que necesitamos estado compartido. La opción estándar es Redis, con la clave formada por el identificador del cliente y la ventana, usando operaciones de incremento atómicas.
+Deberíamos hacer toda la comprobación y el decremento dentro de un único script de Lua, para que la lectura, la comparación y la escritura sean atómicas en el lado de Redis.
+Eso evita la condición de carrera clásica en la que dos nodos de pasarela leen noventa y nueve y ambos deciden permitir la solicitud.
+Para el cubo de tokens, el script calcularía el tiempo transcurrido desde la última recarga, sumaría los tokens ganados, los limitaría a la capacidad y luego intentaría gastar uno.
+Guardamos el número de tokens y la marca de tiempo de la última recarga en un único hash, así que un solo viaje de ida y vuelta toma toda la decisión.
+Aquí importa el presupuesto de latencia. Cada solicitud paga este coste, así que queremos que la llamada a Redis se mantenga en pocos milisegundos.
+Eso significa que el clúster de Redis debería estar en la misma región e idealmente en el mismo grupo de zonas de disponibilidad que la flota de pasarelas.
+También deberíamos particionar por clave para que un cliente muy activo no concentre toda la carga en un único primario de Redis.
+Redis Cluster aplica un hash a la clave para asignarla a una ranura, así que mientras nuestro espacio de claves sea amplio, la distribución queda equilibrada de forma natural.
+Pero un único cliente abusivo sigue siendo una única clave, y una única clave siempre cae en un único nodo. Ese es nuestro problema de clave caliente.
+Para ese caso podemos particionar el propio contador, repartiendo el límite entre unos pocos subcontadores y eligiendo uno al azar en cada solicitud.
+Eso reduce la contención a costa de algo de precisión, porque los subcontadores se desvían y uno puede agotarse antes que los demás.
+Otra opción para tráfico extremo es un modelo de asignación local de tokens, en el que cada nodo de pasarela alquila una porción del presupuesto a Redis.
+Así que un nodo pide diez tokens a la vez, los sirve localmente sin ninguna llamada de red y vuelve a pedir más cuando el alquiler se está agotando.
+Eso reduce la tasa de llamadas a Redis en un orden de magnitud, y la pérdida de precisión está acotada por los alquileres sin gastar en el momento de una ráfaga.
+Hablemos del manejo de fallos. ¿Qué pasa cuando Redis no está disponible o es más lento que nuestro tiempo de espera?
+Necesitamos una política explícita. Fallar abierto significa permitir el tráfico y proteger la disponibilidad. Fallar cerrado significa rechazar y proteger el backend.
+Para una API pública yo fallaría abierto en los endpoints normales, pero fallaría cerrado en los costosos o sensibles, como la creación de cuentas y la exportación masiva.
+También deberíamos degradar a un limitador local en memoria cuando el almacén compartido esté caído, para que siga habiendo algún techo en lugar de ninguno.
+Bien. El respaldo local debería usar un límite conservador, ya que cada nodo lo aplica de forma independiente y el total efectivo se multiplica por el tamaño de la flota.
+Ahora el contrato de respuesta. Al rechazar devolvemos el estado cuatrocientos veintinueve, demasiadas solicitudes, con una cabecera Retry-After.
+Y en cada respuesta deberíamos incluir el límite, la cuota restante y la marca de tiempo de reinicio, para que los clientes bien comportados puedan regular su ritmo.
+Esas cabeceras convierten el limitador de tasa de un castigo en un protocolo. Los clientes pueden reducir el ritmo de forma proactiva en lugar de insistir y quedar bloqueados.
+También deberíamos recomendar un retroceso exponencial con variación aleatoria en la documentación para clientes; si no, todos los clientes rechazados reintentan en el mismo instante de reinicio.
+Esa tormenta de reintentos sincronizados es un modo de fallo real. La variación aleatoria reparte el tráfico de recuperación en lugar de crear un segundo pico.
+¿Y la configuración de reglas? Yo mantendría las políticas en un plano de control y las enviaría a las pasarelas, en lugar de codificarlas de forma fija.
+Sí, un servicio de políticas con reglas versionadas, para poder cambiar el nivel de un socio sin un despliegue. Las pasarelas guardan las reglas en caché y las actualizan periódicamente.
+También deberíamos admitir excepciones por endpoint. Un endpoint de lectura barato y un endpoint de búsqueda caro no deberían compartir el mismo presupuesto.
+Un modelo de coste ponderado resuelve eso bien. Una solicitud de búsqueda gasta cinco tokens mientras que una lectura simple gasta uno.
+Para la observabilidad necesitamos métricas de solicitudes permitidas y rechazadas por nivel, las claves más rechazadas y la latencia del propio limitador.
+Deberíamos alertar cuando la tasa de rechazo supere un umbral, porque eso suele significar un ataque o un cliente que ha publicado un bucle defectuoso.
+Otra preocupación más es el multirregión. Si un cliente puede llegar a dos regiones, ¿aplicamos un límite global o un límite por región?
+Las comprobaciones síncronas entre regiones añadirían decenas de milisegundos, así que yo aplicaría presupuestos por región y conciliaría de forma asíncrona para la facturación.
+Es un compromiso razonable. El limitador protege la capacidad, que de todos modos es regional, y el recuento global exacto solo importa para el contrato.
+Así que, en resumen, cubo de tokens en Redis con scripts de Lua atómicos, alquileres locales para las claves calientes, una política explícita de fallar abierto y cabeceras estándar.
+Además de un plano de control de políticas versionadas, costes ponderados por endpoint y aplicación por región. Creo que eso cubre el diseño de principio a fin.
