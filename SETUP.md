@@ -121,17 +121,20 @@ ALL CHECKS PASSED
 ```
 The exit code is 0 on success and 1 if any check fails.
 
-## 7b. Multilingual evaluation audio (optional, dev only)
+## 7b. Multilingual evaluation audio (dev only; already committed)
 
-The translated es/hi/zh evaluation set (`dataset/multilingual/`, Task 17) ships as text. To create its audio:
+The translated es/hi/zh evaluation set (`dataset/multilingual/`, Task 17) is committed **with its audio**:
+18 WAVs (16 kHz mono) and exact segment timings, synthesised by `scripts/synthesize_multilingual.py`
+(Kokoro-82M v1.0 via `kokoro-onnx`, deterministic on CPU). Check it with:
 ```bash
-brew install espeak-ng            # Linux: sudo apt install espeak-ng  (Spanish/Hindi phonemes)
-pip install -r requirements-dev.txt
-python scripts/synthesize_multilingual.py      # downloads Kokoro-82M (~330 MB, not gated); writes 18 WAVs
 python -m pytest tests/data/test_multilingual_dataset.py -q
 ```
-If you change a translation (`dataset/multilingual/translations/`), run `python scripts/build_multilingual_dataset.py`
-and then re-synthesise that language with `--lang <code> --force`.
+To regenerate after changing a translation (`dataset/multilingual/translations/`):
+```bash
+pip install -r requirements-dev.txt               # kokoro-onnx bundles espeak-ng: no system package needed
+python scripts/build_multilingual_dataset.py
+python scripts/synthesize_multilingual.py --lang <es|hi|zh> --force   # model files (~350 MB) download from GitHub on first run
+```
 
 ## 8. Troubleshooting
 

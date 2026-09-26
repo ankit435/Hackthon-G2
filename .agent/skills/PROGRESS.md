@@ -145,7 +145,7 @@ Missing packages are installed, not worked around; but never silently.
 | 2026-09-26 | `pytest`, `pytest-asyncio`, `httpx` | 9.1.1, 1.4.0, 0.28.1 | `requirements-dev.txt` | Tests; httpx is required by FastAPI's TestClient |
 | 2026-09-26 | `jiwer` | 4.0.0 | `requirements-dev.txt` | WER + CER scoring (Q15) |
 | 2026-09-26 | `pyannote.metrics` | 4.1 | `requirements-dev.txt` | DER scoring (Q15) |
-| 2026-09-26 | `kokoro`, `misaki[zh]` | 0.9.4, 0.9.4 | `requirements-dev.txt` (**pinned, not yet installed in `.venv`**) | Dev-only TTS for the translated evaluation audio (Task 17 M8). Needs system `espeak-ng` for es/hi. Install and verify on the Mac, then update this row |
+| 2026-09-26 | `kokoro-onnx`, `onnxruntime`, `misaki[zh]`, `soxr` | 0.6.1, 1.30.0, 0.9.4, 0.5.0.post1 | `requirements-dev.txt` | Dev-only TTS for the translated evaluation audio (Task 17 M8). Replaced `kokoro==0.9.4`: kokoro-onnx fetches the Kokoro-82M v1.0 weights from its GitHub release (sha256-pinned in the script), not Hugging Face, and bundles espeak-ng. Verified by synthesising all 18 files in the cloud session (Python 3.11 scratch venv); **not yet installed in the Mac `.venv`** |
 
 
 ---
@@ -394,7 +394,7 @@ surprising you could not explain** (Rule 15). Empty is fine; stale is not.
 | Item | Severity | Where | Note |
 |---|---|---|---|
 | **Multilingual translations are LLM-drafted, not yet human-verified** (es/hi/zh: 939 segments + 90 QA items) | **High** for Task 17 evaluation | `dataset/multilingual/translations/` | `PLAN.md` §7B requires human verification before any multilingual metric is claimed. Edit the `.txt` / `qa.json`, then re-run `scripts/build_multilingual_dataset.py` |
-| **Multilingual audio not synthesised yet**: Hugging Face was unreachable from the session that built the dataset | Medium | `scripts/synthesize_multilingual.py` | Run on the Mac (`pip install -r requirements-dev.txt`, `brew install espeak-ng`, then the script). Listen to one file per language before ingesting |
+| Multilingual audio is **synthetic TTS** (Kokoro-82M v1.0, one voice pair per language), 16 kHz, committed in `dataset/multilingual/` | Low | `dataset/multilingual/` | Cleaner than real speech; state it in `SOLUTION.md`. Listen to one file per language before relying on per-language metrics. Hindi reads Latin-script terms (API, Redis) with espeak-ng Hindi rules |
 | **D1** Reference timestamps drift late by ~0.0823 s per segment boundary (the generator overstated the gap: 0.300 s vs a real ~0.218 s) | ✅ **Fixed for 01–06** | `dataset/reference_corrected/` | **Use the corrected files for all timestamp-based evaluation. Never use the originals.** Files 07–10 are uncorrected (not in the golden set) |
 | **D2** `all.json` `evidence_time_ranges` match no reference segment (0/134). Offsets 6.8–420 s; they come from a longer render. 09/10 segment indices are wrong in 9/10 items | **High** for Task 6 | `dataset/all.json` | Quotes resolve uniquely (134/134). Derivation plan pending Q19 |
 | Golden files are 5.9–7.4 min, below the 8–10 min spec | Low | `dataset/golden_set.json` | Accepted (Q17). Disclose in `SOLUTION.md` |

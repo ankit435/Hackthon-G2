@@ -5,7 +5,7 @@
   "language": "zh",
   "topic": "社交信息流的排序与扩散",
   "source_topic": "Social News Feed Ranking and Fanout",
-  "duration_seconds": null,
+  "duration_seconds": 404.271,
   "speakers": [
     "SPEAKER_00",
     "SPEAKER_01"
@@ -15,351 +15,351 @@
       "index": 0,
       "speaker": "SPEAKER_00",
       "text": "我们来梳理一个社交信息流，就是用户打开应用后看到自己关注的人发布内容的那种。",
-      "start": null,
-      "end": null
+      "start": 0.0,
+      "end": 7.936
     },
     {
       "index": 1,
       "speaker": "SPEAKER_01",
       "text": "这个问题的核心矛盾永远是写扩散和读扩散之间的取舍。",
-      "start": null,
-      "end": null
+      "start": 8.186,
+      "end": 12.922
     },
     {
       "index": 2,
       "speaker": "SPEAKER_00",
       "text": "我们先把它们定义清楚。写扩散是指有人发帖时，我们立刻把一条引用插入到每个粉丝的信息流里。",
-      "start": null,
-      "end": null
+      "start": 13.172,
+      "end": 22.537
     },
     {
       "index": 3,
       "speaker": "SPEAKER_01",
       "text": "读扩散是指帖子只存一份，在请求时查询浏览者关注的所有人，再拼出信息流。",
-      "start": null,
-      "end": null
+      "start": 22.787,
+      "end": 29.443
     },
     {
       "index": 4,
       "speaker": "SPEAKER_00",
       "text": "写扩散让读取非常快，这很重要，因为在这个产品里读请求远远多于写请求。",
-      "start": null,
-      "end": null
+      "start": 29.693,
+      "end": 37.672
     },
     {
       "index": 5,
       "speaker": "SPEAKER_01",
       "text": "但对于拥有几百万粉丝的账号，写放大非常严重。一条帖子会变成几百万次插入。",
-      "start": null,
-      "end": null
+      "start": 37.922,
+      "end": 44.557
     },
     {
       "index": 6,
       "speaker": "SPEAKER_00",
       "text": "而且这些插入大部分都是浪费，因为在帖子过时之前，只有一小部分粉丝会打开应用。",
-      "start": null,
-      "end": null
+      "start": 44.807,
+      "end": 52.913
     },
     {
       "index": 7,
       "speaker": "SPEAKER_01",
       "text": "所以标准答案是混合方案。普通账号用写扩散，粉丝很多的账号在读取时再合并进来。",
-      "start": null,
-      "end": null
+      "start": 53.163,
+      "end": 60.289
     },
     {
       "index": 8,
       "speaker": "SPEAKER_00",
       "text": "我们设一个阈值，比如十万粉丝，超过这个数的账号就被标记为大V，不参与推送。",
-      "start": null,
-      "end": null
+      "start": 60.539,
+      "end": 68.261
     },
     {
       "index": 9,
       "speaker": "SPEAKER_01",
       "text": "读取时，我们拿到预先计算好的信息流，再拉取浏览者关注的大V的最新帖子，把两个列表合并起来。",
-      "start": null,
-      "end": null
+      "start": 68.511,
+      "end": 76.554
     },
     {
       "index": 10,
       "speaker": "SPEAKER_00",
       "text": "合并的成本很低，因为每个浏览者关注的大V很少，通常只有几个账号。",
-      "start": null,
-      "end": null
+      "start": 76.804,
+      "end": 83.631
     },
     {
       "index": 11,
       "speaker": "SPEAKER_01",
       "text": "我们应该积极缓存大V的时间线，因为几百万浏览者拉取的都是同样那几个作者的时间线。",
-      "start": null,
-      "end": null
+      "start": 83.881,
+      "end": 91.006
     },
     {
       "index": 12,
       "speaker": "SPEAKER_00",
       "text": "我们来定义数据模型。帖子记录包含作者、内容引用、创建时间和可见性设置。",
-      "start": null,
-      "end": null
+      "start": 91.256,
+      "end": 99.0
     },
     {
       "index": 13,
       "speaker": "SPEAKER_01",
       "text": "信息流本身是每个用户一份帖子标识的列表，带有排序分数，并截断到某个最大长度。",
-      "start": null,
-      "end": null
+      "start": 99.25,
+      "end": 106.439
     },
     {
       "index": 14,
       "speaker": "SPEAKER_00",
       "text": "信息流里不存帖子内容，只存引用，所以编辑或删除会立刻在所有地方生效。",
-      "start": null,
-      "end": null
+      "start": 106.689,
+      "end": 114.284
     },
     {
       "index": 15,
       "speaker": "SPEAKER_01",
       "text": "内容填充在读取时进行，从帖子存储或缓存中批量获取真正的帖子对象。",
-      "start": null,
-      "end": null
+      "start": 114.534,
+      "end": 121.083
     },
     {
       "index": 16,
       "speaker": "SPEAKER_00",
       "text": "这也让我们可以在读取时过滤。被屏蔽的作者、已删除的帖子和修改过的隐私设置，都在填充时生效。",
-      "start": null,
-      "end": null
+      "start": 121.333,
+      "end": 131.232
     },
     {
       "index": 17,
       "speaker": "SPEAKER_01",
       "text": "如果不这样做，一条已删除的帖子会留在几百万份预计算的信息流里，我们还得发删除请求去一一清理。",
-      "start": null,
-      "end": null
+      "start": 131.482,
+      "end": 139.887
     },
     {
       "index": 18,
       "speaker": "SPEAKER_00",
       "text": "现在谈排序。最简单的信息流是按时间倒序，结果可预期，也不需要机器学习。",
-      "start": null,
-      "end": null
+      "start": 140.137,
+      "end": 148.031
     },
     {
       "index": 19,
       "speaker": "SPEAKER_01",
       "text": "而以互动为优化目标的信息流会根据预测的互动给每个候选打分，然后按分数而不是时间排序。",
-      "start": null,
-      "end": null
+      "start": 148.281,
+      "end": 156.238
     },
     {
       "index": 20,
       "speaker": "SPEAKER_00",
       "text": "典型的流水线有三个阶段。候选生成，然后是一轮轻量排序，再用一个更重的模型处理剩下的候选。",
-      "start": null,
-      "end": null
+      "start": 156.488,
+      "end": 166.344
     },
     {
       "index": 21,
       "speaker": "SPEAKER_01",
       "text": "候选生成可能产出几千条帖子，轻量排序把它们削减到几百条，重排序模型再确定最终一页的顺序。",
-      "start": null,
-      "end": null
+      "start": 166.594,
+      "end": 174.807
     },
     {
       "index": 22,
       "speaker": "SPEAKER_00",
       "text": "正是这种分阶段的漏斗让延迟保持在可接受范围内，因为昂贵的模型只会看到很小的候选集合。",
-      "start": null,
-      "end": null
+      "start": 175.057,
+      "end": 184.636
     },
     {
       "index": 23,
       "speaker": "SPEAKER_01",
       "text": "特征包括浏览者过去和作者的互动、时效性、内容类型，以及帖子早期的互动信号。",
-      "start": null,
-      "end": null
+      "start": 184.886,
+      "end": 191.67
     },
     {
       "index": 24,
       "speaker": "SPEAKER_00",
       "text": "排序之后我们还应该应用多样性规则，这样信息流就不会连续展示同一个作者的十条帖子。",
-      "start": null,
-      "end": null
+      "start": 191.92,
+      "end": 200.603
     },
     {
       "index": 25,
       "speaker": "SPEAKER_01",
       "text": "还有内容安全过滤，去掉违反政策的内容，或者浏览者明确屏蔽过的内容。",
-      "start": null,
-      "end": null
+      "start": 200.853,
+      "end": 206.719
     },
     {
       "index": 26,
       "speaker": "SPEAKER_00",
       "text": "我们来谈谈服务路径的延迟。一次信息流请求在第九十九百分位上应该在两百毫秒左右完成。",
-      "start": null,
-      "end": null
+      "start": 206.969,
+      "end": 216.1
     },
     {
       "index": 27,
       "speaker": "SPEAKER_01",
       "text": "这意味着查询预计算的信息流必须是一次缓存读取，而内容填充必须是一次批量的多键读取。",
-      "start": null,
-      "end": null
+      "start": 216.35,
+      "end": 223.881
     },
     {
       "index": 28,
       "speaker": "SPEAKER_00",
       "text": "分页需要一个稳定的游标，因为如果按偏移量分页，新帖子到来时列表会在用户眼前发生错位。",
-      "start": null,
-      "end": null
+      "start": 224.131,
+      "end": 233.176
     },
     {
       "index": 29,
       "speaker": "SPEAKER_01",
       "text": "游标里编码上次看到的位置和排序快照，这样滚动时就不会出现重复或遗漏。",
-      "start": null,
-      "end": null
+      "start": 233.426,
+      "end": 240.039
     },
     {
       "index": 30,
       "speaker": "SPEAKER_00",
       "text": "对写入路径来说，发帖对作者来说应该很快。我们先持久化帖子，返回确认，然后异步地做扩散。",
-      "start": null,
-      "end": null
+      "start": 240.289,
+      "end": 249.676
     },
     {
       "index": 31,
       "speaker": "SPEAKER_01",
       "text": "扩散任务读取粉丝列表，分批写入信息流存储，并且带有背压，这样突发流量就不会压垮集群。",
-      "start": null,
-      "end": null
+      "start": 249.926,
+      "end": 257.499
     },
     {
       "index": 32,
       "speaker": "SPEAKER_00",
       "text": "我们应该优先处理活跃粉丝，让很可能马上打开应用的人比不活跃的账号更早收到帖子。",
-      "start": null,
-      "end": null
+      "start": 257.749,
+      "end": 265.963
     },
     {
       "index": 33,
       "speaker": "SPEAKER_01",
       "text": "这是个很好的优化。即使完整扩散需要几分钟，用户感知到的扩散延迟也会大幅降低。",
-      "start": null,
-      "end": null
+      "start": 266.213,
+      "end": 273.167
     },
     {
       "index": 34,
       "speaker": "SPEAKER_00",
       "text": "实际上，对于不活跃的用户，我们可以完全跳过推送，等他们最终回来时再在读取时重建信息流。",
-      "start": null,
-      "end": null
+      "start": 273.417,
+      "end": 282.825
     },
     {
       "index": 35,
       "speaker": "SPEAKER_01",
       "text": "这能节省大量的写入量，因为在任何一天里，注册账号中都有很大一部分是不活跃的。",
-      "start": null,
-      "end": null
+      "start": 283.075,
+      "end": 289.881
     },
     {
       "index": 36,
       "speaker": "SPEAKER_00",
       "text": "在存储上，信息流纯粹是缓存。就算丢了，我们也总能根据帖子和关注关系图重新构建出来。",
-      "start": null,
-      "end": null
+      "start": 290.131,
+      "end": 299.411
     },
     {
       "index": 37,
       "speaker": "SPEAKER_01",
       "text": "所以我们可以把它们放在内存里，限制长度，比如只保留最近几百条，未命中时再重建。",
-      "start": null,
-      "end": null
+      "start": 299.661,
+      "end": 306.53
     },
     {
       "index": 38,
       "speaker": "SPEAKER_00",
       "text": "关注关系图本身需要能快速遍历，因为扩散和读取时的拼装都依赖它。",
-      "start": null,
-      "end": null
+      "start": 306.78,
+      "end": 313.777
     },
     {
       "index": 39,
       "speaker": "SPEAKER_01",
       "text": "我们把粉丝列表和关注列表分别存成两个邻接表，因为这两个方向是在不同的代码路径里查询的。",
-      "start": null,
-      "end": null
+      "start": 314.027,
+      "end": 321.771
     },
     {
       "index": 40,
       "speaker": "SPEAKER_00",
       "text": "对于特别大的粉丝列表，我们分页遍历，扩散任务分批处理，而不是一次全部加载。",
-      "start": null,
-      "end": null
+      "start": 322.021,
+      "end": 329.829
     },
     {
       "index": 41,
       "speaker": "SPEAKER_01",
       "text": "我们来看看冷启动的情况。一个全新的用户谁都没关注，所以他的信息流是空的。",
-      "start": null,
-      "end": null
+      "start": 330.079,
+      "end": 336.458
     },
     {
       "index": 42,
       "speaker": "SPEAKER_00",
       "text": "我们根据他填写的兴趣，用热门和相关主题的内容填充，随着他关注账号，再逐步转向基于关系图的内容。",
-      "start": null,
-      "end": null
+      "start": 336.708,
+      "end": 346.927
     },
     {
       "index": 43,
       "speaker": "SPEAKER_01",
       "text": "在可观测性方面，我们应该跟踪信息流延迟、缓存命中率、扩散延迟，以及信息流中来自读取路径合并的比例。",
-      "start": null,
-      "end": null
+      "start": 347.177,
+      "end": 355.731
     },
     {
       "index": 44,
       "speaker": "SPEAKER_00",
       "text": "扩散延迟是最关键的健康指标。如果它变大，即使技术上什么都没坏，用户也会看到过时的信息流。",
-      "start": null,
-      "end": null
+      "start": 355.981,
+      "end": 365.859
     },
     {
       "index": 45,
       "speaker": "SPEAKER_01",
       "text": "我们应该针对这个延迟告警，而不是针对任务队列的深度，因为延迟直接对应用户体验。",
-      "start": null,
-      "end": null
+      "start": 366.109,
+      "end": 372.978
     },
     {
       "index": 46,
       "speaker": "SPEAKER_00",
       "text": "总结一下：带大V阈值的混合扩散，只存引用的信息流存储，以及读取时的填充和过滤。",
-      "start": null,
-      "end": null
+      "start": 373.228,
+      "end": 381.825
     },
     {
       "index": 47,
       "speaker": "SPEAKER_01",
       "text": "再加上分阶段的排序漏斗、基于游标的分页、按活跃度排优先级的扩散，并把信息流当作可重建的缓存。",
-      "start": null,
-      "end": null
+      "start": 382.075,
+      "end": 390.246
     },
     {
       "index": 48,
       "speaker": "SPEAKER_00",
       "text": "巧妙的地方在于信息流是可以丢弃的。一切都能重建，这让运维工作简单得多。",
-      "start": null,
-      "end": null
+      "start": 390.496,
+      "end": 398.24
     },
     {
       "index": 49,
       "speaker": "SPEAKER_01",
       "text": "同意。把派生数据当作缓存而不是事实来源，就消除了一整类一致性问题。",
-      "start": null,
-      "end": null
+      "start": 398.49,
+      "end": 404.271
     }
   ],
   "translation": {
@@ -369,5 +369,22 @@
     "translation_file": "multilingual/translations/zh/audio_04_news_feed.txt",
     "translation_sha256": "4dc3383b04deffcdaafbd32b0b2cbf77316754203b6286ed538b5495acb98cb3"
   },
-  "synthesis": null
+  "synthesis": {
+    "engine": "kokoro-onnx",
+    "engine_version": "0.6.1",
+    "model": "Kokoro-82M v1.0 (kokoro-v1.0.onnx)",
+    "model_sha256": "7d5df8ecf7d4b1878015a32686053fd0eebe2bc377234608764cc0ef3636a6c5",
+    "g2p": "misaki zh + espeak-ng en-us for English words",
+    "voices": {
+      "SPEAKER_00": "zf_xiaobei",
+      "SPEAKER_01": "zm_yunjian"
+    },
+    "speed": 1.0,
+    "gap_seconds": 0.25,
+    "sample_rate": 16000,
+    "resampled_from": 24000,
+    "format": "wav pcm_s16le mono",
+    "timing": "exact: sample offsets of each synthesised segment",
+    "wav_sha256": "379307bd2a2b8695d7af28c02da0a45b16a9f60bd233b298e9f5d1550209410e"
+  }
 }

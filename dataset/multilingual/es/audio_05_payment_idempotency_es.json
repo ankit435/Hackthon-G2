@@ -5,7 +5,7 @@
   "language": "es",
   "topic": "Procesamiento de pagos e idempotencia",
   "source_topic": "Payment Processing and Idempotency",
-  "duration_seconds": null,
+  "duration_seconds": 435.672,
   "speakers": [
     "SPEAKER_00",
     "SPEAKER_01"
@@ -15,379 +15,379 @@
       "index": 0,
       "speaker": "SPEAKER_00",
       "text": "Diseñemos un servicio de pagos que cobre tarjetas y nunca le cobre dos veces a un cliente.",
-      "start": null,
-      "end": null
+      "start": 0.0,
+      "end": 5.44
     },
     {
       "index": 1,
       "speaker": "SPEAKER_01",
       "text": "El requisito estricto es un efecto financiero exactamente una vez, aunque la red solo nos da como máximo una vez o al menos una vez.",
-      "start": null,
-      "end": null
+      "start": 5.69,
+      "end": 13.37
     },
     {
       "index": 2,
       "speaker": "SPEAKER_00",
       "text": "Exacto. El cliente puede agotar el tiempo de espera y reintentar, y sin ayuda no tenemos forma de distinguir un reintento de una segunda compra real.",
-      "start": null,
-      "end": null
+      "start": 13.62,
+      "end": 21.983
     },
     {
       "index": 3,
       "speaker": "SPEAKER_01",
       "text": "Esa ayuda es la clave de idempotencia. El cliente genera una clave única por cada intento lógico de pago y la envía con cada reintento.",
-      "start": null,
-      "end": null
+      "start": 22.233,
+      "end": 30.681
     },
     {
       "index": 4,
       "speaker": "SPEAKER_00",
       "text": "El servidor guarda la clave con la solicitud y el resultado final, así que repetir la misma clave devuelve el resultado original.",
-      "start": null,
-      "end": null
+      "start": 30.931,
+      "end": 38.675
     },
     {
       "index": 5,
       "speaker": "SPEAKER_01",
       "text": "Debemos limitar el alcance de la clave a la cuenta; si no, un cliente podría adivinar la clave de otro y leer el resultado de su pago.",
-      "start": null,
-      "end": null
+      "start": 38.925,
+      "end": 46.925
     },
     {
       "index": 6,
       "speaker": "SPEAKER_00",
       "text": "Y deberíamos calcular un hash del cuerpo de la solicitud y compararlo, para que la misma clave con parámetros distintos se rechace como conflicto.",
-      "start": null,
-      "end": null
+      "start": 47.175,
+      "end": 55.559
     },
     {
       "index": 7,
       "speaker": "SPEAKER_01",
       "text": "Eso detecta errores del cliente en los que la clave se reutiliza para otro importe, que de otro modo devolverían en silencio un resultado equivocado.",
-      "start": null,
-      "end": null
+      "start": 55.809,
+      "end": 64.299
     },
     {
       "index": 8,
       "speaker": "SPEAKER_00",
       "text": "La parte difícil es la concurrencia. Dos reintentos pueden llegar en el mismo instante mientras el primero todavía está en curso.",
-      "start": null,
-      "end": null
+      "start": 64.549,
+      "end": 72.165
     },
     {
       "index": 9,
       "speaker": "SPEAKER_01",
       "text": "Así que el registro de la clave necesita una máquina de estados. Lo insertamos como en curso con una restricción de unicidad, y el que pierde esa carrera espera o devuelve un conflicto.",
-      "start": null,
-      "end": null
+      "start": 72.415,
+      "end": 82.869
     },
     {
       "index": 10,
       "speaker": "SPEAKER_00",
       "text": "Yo devolvería un cuatro cero nueve con una indicación de reintento en lugar de bloquear, porque mantener una solicitud abierta consume recursos.",
-      "start": null,
-      "end": null
+      "start": 83.119,
+      "end": 91.417
     },
     {
       "index": 11,
       "speaker": "SPEAKER_01",
       "text": "Luego, cuando el primer intento termina, actualizamos el registro a exitoso o fallido con el cuerpo de la respuesta guardado.",
-      "start": null,
-      "end": null
+      "start": 91.667,
+      "end": 98.771
     },
     {
       "index": 12,
       "speaker": "SPEAKER_00",
       "text": "¿Y el intervalo en el que llamamos al procesador de pagos pero caímos antes de registrar el resultado?",
-      "start": null,
-      "end": null
+      "start": 99.021,
+      "end": 104.824
     },
     {
       "index": 13,
       "speaker": "SPEAKER_01",
       "text": "Ese es el clásico estado colgado. Debemos escribir nuestra intención antes de la llamada externa, para que la recuperación sepa que la llamada pudo haber ocurrido.",
-      "start": null,
-      "end": null
+      "start": 105.074,
+      "end": 114.461
     },
     {
       "index": 14,
       "speaker": "SPEAKER_00",
       "text": "Así que la secuencia es: persistir la intención, llamar al procesador y persistir el resultado. La recuperación encuentra intenciones sin resultado y las concilia.",
-      "start": null,
-      "end": null
+      "start": 114.711,
+      "end": 124.375
     },
     {
       "index": 15,
       "speaker": "SPEAKER_01",
       "text": "La conciliación consulta al procesador por nuestro propio identificador de referencia, que debemos enviar en la llamada saliente precisamente con este fin.",
-      "start": null,
-      "end": null
+      "start": 124.625,
+      "end": 133.947
     },
     {
       "index": 16,
       "speaker": "SPEAKER_00",
       "text": "Por eso todos los procesadores admiten una referencia del comercio. Nos permite preguntar si ya procesaron esto, en lugar de adivinar.",
-      "start": null,
-      "end": null
+      "start": 134.197,
+      "end": 141.941
     },
     {
       "index": 17,
       "speaker": "SPEAKER_01",
       "text": "Y nunca deberíamos reintentar a ciegas un cobro saliente sin comprobar primero, porque ese es el camino directo a un cobro doble.",
-      "start": null,
-      "end": null
+      "start": 142.191,
+      "end": 149.701
     },
     {
       "index": 18,
       "speaker": "SPEAKER_00",
       "text": "Modelemos explícitamente el ciclo de vida del pago. Yo usaría estados como creado, autorizado, capturado, fallido, reembolsado y disputado.",
-      "start": null,
-      "end": null
+      "start": 149.951,
+      "end": 158.335
     },
     {
       "index": 19,
       "speaker": "SPEAKER_01",
       "text": "Las transiciones deben validarse de forma estricta. No se puede capturar un pago fallido, ni reembolsar algo que nunca se capturó.",
-      "start": null,
-      "end": null
+      "start": 158.585,
+      "end": 166.414
     },
     {
       "index": 20,
       "speaker": "SPEAKER_00",
       "text": "Guardar la máquina de estados en la base de datos con una columna de versión nos da concurrencia optimista en las transiciones.",
-      "start": null,
-      "end": null
+      "start": 166.664,
+      "end": 173.832
     },
     {
       "index": 21,
       "speaker": "SPEAKER_01",
       "text": "La comprobación de versión significa que dos workers concurrentes no pueden hacer avanzar el pago desde el mismo estado inicial.",
-      "start": null,
-      "end": null
+      "start": 174.082,
+      "end": 181.655
     },
     {
       "index": 22,
       "speaker": "SPEAKER_00",
       "text": "Para el dinero en sí, guardamos los importes como enteros en la unidad monetaria más pequeña, nunca como coma flotante.",
-      "start": null,
-      "end": null
+      "start": 181.905,
+      "end": 188.924
     },
     {
       "index": 23,
       "speaker": "SPEAKER_01",
       "text": "Por supuesto. El redondeo de coma flotante en código financiero es una fuente segura de discrepancias de céntimos que los auditores encontrarán.",
-      "start": null,
-      "end": null
+      "start": 189.174,
+      "end": 197.515
     },
     {
       "index": 24,
       "speaker": "SPEAKER_00",
       "text": "Y cada importe lleva su código de moneda, porque un número suelto no significa nada en un sistema con varias monedas.",
-      "start": null,
-      "end": null
+      "start": 197.765,
+      "end": 204.464
     },
     {
       "index": 25,
       "speaker": "SPEAKER_01",
       "text": "Hablemos del libro mayor. El estado del pago es operativo, pero la verdad contable debería ser un libro mayor de partida doble.",
-      "start": null,
-      "end": null
+      "start": 204.714,
+      "end": 212.117
     },
     {
       "index": 26,
       "speaker": "SPEAKER_00",
       "text": "Cada movimiento escribe asientos de débito y crédito equilibrados, y el libro mayor es solo de anexado, sin actualizaciones ni borrados.",
-      "start": null,
-      "end": null
+      "start": 212.367,
+      "end": 219.94
     },
     {
       "index": 27,
       "speaker": "SPEAKER_01",
       "text": "Las correcciones se hacen registrando un asiento de reversión, lo que conserva todo el historial y facilita las auditorías.",
-      "start": null,
-      "end": null
+      "start": 220.19,
+      "end": 227.315
     },
     {
       "index": 28,
       "speaker": "SPEAKER_00",
       "text": "Esa inmutabilidad también encaja bien con un diseño basado en eventos, donde el saldo actual es una proyección de los asientos.",
-      "start": null,
-      "end": null
+      "start": 227.565,
+      "end": 234.861
     },
     {
       "index": 29,
       "speaker": "SPEAKER_01",
       "text": "Debemos cuidar que las proyecciones sigan siendo consistentes. Una proyección retrasada que muestre un saldo obsoleto puede autorizar un descubierto.",
-      "start": null,
-      "end": null
+      "start": 235.111,
+      "end": 243.922
     },
     {
       "index": 30,
       "speaker": "SPEAKER_00",
       "text": "Para comprobar saldos leemos directamente del libro mayor con una lectura fuertemente consistente, en lugar de una vista con consistencia eventual.",
-      "start": null,
-      "end": null
+      "start": 244.172,
+      "end": 252.62
     },
     {
       "index": 31,
       "speaker": "SPEAKER_01",
       "text": "Ahora el problema de la transacción distribuida. Una compra toca el inventario, el pago y la creación del pedido en servicios separados.",
-      "start": null,
-      "end": null
+      "start": 252.87,
+      "end": 260.593
     },
     {
       "index": 32,
       "speaker": "SPEAKER_00",
       "text": "El commit en dos fases entre servicios no es práctico aquí, así que usamos una saga con acciones de compensación.",
-      "start": null,
-      "end": null
+      "start": 260.843,
+      "end": 267.52
     },
     {
       "index": 33,
       "speaker": "SPEAKER_01",
       "text": "El servicio de pedidos orquesta. Reserva el inventario, cobra la tarjeta, confirma el pedido y compensa hacia atrás ante cualquier fallo.",
-      "start": null,
-      "end": null
+      "start": 267.77,
+      "end": 275.685
     },
     {
       "index": 34,
       "speaker": "SPEAKER_00",
       "text": "La compensación de una captura es un reembolso, y la compensación de una reserva de inventario es una liberación. Ninguna es un verdadero rollback.",
-      "start": null,
-      "end": null
+      "start": 275.935,
+      "end": 284.532
     },
     {
       "index": 35,
       "speaker": "SPEAKER_01",
       "text": "Ese es el cambio mental clave. Las sagas dan consistencia eventual con deshacer a nivel de negocio, no atomicidad.",
-      "start": null,
-      "end": null
+      "start": 284.782,
+      "end": 291.502
     },
     {
       "index": 36,
       "speaker": "SPEAKER_00",
       "text": "Para la fiabilidad entre servicios deberíamos usar el patrón de outbox transaccional en lugar de publicar los eventos directamente.",
-      "start": null,
-      "end": null
+      "start": 291.752,
+      "end": 299.368
     },
     {
       "index": 37,
       "speaker": "SPEAKER_01",
       "text": "Así, el cambio de estado y el evento saliente se escriben en la misma transacción local, y un relé publica desde el outbox.",
-      "start": null,
-      "end": null
+      "start": 299.618,
+      "end": 306.701
     },
     {
       "index": 38,
       "speaker": "SPEAKER_00",
       "text": "Eso elimina el modo de fallo en el que confirmamos el cobro pero caemos antes de publicar el evento.",
-      "start": null,
-      "end": null
+      "start": 306.951,
+      "end": 312.753
     },
     {
       "index": 39,
       "speaker": "SPEAKER_01",
       "text": "Los consumidores deben ser idempotentes, porque el relé garantiza entrega al menos una vez y los duplicados son normales.",
-      "start": null,
-      "end": null
+      "start": 313.003,
+      "end": 320.15
     },
     {
       "index": 40,
       "speaker": "SPEAKER_00",
       "text": "Los webhooks del procesador tienen la misma propiedad. Reintentan de forma agresiva y pueden llegar fuera de orden.",
-      "start": null,
-      "end": null
+      "start": 320.4,
+      "end": 326.907
     },
     {
       "index": 41,
       "speaker": "SPEAKER_01",
       "text": "Así que los manejadores de webhooks deben ser idempotentes respecto al identificador del evento y deben ignorar las transiciones que hagan retroceder el estado.",
-      "start": null,
-      "end": null
+      "start": 327.157,
+      "end": 336.565
     },
     {
       "index": 42,
       "speaker": "SPEAKER_00",
       "text": "También tenemos que verificar las firmas de los webhooks, ya que el endpoint es accesible públicamente y un atacante podría falsificar un evento de éxito.",
-      "start": null,
-      "end": null
+      "start": 336.815,
+      "end": 345.711
     },
     {
       "index": 43,
       "speaker": "SPEAKER_01",
       "text": "Hablemos de la seguridad de forma más amplia. Nunca deberíamos guardar números de tarjeta en claro en nuestros propios sistemas.",
-      "start": null,
-      "end": null
+      "start": 345.961,
+      "end": 353.3
     },
     {
       "index": 44,
       "speaker": "SPEAKER_00",
       "text": "La tokenización a través del procesador nos deja fuera del ámbito de cumplimiento más estricto, y solo guardamos un token opaco.",
-      "start": null,
-      "end": null
+      "start": 353.55,
+      "end": 361.038
     },
     {
       "index": 45,
       "speaker": "SPEAKER_01",
       "text": "También deberíamos cifrar los campos sensibles en reposo, restringir el acceso por rol y registrar cada lectura de datos de pago para auditoría.",
-      "start": null,
-      "end": null
+      "start": 361.288,
+      "end": 369.714
     },
     {
       "index": 46,
       "speaker": "SPEAKER_00",
       "text": "En observabilidad necesitamos tasas de éxito por procesador, la latencia y una alerta clara cuando la tasa de fallos se desvía de la referencia.",
-      "start": null,
-      "end": null
+      "start": 369.964,
+      "end": 378.498
     },
     {
       "index": 47,
       "speaker": "SPEAKER_01",
       "text": "Los rechazos son normales, así que la alerta debería comparar con el patrón histórico en lugar de con un umbral fijo.",
-      "start": null,
-      "end": null
+      "start": 378.748,
+      "end": 385.404
     },
     {
       "index": 48,
       "speaker": "SPEAKER_00",
       "text": "También deberíamos admitir varios procesadores con conmutación por error, ya que de lo contrario la caída de un solo procesador detendría todos los ingresos.",
-      "start": null,
-      "end": null
+      "start": 385.654,
+      "end": 395.04
     },
     {
       "index": 49,
       "speaker": "SPEAKER_01",
       "text": "El enrutamiento entre ellos requiere cuidado, porque un pago en curso no debe reintentarse en otro procesador sin comprobar su estado.",
-      "start": null,
-      "end": null
+      "start": 395.29,
+      "end": 402.949
     },
     {
       "index": 50,
       "speaker": "SPEAKER_00",
       "text": "En resumen, claves de idempotencia con alcance y huella de la solicitud, intención antes de la llamada externa y conciliación por la referencia del comercio.",
-      "start": null,
-      "end": null
+      "start": 403.199,
+      "end": 412.351
     },
     {
       "index": 51,
       "speaker": "SPEAKER_01",
       "text": "Además de una máquina de estados validada, un libro mayor inmutable de partida doble, sagas con compensación y un outbox transaccional para los eventos.",
-      "start": null,
-      "end": null
+      "start": 412.601,
+      "end": 421.497
     },
     {
       "index": 52,
       "speaker": "SPEAKER_00",
       "text": "El tema recurrente es que aquí la corrección viene de la intención duradera y la idempotencia, no de los bloqueos distribuidos.",
-      "start": null,
-      "end": null
+      "start": 421.747,
+      "end": 428.659
     },
     {
       "index": 53,
       "speaker": "SPEAKER_01",
       "text": "Exacto. No se puede hacer que la red sea fiable, así que se hacen las operaciones repetibles sin cambiar el resultado.",
-      "start": null,
-      "end": null
+      "start": 428.909,
+      "end": 435.672
     }
   ],
   "translation": {
@@ -397,5 +397,22 @@
     "translation_file": "multilingual/translations/es/audio_05_payment_idempotency.txt",
     "translation_sha256": "5f0e0938ac7f3094b50d44c999bcf527278a1fd8dd5dd2494b4869b19e323b12"
   },
-  "synthesis": null
+  "synthesis": {
+    "engine": "kokoro-onnx",
+    "engine_version": "0.6.1",
+    "model": "Kokoro-82M v1.0 (kokoro-v1.0.onnx)",
+    "model_sha256": "7d5df8ecf7d4b1878015a32686053fd0eebe2bc377234608764cc0ef3636a6c5",
+    "g2p": "espeak-ng es",
+    "voices": {
+      "SPEAKER_00": "ef_dora",
+      "SPEAKER_01": "em_alex"
+    },
+    "speed": 1.0,
+    "gap_seconds": 0.25,
+    "sample_rate": 16000,
+    "resampled_from": 24000,
+    "format": "wav pcm_s16le mono",
+    "timing": "exact: sample offsets of each synthesised segment",
+    "wav_sha256": "8a859bd2a877082deac5b2df165a4f12348461c0b699b5edfe9cb6c58e264e15"
+  }
 }

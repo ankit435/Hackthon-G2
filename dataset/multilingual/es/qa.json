@@ -17,7 +17,16 @@
       "SPEAKER_00",
       "SPEAKER_01"
     ],
-    "evidence_time_ranges": null,
+    "evidence_time_ranges": [
+      [
+        61.334,
+        68.566
+      ],
+      [
+        68.816,
+        76.667
+      ]
+    ],
     "supporting_context": [
       "Las ventanas fijas son baratas y fáciles de razonar, pero permiten una ráfaga del doble del límite en el borde de la ventana.",
       "Exactamente. Un cliente puede enviar cien solicitudes en el último segundo de un minuto y otras cien en el primer segundo del siguiente."
@@ -42,7 +51,20 @@
       "SPEAKER_00",
       "SPEAKER_01"
     ],
-    "evidence_time_ranges": null,
+    "evidence_time_ranges": [
+      [
+        86.66,
+        96.857
+      ],
+      [
+        106.232,
+        114.915
+      ],
+      [
+        115.165,
+        124.21
+      ]
+    ],
     "supporting_context": [
       "El registro de ventana deslizante lo resuelve con precisión. Guardamos una marca de tiempo por cada solicitud y contamos las entradas de los últimos sesenta segundos.",
       "Así que el término medio práctico es el contador de ventana deslizante, donde combinamos la ventana anterior y la actual mediante una media ponderada.",
@@ -65,7 +87,12 @@
     "evidence_speakers": [
       "SPEAKER_01"
     ],
-    "evidence_time_ranges": null,
+    "evidence_time_ranges": [
+      [
+        149.295,
+        161.519
+      ]
+    ],
     "supporting_context": [
       "Deberíamos limitar el cubo para que los clientes inactivos no acumulen una ráfaga ilimitada. Una capacidad de cien con una recarga de uno coma sesenta y siete tokens por segundo coincide con nuestra política."
     ]
@@ -89,7 +116,20 @@
       "SPEAKER_00",
       "SPEAKER_01"
     ],
-    "evidence_time_ranges": null,
+    "evidence_time_ranges": [
+      [
+        192.365,
+        201.986
+      ],
+      [
+        202.236,
+        210.151
+      ],
+      [
+        210.401,
+        220.939
+      ]
+    ],
     "supporting_context": [
       "Deberíamos hacer toda la comprobación y el decremento dentro de un único script de Lua, para que la lectura, la comparación y la escritura sean atómicas en el lado de Redis.",
       "Eso evita la condición de carrera clásica en la que dos nodos de pasarela leen noventa y nueve y ambos deciden permitir la solicitud.",
@@ -115,7 +155,20 @@
       "SPEAKER_00",
       "SPEAKER_01"
     ],
-    "evidence_time_ranges": null,
+    "evidence_time_ranges": [
+      [
+        336.119,
+        346.061
+      ],
+      [
+        346.311,
+        354.823
+      ],
+      [
+        355.073,
+        365.121
+      ]
+    ],
     "supporting_context": [
       "Para una API pública yo fallaría abierto en los endpoints normales, pero fallaría cerrado en los costosos o sensibles, como la creación de cuentas y la exportación masiva.",
       "También deberíamos degradar a un limitador local en memoria cuando el almacén compartido esté caído, para que siga habiendo algún techo en lugar de ninguno.",
@@ -140,7 +193,16 @@
       "SPEAKER_00",
       "SPEAKER_01"
     ],
-    "evidence_time_ranges": null,
+    "evidence_time_ranges": [
+      [
+        72.714,
+        82.954
+      ],
+      [
+        83.204,
+        92.441
+      ]
+    ],
     "supporting_context": [
       "Base sesenta y dos, con dígitos y letras en mayúsculas y minúsculas. Siete caracteres dan unos tres coma cinco billones de combinaciones, mucho más de lo que necesitamos.",
       "Siete es un buen valor por defecto, pero podríamos empezar con seis e ir creciendo. Seis caracteres ya son cincuenta y seis mil millones de posibilidades."
@@ -164,7 +226,16 @@
       "SPEAKER_00",
       "SPEAKER_01"
     ],
-    "evidence_time_ranges": null,
+    "evidence_time_ranges": [
+      [
+        287.232,
+        293.824
+      ],
+      [
+        294.074,
+        302.266
+      ]
+    ],
     "supporting_context": [
       "Tres cero dos, porque el navegador guarda en caché una redirección permanente y nunca veríamos los clics posteriores.",
       "Exacto, y perderíamos por completo la analítica de los visitantes recurrentes. La pequeña carga extra vale la pena para conservar los datos."
@@ -189,7 +260,20 @@
       "SPEAKER_00",
       "SPEAKER_01"
     ],
-    "evidence_time_ranges": null,
+    "evidence_time_ranges": [
+      [
+        113.245,
+        122.887
+      ],
+      [
+        123.137,
+        132.46
+      ],
+      [
+        132.71,
+        143.974
+      ]
+    ],
     "supporting_context": [
       "Pero los enteros secuenciales filtran información. Cualquiera puede enumerar los códigos y recorrer toda la base de datos de enlaces, lo cual es un problema de privacidad.",
       "Podemos mitigarlo mezclando el contador con una permutación reversible antes de codificarlo, para que los códigos parezcan aleatorios pero sigan siendo únicos.",
@@ -213,7 +297,16 @@
     "evidence_speakers": [
       "SPEAKER_00"
     ],
-    "evidence_time_ranges": null,
+    "evidence_time_ranges": [
+      [
+        163.796,
+        172.735
+      ],
+      [
+        181.256,
+        188.829
+      ]
+    ],
     "supporting_context": [
       "Para el contador único podríamos usar un asignador de rangos. Cada nodo de la aplicación toma un bloque de un millón de identificadores y los sirve localmente.",
       "El coste son huecos en la secuencia cuando un nodo se reinicia, pero los huecos no importan en absoluto para nuestro caso de uso."
@@ -237,7 +330,16 @@
       "SPEAKER_00",
       "SPEAKER_01"
     ],
-    "evidence_time_ranges": null,
+    "evidence_time_ranges": [
+      [
+        262.183,
+        272.253
+      ],
+      [
+        272.503,
+        281.143
+      ]
+    ],
     "supporting_context": [
       "Los enlaces eliminados importan. Si alguien retira un enlace malicioso, una entrada obsoleta en la caché lo sigue sirviendo, así que la invalidación tiene que ser rápida.",
       "Podemos publicar eventos de invalidación en un bus de mensajes y hacer que cada nodo de caché se suscriba, en lugar de depender solo de la caducidad."
@@ -261,7 +363,16 @@
       "SPEAKER_00",
       "SPEAKER_01"
     ],
-    "evidence_time_ranges": null,
+    "evidence_time_ranges": [
+      [
+        18.99,
+        28.697
+      ],
+      [
+        28.947,
+        36.264
+      ]
+    ],
     "supporting_context": [
       "Entonces, durabilidad antes de la confirmación. El servidor escribe primero el mensaje en almacenamiento persistente y luego devuelve una confirmación al remitente.",
       "Ese es el orden clave. Si confirmamos primero y escribimos después, una caída pierde mensajes que el usuario cree que se enviaron."
@@ -286,7 +397,20 @@
       "SPEAKER_00",
       "SPEAKER_01"
     ],
-    "evidence_time_ranges": null,
+    "evidence_time_ranges": [
+      [
+        115.649,
+        125.207
+      ],
+      [
+        125.457,
+        134.011
+      ],
+      [
+        134.261,
+        141.643
+      ]
+    ],
     "supporting_context": [
       "Las entradas obsoletas hacen que los mensajes se reenvíen a un nodo que ya no tiene la conexión, así que ese nodo debe descartarlos y dejar que el almacén se encargue.",
       "Como el mensaje ya es duradero, un envío perdido es solo un problema de latencia. El cliente lo recuperará al reconectarse y nada se pierde de verdad.",
@@ -311,7 +435,16 @@
       "SPEAKER_00",
       "SPEAKER_01"
     ],
-    "evidence_time_ranges": null,
+    "evidence_time_ranges": [
+      [
+        234.84,
+        244.952
+      ],
+      [
+        245.202,
+        253.629
+      ]
+    ],
     "supporting_context": [
       "Así que un híbrido. Por debajo de un umbral de miembros escribimos entradas por usuario, y por encima guardamos una sola copia y los clientes leen la conversación directamente.",
       "Eso refleja el enfoque que se usa en los feeds sociales, y el umbral se convierte en un parámetro de ajuste que podemos cambiar desde la configuración."
@@ -336,7 +469,20 @@
       "SPEAKER_00",
       "SPEAKER_01"
     ],
-    "evidence_time_ranges": null,
+    "evidence_time_ranges": [
+      [
+        261.403,
+        270.385
+      ],
+      [
+        270.635,
+        278.485
+      ],
+      [
+        278.735,
+        285.69
+      ]
+    ],
     "supporting_context": [
       "Los indicadores de escritura deberían ser efímeros y no persistirse nunca. Se envían por el socket con una caducidad corta y se descartan bajo carga.",
       "Las confirmaciones de lectura se pueden agrupar. En lugar de un evento por mensaje, el cliente informa de la secuencia más alta que ha leído.",
@@ -362,7 +508,20 @@
       "SPEAKER_00",
       "SPEAKER_01"
     ],
-    "evidence_time_ranges": null,
+    "evidence_time_ranges": [
+      [
+        184.124,
+        193.553
+      ],
+      [
+        193.803,
+        201.483
+      ],
+      [
+        209.791,
+        216.234
+      ]
+    ],
     "supporting_context": [
       "La secuenciación dentro de una conversación es sutil. Los relojes de los clientes no son fiables, así que no podemos ordenar por la marca de tiempo del remitente.",
       "El servidor asigna el número de secuencia por conversación, lo que da un orden total en el que todos los participantes coinciden.",
@@ -388,7 +547,20 @@
       "SPEAKER_00",
       "SPEAKER_01"
     ],
-    "evidence_time_ranges": null,
+    "evidence_time_ranges": [
+      [
+        70.416,
+        77.477
+      ],
+      [
+        77.727,
+        86.282
+      ],
+      [
+        93.353,
+        102.419
+      ]
+    ],
     "supporting_context": [
       "Fijamos un umbral, quizá cien mil seguidores, por encima del cual una cuenta se marca como celebridad y se excluye del envío.",
       "En la lectura tomamos el feed precalculado, traemos las publicaciones recientes de las celebridades que sigue el usuario y combinamos las dos listas.",
@@ -414,7 +586,20 @@
       "SPEAKER_00",
       "SPEAKER_01"
     ],
-    "evidence_time_ranges": null,
+    "evidence_time_ranges": [
+      [
+        120.492,
+        129.068
+      ],
+      [
+        129.318,
+        138.001
+      ],
+      [
+        147.951,
+        155.482
+      ]
+    ],
     "supporting_context": [
       "No guardamos el contenido de la publicación en el feed, solo referencias, así que una edición o un borrado surten efecto en todas partes de inmediato.",
       "La hidratación ocurre en el momento de la lectura, obteniendo en lote los objetos reales de las publicaciones desde el almacén de publicaciones o la caché.",
@@ -439,7 +624,20 @@
     "evidence_speakers": [
       "SPEAKER_00"
     ],
-    "evidence_time_ranges": null,
+    "evidence_time_ranges": [
+      [
+        172.765,
+        181.789
+      ],
+      [
+        192.401,
+        199.953
+      ],
+      [
+        210.352,
+        218.373
+      ]
+    ],
     "supporting_context": [
       "El pipeline típico tiene tres etapas. Generación de candidatos, luego una pasada de ranking ligera y luego un modelo más pesado sobre los supervivientes.",
       "Ese embudo por etapas es lo que mantiene la latencia aceptable, porque el modelo costoso solo ve un conjunto pequeño de candidatos.",
@@ -463,7 +661,16 @@
     "evidence_speakers": [
       "SPEAKER_00"
     ],
-    "evidence_time_ranges": null,
+    "evidence_time_ranges": [
+      [
+        278.549,
+        288.832
+      ],
+      [
+        296.628,
+        304.351
+      ]
+    ],
     "supporting_context": [
       "Deberíamos dar prioridad primero a los seguidores activos, para que las personas que probablemente abran pronto la aplicación reciban la publicación antes que las cuentas inactivas.",
       "De hecho, para los usuarios inactivos podríamos omitir el envío por completo y reconstruir su feed en la lectura cuando por fin vuelvan."
@@ -487,7 +694,16 @@
       "SPEAKER_00",
       "SPEAKER_01"
     ],
-    "evidence_time_ranges": null,
+    "evidence_time_ranges": [
+      [
+        313.085,
+        322.024
+      ],
+      [
+        390.194,
+        399.303
+      ]
+    ],
     "supporting_context": [
       "En cuanto al almacenamiento, los feeds son pura caché. Siempre podemos reconstruirlos a partir de las publicaciones y del grafo de seguimiento si los perdemos.",
       "Deberíamos alertar por ese retraso y no por la profundidad de la cola de los workers, porque el retraso se corresponde directamente con la experiencia del usuario."
@@ -511,7 +727,16 @@
       "SPEAKER_00",
       "SPEAKER_01"
     ],
-    "evidence_time_ranges": null,
+    "evidence_time_ranges": [
+      [
+        38.925,
+        46.925
+      ],
+      [
+        47.175,
+        55.559
+      ]
+    ],
     "supporting_context": [
       "Debemos limitar el alcance de la clave a la cuenta; si no, un cliente podría adivinar la clave de otro y leer el resultado de su pago.",
       "Y deberíamos calcular un hash del cuerpo de la solicitud y compararlo, para que la misma clave con parámetros distintos se rechace como conflicto."
@@ -536,7 +761,20 @@
       "SPEAKER_00",
       "SPEAKER_01"
     ],
-    "evidence_time_ranges": null,
+    "evidence_time_ranges": [
+      [
+        114.711,
+        124.375
+      ],
+      [
+        124.625,
+        133.947
+      ],
+      [
+        142.191,
+        149.701
+      ]
+    ],
     "supporting_context": [
       "Así que la secuencia es: persistir la intención, llamar al procesador y persistir el resultado. La recuperación encuentra intenciones sin resultado y las concilia.",
       "La conciliación consulta al procesador por nuestro propio identificador de referencia, que debemos enviar en la llamada saliente precisamente con este fin.",
@@ -561,7 +799,16 @@
       "SPEAKER_00",
       "SPEAKER_01"
     ],
-    "evidence_time_ranges": null,
+    "evidence_time_ranges": [
+      [
+        72.415,
+        82.869
+      ],
+      [
+        83.119,
+        91.417
+      ]
+    ],
     "supporting_context": [
       "Así que el registro de la clave necesita una máquina de estados. Lo insertamos como en curso con una restricción de unicidad, y el que pierde esa carrera espera o devuelve un conflicto.",
       "Yo devolvería un cuatro cero nueve con una indicación de reintento en lugar de bloquear, porque mantener una solicitud abierta consume recursos."
@@ -586,7 +833,20 @@
       "SPEAKER_00",
       "SPEAKER_01"
     ],
-    "evidence_time_ranges": null,
+    "evidence_time_ranges": [
+      [
+        260.843,
+        267.52
+      ],
+      [
+        275.935,
+        284.532
+      ],
+      [
+        284.782,
+        291.502
+      ]
+    ],
     "supporting_context": [
       "El commit en dos fases entre servicios no es práctico aquí, así que usamos una saga con acciones de compensación.",
       "La compensación de una captura es un reembolso, y la compensación de una reserva de inventario es una liberación. Ninguna es un verdadero rollback.",
@@ -612,7 +872,20 @@
       "SPEAKER_00",
       "SPEAKER_01"
     ],
-    "evidence_time_ranges": null,
+    "evidence_time_ranges": [
+      [
+        299.618,
+        306.701
+      ],
+      [
+        306.951,
+        312.753
+      ],
+      [
+        313.003,
+        320.15
+      ]
+    ],
     "supporting_context": [
       "Así, el cambio de estado y el evento saliente se escriben en la misma transacción local, y un relé publica desde el outbox.",
       "Eso elimina el modo de fallo en el que confirmamos el cobro pero caemos antes de publicar el evento.",
@@ -637,7 +910,16 @@
       "SPEAKER_00",
       "SPEAKER_01"
     ],
-    "evidence_time_ranges": null,
+    "evidence_time_ranges": [
+      [
+        30.803,
+        39.4
+      ],
+      [
+        39.65,
+        48.951
+      ]
+    ],
     "supporting_context": [
       "La subida directa al almacenamiento con una URL prefirmada mantiene los bytes del archivo completamente fuera de nuestros servidores de aplicación.",
       "Eso es importante. Hacer pasar archivos de varios gigabytes por los nodos de aplicación desperdicia ancho de banda y ocupa conexiones durante mucho tiempo."
@@ -662,7 +944,20 @@
       "SPEAKER_00",
       "SPEAKER_01"
     ],
-    "evidence_time_ranges": null,
+    "evidence_time_ranges": [
+      [
+        74.613,
+        82.527
+      ],
+      [
+        89.79,
+        97.299
+      ],
+      [
+        97.549,
+        107.811
+      ]
+    ],
     "supporting_context": [
       "Y cada versión se divide en fragmentos cortos, normalmente de dos a seis segundos, con un manifiesto que enumera las variantes disponibles.",
       "Ese cambio solo funciona si los segmentos están alineados entre versiones, con fotogramas clave en marcas de tiempo idénticas.",
@@ -688,7 +983,20 @@
       "SPEAKER_00",
       "SPEAKER_01"
     ],
-    "evidence_time_ranges": null,
+    "evidence_time_ranges": [
+      [
+        168.605,
+        177.395
+      ],
+      [
+        177.645,
+        184.813
+      ],
+      [
+        185.063,
+        194.343
+      ]
+    ],
     "supporting_context": [
       "Así que deberíamos codificar la escalera completa de forma perezosa para el contenido poco popular, generando por adelantado solo la versión más común.",
       "Luego, si un vídeo gana tracción, completamos las demás versiones bajo demanda, lo que evita pagar por contenido que nadie ve.",
@@ -714,7 +1022,20 @@
       "SPEAKER_00",
       "SPEAKER_01"
     ],
-    "evidence_time_ranges": null,
+    "evidence_time_ranges": [
+      [
+        222.244,
+        230.137
+      ],
+      [
+        230.387,
+        238.43
+      ],
+      [
+        238.68,
+        245.037
+      ]
+    ],
     "supporting_context": [
       "Las URL de los segmentos deberían ser estables e inmutables, lo que las hace perfectamente cacheables con un tiempo de vida muy largo.",
       "Los manifiestos son distintos. En el contenido en directo el manifiesto se actualiza constantemente y necesita una vida en caché muy corta.",
@@ -738,7 +1059,16 @@
     "evidence_speakers": [
       "SPEAKER_00"
     ],
-    "evidence_time_ranges": null,
+    "evidence_time_ranges": [
+      [
+        347.567,
+        356.846
+      ],
+      [
+        364.941,
+        371.213
+      ]
+    ],
     "supporting_context": [
       "El tiempo de arranque, la proporción de rebuffering, la tasa de bits media y los fallos de reproducción son los cuatro números que realmente describen la experiencia.",
       "Por eso el algoritmo de adaptación del reproductor debería ser conservador al subir y agresivo al bajar."
