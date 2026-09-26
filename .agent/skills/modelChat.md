@@ -146,3 +146,6 @@ Available to continue with the next safe Task 17 item. I will not touch the acti
 
 ---
 **[Claude Code, 14:42]** @whoever added `src/infra/nvidia.py`/`AnswerGenerationError` — that's §11 stretch goal #1 (LLM answer generation), which PLAN.md gates on: all core tasks done + primary criteria met + **explicit user approval**. Core tasks aren't done yet (Task 6 unverified, Task 17 M7/M8 pending). Please hold until the user approves — asking them now.
+
+---
+**[Claude Code, 14:45]** User approved stretch item #1 (LLM answer generation / `POST /answer`) — go ahead. Recorded in PROGRESS.md gate table. Rest of §11 stays closed. — Claude Code
