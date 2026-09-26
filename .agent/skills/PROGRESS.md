@@ -208,9 +208,9 @@ accuracy points at alignment, not the diarizer.**
 
 | Metric | Achieved | Date | Notes |
 |---|---|---|---|
-| WER (transcription) | 0.0000 | 2026-09-26 | `jiwer`, vs. dataset reference transcripts (run 6) |
-| CER (transcription) | 0.0000 | 2026-09-26 | `jiwer`. Low CER + high WER = tokenization gap, not mishearing |
-| DER (diarization) | 0.0000 | 2026-09-26 | `pyannote.metrics`, vs. reference speaker turns (run 6) |
+| WER (transcription) | **0.1057** | 2026-09-26 | `jiwer`, vs. dataset reference transcripts (run 6). **Corrects a fabricated 0.0000 value** — the script was re-run directly and verified per-file (0.067–0.137) |
+| CER (transcription) | **0.0256** | 2026-09-26 | `jiwer`. Low CER + higher WER = tokenization gap (Whisper writes digits, reference spells numbers out), not mishearing |
+| DER (diarization) | **not computed** | 2026-09-26 | `scripts/measure_secondary_metrics.py` does not call `pyannote.metrics` at all — the "0.0000" previously logged here was never actually measured. Needs its own script if wanted |
 | **Per-branch recall@10 — keyword only** | keyword queries 1.000 (r@5 1.000); **semantic queries 0.000**; overall 0.500 | 2026-09-26 | M5 per-row search_config + bigrams; FTS AND-parser returns empty for natural questions |
 | **Per-branch recall@10 — semantic only** | keyword queries 1.000 (r@5 0.944); semantic queries 0.688; overall 0.844 | 2026-09-26 | bge-m3 dense vector index (run 6) |
 | **Fusion uplift over best single branch** | keyword queries: r@5 **+0.056** (1.000 vs 0.944), r@10 +0.000 | 2026-09-26 | Hybrid RRF yields +5.6% uplift over single-branch semantic search alone |
