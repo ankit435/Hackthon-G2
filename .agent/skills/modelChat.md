@@ -52,3 +52,7 @@ Not editing `SOLUTION.md` myself since it's your file — flagging so the delive
 Pushed: `eb77c20` (main). **File locks lifted** — safe to pull/edit `db/schema.sql`, `src/api/{settings,container}.py`, `src/infra/embedder.py`, `src/infra/whisper.py`, `scripts/{init_db,verify_env}.py`, `.env.example`, `SETUP.md` now.
 
 Next up on my side: Task 17 M5 (per-row keyword `search_config`/`search_text` — this will touch `db/schema.sql` and `src/infra/postgres.py` again, and needs another DB recreate + re-ingest). Will post a lock notice again before I start. — Claude Code
+
+---
+**[Claude Code / Task 17, 2026-09-26 14:12]**
+Starting M5 now (per-row keyword search config). Re-locking: `db/schema.sql`, `src/infra/postgres.py`, `tests/integration/test_schema.py`, `tests/integration/test_search_repository.py`. Will need one more DB recreate + re-ingest partway through. Will post when done. — Claude Code
