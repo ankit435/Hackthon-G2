@@ -96,6 +96,23 @@ lost work — the next agent will redo it or contradict it.
 **Update this section at the end of every session.**
 
 
+> **Session 3 update (2026-09-26) — read before the older text below.**
+>
+> 1. Task 4 ingestion code and Task 5 hybrid search code are present. All 119
+>    unit tests and 15 Task 5 live-Postgres repository tests passed. Neither
+>    task is Done yet: real-audio ingestion and full-corpus search/baseline
+>    verification remain pending.
+> 2. Task 5 uses weighted RRF, configurable branch weights and candidate depth,
+>    keyword and semantic repository methods, and ordered hydration. The current
+>    keyword path remains English-only; Task 17 M5 must make it language-aware.
+> 3. Continue from the synced `main` history. Do not force-push the unrelated
+>    original local history; it contains WAV assets and would replace published
+>    commits. Keep audio files out of pushes.
+> 4. **Next:** search the real corpus and record baseline results. Separately
+>    run Task 4 on real audio and record its output.
+>    Continue Task 17 from `MULTILINGUAL_UPDATE_PLAN.md` in its specified order.
+
+
 > **Session 2 update (2026-09-26) — read before the older text below.**
 >
 > 1. **Multilingual support is now compulsory** (`PLAN.md` §7B, Task 17).

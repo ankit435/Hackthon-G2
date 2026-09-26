@@ -63,3 +63,16 @@ Continuation (same session): the user answered Q21 (any language; eval data = tr
 - `PLAN.md` rewritten in place so no section says "amended by §7B" any more. §7B now holds the final decisions only. New `MULTILINGUAL_UPDATE_PLAN.md`: a self-contained Task 17 checklist with file:line references to the code at `43abd98`.
 - Not verified: bge-m3 dims/window and the Kokoro voice list (Hugging Face blocked from this container). Both are flagged "measure at adoption" in the checklist.
 - Pushed mid-way at the user's request, then again at the end. No code changed.
+
+## Session 3 — 2026-09-26 — Phase 2
+Model/agent: GitHub Copilot (VS Code)
+Prompt summary: Sync current work and push the Task 5 hybrid-search implementation, including the project tracking files.
+Key decisions:
+- Added Task 5 as a forward commit on the latest GitHub `main`; did not force-push, which would replace published history and risk publishing WAV assets from the unrelated local history.
+- Kept Tasks 4 and 5 In Progress: the full unit suite passed, but real-audio and live-Postgres verification remain outstanding.
+- The pasted `MULTILINGUAL_UPDATE_PLAN.md` matched the version already on GitHub; preserved the latest multilingual plan and checklist.
+Deviations from PLAN: none. Task 5 keyword search remains English-only until the planned multilingual M5 work is implemented.
+Packages installed: none.
+Files touched: `.env.example`, `SETUP.md`, `.agent/skills/PROGRESS.md`, `.agent/skills/HANDOFF.md`, `.agent/skills/AGENT_LOG.md`, `src/api/search_wiring.py`, `src/api/settings.py`, `src/application/fusion.py`, `src/application/search.py`, `src/infra/postgres.py`, `tests/integration/test_search_repository.py`, `tests/unit/test_fusion.py`, `tests/unit/test_search_service.py`, `tests/unit/test_settings.py`.
+Verified how: `/Users/ankit/Desktop/HackthonG2/.venv/bin/python -m pytest -q tests/unit` in the synced checkout → 119 passed. Focused fusion/search/settings tests → 58 passed. `tests/integration/test_search_repository.py` with local environment configuration → 15 passed. `git diff --check` passed before the tracking-file update. Real-audio ingestion and full-corpus search baseline were not run.
+Open items left: search the real corpus and record retrieval baseline; verify Task 4 against real audio; implement Task 17 multilingual changes in the required order.

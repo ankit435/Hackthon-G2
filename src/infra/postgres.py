@@ -16,15 +16,33 @@ from domain.models import AudioFile, BranchHit, Chunk, SearchResultItem
 # tests/integration/test_schema.py asserts both sides agree.
 TEXT_SEARCH_CONFIG = "english"
 
+# ts_rank_cd normalization: 1 divides by 1 + log(document length), so a longer chunk cannot win
+# just by repeating a term but is not punished harshly; 32 maps rank to rank/(rank+1), bounding
+# scores to [0, 1). Together they approximate BM25-style saturation + length normalization.
+TS_RANK_NORMALIZATION = 1 | 32
+
+# websearch_to_tsquery never raises on malformed input and honours "quotes", OR, -exclusions.
+# A stop-word-only query yields an empty tsquery that matches nothing, so the result is [].
+# Ties on score break by id, so row position (the rank fusion consumes) is deterministic.
+KEYWORD_SQL = ("SELECT id, ts_rank_cd(text_search, q, %s) AS score "
+               "FROM chunk, websearch_to_tsquery(%s::regconfig, %s) AS q "
+               "WHERE text_search @@ q ORDER BY score DESC, id LIMIT %s")
+# ORDER BY the raw <=> operator (not the alias) so the planner can use the HNSW index.
+SEMANTIC_SQL = ("SELECT id, 1 - (embedding <=> %s) AS similarity FROM chunk "
+                "WHERE embedding IS NOT NULL ORDER BY embedding <=> %s LIMIT %s")
+HYDRATE_SQL = ("SELECT c.id, c.audio_file_id, a.file_name, a.file_path, c.speaker_id, c.start_time, c.end_time, c.text "
+               "FROM chunk c JOIN audio_file a ON a.id = c.audio_file_id WHERE c.id = ANY(%s)")
+
 _CHUNK_COLUMNS = ("id, audio_file_id, chunk_index, speaker_id, text, start_time, end_time, embedding, "
                   "prev_chunk_id, next_chunk_id, token_count, char_count")
 
 
 class PostgresRepository:
-    """Implements AudioFileRepository and ChunkRepository. Search methods arrive in Task 5."""
+    """Implements AudioFileRepository and ChunkRepository."""
 
-    def __init__(self, database_url: str) -> None:
+    def __init__(self, database_url: str, hnsw_ef_search: int | None = None) -> None:
         self._url = database_url
+        self._ef_search = hnsw_ef_search  # None: leave the server default (ingest-only use)
 
     async def _connect(self) -> psycopg.AsyncConnection:
         conn = await psycopg.AsyncConnection.connect(self._url)
@@ -69,10 +87,36 @@ class PostgresRepository:
                       prev_chunk_id=r[8], next_chunk_id=r[9], token_count=r[10], char_count=r[11]) for r in rows]
 
     async def keyword_search(self, query: str, limit: int) -> list[BranchHit]:
-        raise NotImplementedError("Task 5")
+        try:
+            async with await self._connect() as conn:
+                rows = await (await conn.execute(KEYWORD_SQL, (TS_RANK_NORMALIZATION, TEXT_SEARCH_CONFIG, query, limit))).fetchall()
+        except psycopg.Error as e:
+            raise RepositoryError("keyword search failed", stage="search.keyword", error=type(e).__name__) from e
+        return [BranchHit(chunk_id=r[0], rank=i, score=float(r[1])) for i, r in enumerate(rows, start=1)]
 
     async def semantic_search(self, query_embedding: Sequence[float], limit: int) -> list[BranchHit]:
-        raise NotImplementedError("Task 5")
+        vector = np.asarray(query_embedding, dtype=np.float32)
+        try:
+            async with await self._connect() as conn, conn.transaction():
+                # A plain HNSW scan can return FEWER than LIMIT rows (measured: 37 of 50 at ef_search=40),
+                # silently shrinking the branch. Iterative scanning (pgvector >= 0.8) keeps going until LIMIT
+                # is met; strict_order preserves exact distance order, so row position is a true rank.
+                await conn.execute("SET LOCAL hnsw.iterative_scan = strict_order")
+                if self._ef_search is not None:
+                    await conn.execute(f"SET LOCAL hnsw.ef_search = {int(self._ef_search)}")
+                rows = await (await conn.execute(SEMANTIC_SQL, (vector, vector, limit))).fetchall()
+        except psycopg.Error as e:
+            raise RepositoryError("semantic search failed", stage="search.semantic", error=type(e).__name__) from e
+        return [BranchHit(chunk_id=r[0], rank=i, score=float(r[1])) for i, r in enumerate(rows, start=1)]
 
     async def hydrate(self, chunk_ids: Sequence[UUID]) -> list[SearchResultItem]:
-        raise NotImplementedError("Task 5")
+        ids = list(dict.fromkeys(chunk_ids))
+        if not ids:
+            return []
+        try:
+            async with await self._connect() as conn:
+                rows = await (await conn.execute(HYDRATE_SQL, (ids,))).fetchall()
+        except psycopg.Error as e:
+            raise RepositoryError("hydrating results failed", stage="search.hydrate", error=type(e).__name__) from e
+        return [SearchResultItem(chunk_id=r[0], audio_file_id=r[1], file_name=r[2], file_path=r[3], speaker=r[4],
+                                 start_time=r[5], end_time=r[6], text=r[7], score=0.0) for r in rows]

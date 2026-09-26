@@ -19,11 +19,9 @@
 
 
 **Last updated:** 2026-09-26
-**Current phase:** Phase 1 — Foundation **complete** (Tasks 1–3 done). Phase 2: Task 4 code exists (verification pending, see Known Issues).
+**Current phase:** Phase 1 — Foundation **complete** (Tasks 1–3 done). Phase 2 — Tasks 4 and 5 are In Progress; code and unit tests exist, with real-data/live-DB verification pending.
 **⚠️ Compulsory feature added 2026-09-26: multilingual support.** Checklist `MULTILINGUAL_UPDATE_PLAN.md`, rationale `PLAN.md` §7B, Task 17. Decisions final (Q21–Q24). Not implemented yet.
-**Repo state:** Design documents plus a verified dataset (`dataset/`, provenance in
-`dataset/PROVENANCE.md`). Python 3.12 venv with pinned requirements, `.env.example`, a `SETUP.md` draft and
-`scripts/verify_env.py`. No application code or schema yet. Git repo initialised 2026-09-26.
+**Repo state:** Verified dataset and provenance, Python 3.12 environment, schema, and Task 4/5 application code are present. All 119 unit tests and the 15 Task 5 live-Postgres repository tests passed in the synced checkout. Task 4 real-audio ingestion and Task 5 real-corpus search/baseline verification remain pending. Multilingual implementation remains pending.
 Golden set = files 01–06 (`dataset/golden_set.json`). The dataset deviates from the plan's spec,
 and the ground truth has two verified defects. See Known Issues and Q17–Q20.
 
@@ -52,6 +50,8 @@ Mirrors `PLAN.md` §13 one-to-one. Task numbers are stable — never renumber th
 
 | # | Task | Done so far | Remaining |
 |---|---|---|---|
+| 4 | Ingestion pipeline | Pipeline, adapters, alignment, both chunkers and unit tests exist; included in the 119 passing unit tests | Run against real audio and verify output/metrics before marking Done |
+| 5 | Hybrid search service | Weighted RRF, keyword/semantic repository methods, hydration, search service and tests exist; 119 unit tests and 15 live-Postgres repository tests pass | Search the real corpus and record baseline results before marking Done |
 
 
 ### ⬜ Not Done
@@ -59,8 +59,6 @@ Mirrors `PLAN.md` §13 one-to-one. Task numbers are stable — never renumber th
 
 | # | Task | Phase | Blocked by |
 |---|---|---|---|
-| 4 | Ingestion pipeline: transcribe → diarize → align → chunk → embed → index, incl. **both chunkers** ⚠️ *high-risk: alignment, chunking* | 2 | 1, 3 |
-| 5 | Hybrid search service: keyword + semantic → **weighted RRF with configurable weights** → hydrated ranked top-K ⚠️ *high-risk: fusion* | 2 | 3, 4 |
 | 6 | Labeled query set: ~90 queries (15 × 6 files), 50/50 keyword/semantic, LLM-drafted + human-verified | 3 | 4 |
 | 7 | Automated recall@k / MRR tests, **plus per-branch recall, fusion unit tests, keyword stemming tests** ⚠️ *high-risk: metric bugs inflate silently* | 2 | 5 |
 | 8 | Chunking QA regression tests (speaker purity, length distribution, **two-chunker agreement below cap**, semantic-vs-fallback counts, boundary sanity) | 3 | 4 |
@@ -389,7 +387,7 @@ surprising you could not explain** (Rule 15). Empty is fine; stale is not.
 | WAVs are 22.05 kHz mono; pyannote wants 16 kHz | Low | ingestion | pyannote/faster-whisper resample internally. Verify in Task 4 |
 | **Two FFmpeg builds in one process**: PyAV 18.1 (faster-whisper) bundles libavdevice 62, and torchcodec loads Homebrew libavdevice 63. macOS prints `objc: Class AVFFrameReceiver is implemented in both…` and warns of possible crashes | Medium | ingestion (Task 4) | Not yet seen to fail (decode + imports OK). Mitigation plan: decode each file **once**, then pass the numpy waveform to faster-whisper and the in-memory dict to pyannote. If a crash appears, investigate before working around it (Rule 15) |
 | `dataset/.DS_Store` present | Low | `dataset/` | Ignored via `.gitignore` (created early, in Session 1) |
-| **Tracking files lag the repo**: Task 4 code (alignment, chunkers, ingest service, adapters, `scripts/ingest.py`, unit tests) exists in `src/` but Task 4 is still listed Not Done and no session log covers it; no real-data ingest run is recorded | Medium | this file, `AGENT_LOG.md` | Found in session 2 (repo wins). Next agent: verify Task 4 (tests + real-data run) and move it to Done/In Progress with evidence |
+| **Real-corpus verification is incomplete**: 119 unit tests and 15 live-Postgres repository tests pass, but no real-audio ingestion or search baseline against the full corpus is recorded | Medium | ingestion/search, this file | Keep Tasks 4/5 In Progress until real-audio ingestion and full-corpus search metrics are run and recorded |
 | **Code is English-only** in `src/infra/whisper.py` (`language="en"`), `src/infra/embedder.py` model default (`all-MiniLM-L6-v2`), `db/schema.sql` + `src/infra/postgres.py` (`english`), `src/application/chunking.py` (`_SENTENCE_END`), `tests/integration/test_schema.py` (asserts `'english'::regconfig`) | **High** (compulsory feature) | listed files | Task 17 / `PLAN.md` §7B. Not a bug in the old spec — a gap against the new requirement |
 
 
@@ -404,3 +402,4 @@ surprising you could not explain** (Rule 15). Empty is fine; stale is not.
 | 0 | 2026-09-25 | — | — | Plan scoped; stack resolved; §4A environment + §4B install policy; §0 discipline; §0B engineering standard; semantic chunking (Q6); WER/DER/throughput secondary metrics; weighted RRF (Q7); stemming spec (Q8); five-endpoint API (Q9); missing-package policy (Q10) |
 | 1 | 2026-09-26 | 1 | 1, 2, 3 (all Done) | Dataset verified; `dataset/PROVENANCE.md` written; defects D1 (timestamp drift) and D2 (QA from another render) found and quantified; Q17/Q18 resolved (golden = 01–06); git init. Task 2: Python 3.12 venv, pinned requirements, `.env.example`, `SETUP.md` draft, `verify_env.py` (5/6, HF token pending); found embedder limit = 256 tokens and a duplicate-FFmpeg warning. Task 1 finished: D1 corrected (shift-only model, 307/307 onsets), 43 integrity tests, mutation-tested |
 | 2 | 2026-09-26 | 1→2 | 17 (spec only) | Multilingual support made **compulsory** by the owner: spec written into `PLAN.md` §7B + Task 17; `skiil.md`, `HANDOFF.md`, this file updated; Q21–Q24 opened. No code changed. Found tracking files lagging the repo on Task 4 (Known Issues) |
+| 3 | 2026-09-26 | 2 | 4, 5 (partial) | Added weighted-RRF hybrid search and Postgres search methods on the remote-based branch; 119 unit tests and 15 live-Postgres repository tests passed. Real-audio ingestion and full-corpus search baseline remain pending. |

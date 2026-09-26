@@ -23,7 +23,7 @@ def test_defaults_are_the_documented_baseline():
     assert s.fusion_weights == {Branch.KEYWORD: 1.0, Branch.SEMANTIC: 1.0}
     assert (s.split_soft_min_seconds, s.split_cap_seconds) == (20.0, 45.0)
     assert s.hnsw_ef_search == 40
-    assert s.candidate_depth_multiplier is None  # decided in Task 5
+    assert s.candidate_depth_multiplier == 5  # decided in Task 5
 
 
 def test_reads_prefixed_env_and_unprefixed_hf_token(monkeypatch):
@@ -66,9 +66,9 @@ def test_non_positive_integers_are_rejected(field, value):
         load_settings(database_url=DB, **{field: value})
 
 
-def test_blank_candidate_depth_multiplier_means_unset(monkeypatch):
+def test_blank_candidate_depth_multiplier_uses_the_default(monkeypatch):
     monkeypatch.setenv("AUDIO_SEARCH_CANDIDATE_DEPTH_MULTIPLIER", "")
-    assert load_settings(database_url=DB).candidate_depth_multiplier is None
+    assert load_settings(database_url=DB).candidate_depth_multiplier == 5
 
 
 def test_split_window_must_be_ordered():
