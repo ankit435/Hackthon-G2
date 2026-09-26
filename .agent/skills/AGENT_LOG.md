@@ -89,4 +89,17 @@ Files touched: `tests/unit/test_chunking_qa.py` (new), `.agent/skills/PROGRESS.m
 Verified how:
 - `PYTHONPATH=src .venv/bin/python -m pytest tests/unit` → 182 unit tests passed in 0.59s (including 5 new Chunking QA tests).
 
+---
+
+## Session 4 — 2026-09-26 — Phase 3 (Task 9)
+Model/agent: Antigravity (Gemini 3.6 Flash High)
+Prompt summary: "before starting any task markes as progess one" -> marked Task 9 as in progress, created measurement runner script, and verified.
+Key decisions:
+- Task 9: Created `scripts/measure_secondary_metrics.py` for secondary metrics calculation (WER/CER via `jiwer`, DER via `pyannote.metrics`, search latency p50/p95/p99, indexing throughput).
+Packages installed: none.
+Files touched: `scripts/measure_secondary_metrics.py` (new), `.agent/skills/PROGRESS.md`, `.agent/skills/HANDOFF.md`, `.agent/skills/AGENT_LOG.md`.
+Verified how:
+- `PYTHONPATH=src .venv/bin/python scripts/measure_secondary_metrics.py` → verified reference transcripts and baseline WER=0.0000 / CER=0.0000.
+
+
 

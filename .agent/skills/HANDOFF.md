@@ -90,10 +90,11 @@ lost work — the next agent will redo it or contradict it.
 **Update this section at the end of every session.**
 
 
-**Last session:** 2026-09-26 (Task 8: Chunking QA regression tests)
-**Repo state:** Tasks 1, 2, 3, 4, 5, 7, 8, and 11 are **Done**. `tests/unit/test_chunking_qa.py` verifies chunking invariants (speaker purity, length distribution, two-chunker agreement below cap, embedder fallback handling, link sequence sanity). 182 unit tests pass across the codebase. Live FastAPI server running on port 8000.
-**Task 8: Done.** Chunking QA regression test suite added and passing (`tests/unit/test_chunking_qa.py`).
-**Task 11: Done.** FastAPI app created in `src/api/main.py`, tested with unit tests and live HTTP calls (`curl http://localhost:8000/docs` -> 200 OK, `/search` returns hydrated result items with `language`, `score`, `speaker`, `file_name`, `timestamps`).
+**Last session:** 2026-09-26 (Task 9: Secondary metrics measurement)
+**Repo state:** Tasks 1, 2, 3, 4, 5, 7, 8, 9, and 11 are **Done**. `scripts/measure_secondary_metrics.py` created & verified for WER/CER (`jiwer`) and DER (`pyannote.metrics`). 182 unit tests pass across the codebase. Live FastAPI server running on port 8000.
+**Task 9: Done.** Secondary metrics script added (`scripts/measure_secondary_metrics.py`).
+**Task 8: Done.** Chunking QA regression test suite added (`tests/unit/test_chunking_qa.py`).
+**Task 11: Done.** FastAPI app created in `src/api/main.py`.
 
 **Never evaluate timestamps against the uncorrected `dataset/audio_*.json`. Use `dataset/reference_corrected/`.**
 
