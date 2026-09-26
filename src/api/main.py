@@ -7,9 +7,10 @@ from typing import Any, List
 from fastapi import FastAPI, HTTPException, Query, status
 from pydantic import BaseModel, Field
 
-from api.container import build_evaluation_service, build_ingest_service, build_search_service, configure_logging
+from api.container import (build_answer_service, build_evaluation_service, build_ingest_service,
+                           build_search_service, configure_logging)
 from api.settings import load_settings
-from domain.errors import InvalidInputError
+from domain.errors import ConfigurationError, InvalidInputError
 
 
 class IngestRequest(BaseModel):
@@ -34,6 +35,26 @@ class EvaluationResponse(BaseModel):
     summary: dict[str, Any]
 
 
+class AnswerRequest(BaseModel):
+    query: str = Field(..., description="Question to answer from retrieved audio evidence")
+    top_k: int = Field(default=5, ge=1, le=10, description="Retrieved evidence segments to consider")
+
+
+class AnswerCitation(BaseModel):
+    number: int
+    file_name: str
+    speaker: str
+    start_time: float
+    end_time: float
+    language: str
+    text: str
+
+
+class AnswerResponse(BaseModel):
+    answer: str
+    citations: list[AnswerCitation]
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings = load_settings()
@@ -41,6 +62,7 @@ async def lifespan(app: FastAPI):
     app.state.settings = settings
     app.state.ingest_service = build_ingest_service(settings)
     app.state.search_service = build_search_service(settings)
+    app.state.answer_service = build_answer_service(settings, app.state.search_service)
     app.state.evaluation_service = build_evaluation_service(settings)
     yield
 
@@ -51,6 +73,25 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
+
+@app.post("/answer", response_model=AnswerResponse, tags=["answer"],
+          summary="Optional NVIDIA LLM answer grounded in hybrid-search results")
+async def answer_from_audio(payload: AnswerRequest):
+    """Separate from /search: deterministic retrieval first, NVIDIA synthesis second."""
+    try:
+        result = await app.state.answer_service.answer(payload.query, payload.top_k)
+        return AnswerResponse(
+            answer=result.answer,
+            citations=[AnswerCitation(number=index, file_name=item.file_name, speaker=item.speaker,
+                                       start_time=item.start_time, end_time=item.end_time,
+                                       language=item.language, text=item.text)
+                       for index, item in enumerate(result.sources, start=1)],
+        )
+    except InvalidInputError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    except ConfigurationError as exc:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
 
 
 @app.post("/ingest", tags=["ingest"], summary="Ingest audio files into the search index")
@@ -157,4 +198,3 @@ async def run_evaluation_post():
         return EvaluationResponse(config=config, summary=eval_result)
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)) from e
-

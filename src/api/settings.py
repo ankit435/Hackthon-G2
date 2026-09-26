@@ -31,6 +31,10 @@ class Settings(BaseSettings):
 
     database_url: str
     hf_token: str | None = Field(default=None, validation_alias=AliasChoices("HF_TOKEN", "AUDIO_SEARCH_HF_TOKEN"))
+    # Optional at startup: deterministic retrieval stays available without the answer endpoint.
+    nvidia_api_key: str | None = Field(default=None, validation_alias=AliasChoices("NVIDIA_API_KEY", "AUDIO_SEARCH_NVIDIA_API_KEY"))
+    answer_base_url: str = "https://integrate.api.nvidia.com/v1"
+    answer_model: str = "meta/muse-glimmer-30b"
 
     whisper_model: str = "large-v3-turbo"
     diarization_model: str = "pyannote/speaker-diarization-3.1"

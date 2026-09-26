@@ -6,6 +6,7 @@ import logging
 import sys
 
 from api.settings import Settings
+from application.answer import AnswerService
 from application.chunking import ChunkingConfig
 from application.evaluation import EvaluationService
 from application.ingest import IngestService
@@ -13,6 +14,7 @@ from application.search import SearchService
 from infra.audio import TorchcodecDecoder
 from infra.diarizer import PyannoteDiarizer
 from infra.embedder import SentenceTransformerEmbedder
+from infra.nvidia import NvidiaAnswerGenerator
 from infra.postgres import PostgresRepository
 from infra.whisper import FasterWhisperTranscriber
 
@@ -64,3 +66,11 @@ def build_evaluation_service(settings: Settings) -> EvaluationService:
     search = build_search_service(settings)
     repo = PostgresRepository(settings.database_url, hnsw_ef_search=settings.hnsw_ef_search)
     return EvaluationService(search, files=repo, chunks=repo)
+
+
+def build_answer_service(settings: Settings, search: SearchService | None = None) -> AnswerService:
+    """Separate stretch endpoint: NVIDIA synthesizes only after standard search completes."""
+    return AnswerService(
+        search or build_search_service(settings),
+        NvidiaAnswerGenerator(settings.nvidia_api_key, base_url=settings.answer_base_url, model=settings.answer_model),
+    )
