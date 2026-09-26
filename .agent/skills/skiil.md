@@ -3,7 +3,7 @@
 skiil.md
 ---
 name: audio-hybrid-search
-description: "Use this skill for any work on the Audio Hybrid Search project — hybrid keyword + semantic retrieval over two-speaker audio conversations using Whisper transcription, pyannote diarization, semantic chunking, local SentenceTransformer embeddings, weighted RRF fusion, and Postgres + pgvector with tsvector/stemming, evaluated by automated recall@k tests. Trigger whenever the user mentions this project, its files (PLAN.md, PROGRESS.md, HANDOFF.md, AGENT_LOG.md, SOLUTION.md, SETUP.md), or asks to resume, continue, or pick up the build; also trigger for tasks involving the ingestion pipeline (transcribe, diarize, align, chunk, embed, index), semantic or merge-and-split chunking, the hybrid search service, keyword/tsvector/stemming or full-text ranking, RRF or weighted fusion and branch weights, the FastAPI endpoints (/ingest, /search, /search/keyword, /search/semantic, /evaluation), the golden audio dataset, the labeled query set, environment/venv/dependency setup for it, or recall@k / WER / DER / speaker-accuracy / latency evaluation; also trigger for multilingual / non-English / language detection / per-language stemming / multilingual embedding work (compulsory, PLAN.md §7B). Do NOT use for unrelated audio, transcription, or search work outside this project."
+description: "Use this skill for any work on the Audio Hybrid Search project — hybrid keyword + semantic retrieval over two-speaker audio conversations using Whisper transcription, pyannote diarization, semantic chunking, local SentenceTransformer embeddings, weighted RRF fusion, and Postgres + pgvector with tsvector/stemming, evaluated by automated recall@k tests. Trigger whenever the user mentions this project, its files (PLAN.md, PROGRESS.md, HANDOFF.md, AGENT_LOG.md, SOLUTION.md, SETUP.md), or asks to resume, continue, or pick up the build; also trigger for tasks involving the ingestion pipeline (transcribe, diarize, align, chunk, embed, index), semantic or merge-and-split chunking, the hybrid search service, keyword/tsvector/stemming or full-text ranking, RRF or weighted fusion and branch weights, the FastAPI endpoints (/ingest, /search, /search/keyword, /search/semantic, /evaluation), the golden audio dataset, the labeled query set, environment/venv/dependency setup for it, or recall@k / WER / DER / speaker-accuracy / latency evaluation. Do NOT use for unrelated audio, transcription, or search work outside this project."
 ---
 
 
@@ -15,32 +15,6 @@ conversations, 8–10 minutes each**. Every hit must return the **containing
 file**, the **timestamp**, and the **speaker**. Branches are combined with
 **weighted RRF** and sliced to top-K. Graded on automated recall@k against a
 labeled query set.
-
-
-## ⚠️ Compulsory feature: multilingual support (added 2026-09-26)
-
-
-**The system must ingest and search non-English conversations.** Decided by
-the project owner; **core scope, not a stretch goal** (`PLAN.md` §7B,
-Task 17). **Implementation checklist with file:line references:
-[MULTILINGUAL_UPDATE_PLAN.md](MULTILINGUAL_UPDATE_PLAN.md)**. All decisions are final:
-
-
-| Stage | Old (English-only) | Now required |
-|---|---|---|
-| Transcription | `language="en"` forced | Auto-detect (setting `AUDIO_SEARCH_TRANSCRIPTION_LANGUAGE`, blank = auto); store language + probability per file |
-| Diarization / alignment | — | **Unchanged** (language-independent) |
-| Sentence split | `.!?` + space | Also `。！？` (no space), `।` `॥`, `؟` `۔` |
-| Embeddings | `all-MiniLM-L6-v2` (English-only, 384) | **`BAAI/bge-m3`**, dense, `vector(1024)`, 8192 tokens, symmetric (no prefixes), CPU or `mps` on a 24 GB Apple Silicon Mac. Measure dim/window at adoption |
-| Keyword branch | `english` for every row | **Per-chunk** `search_config` (mapped from language); `search_text` = CJK-bigram(`text`); tsvector = `to_tsvector(search_config, search_text)`; the query goes through the same bigram function and is parsed once per config present. zh/ja/ko → `simple` + bigrams. Unmapped → `simple` + WARNING |
-| Results | file, timestamp, speaker | + **language** |
-| Languages | English only | **Any** (auto-detected). Evaluated on en + **es, hi, zh** = translations of golden 01–06, re-synthesised (dev-only TTS, e.g. Kokoro-82M) |
-| Evaluation | English only | Thresholds gated **per language AND overall**; cross-lingual slice reported; CER primary for `zh` |
-
-
-**English must not regress** — the English golden set is the before/after
-baseline for every multilingual change. **M5 (per-chunk keyword config) must
-land before or with Task 5's keyword branch.**
 
 
 ## Start here, every session
@@ -156,11 +130,6 @@ as diagnostic in their route descriptions.
 
 
 Full spec: `PLAN.md` §7.
-
-
-> **Multilingual:** the configuration is **per chunk** (`chunk.search_config`,
-> `english` for English rows), over `search_text` (CJK bigrams). Everything
-> below still applies, **per row**.
 
 
 **Stemming is handled by Postgres, not application code.** Use the
@@ -421,10 +390,10 @@ interpreter. Never run a script outside the venv. Detail: `PLAN.md` §4A/§4B.
 
 | Concern | Choice | Constraint it imposes |
 |---|---|---|
-| Transcription | Whisper `large-v3-turbo`, faster-whisper, local | Needs `ffmpeg`. Fallback `small` if hardware struggles. **Language auto-detected (§7B M1)** |
+| Transcription | Whisper `large-v3-turbo`, faster-whisper, local | Needs `ffmpeg`. Fallback `small` if hardware struggles |
 | Diarization | `pyannote/speaker-diarization-3.1` | **Gated**: accept conditions on `speaker-diarization-3.1` *and* `segmentation-3.0`, supply HF token. Mono 16 kHz. `num_speakers=2` |
-| Embeddings | **`BAAI/bge-m3`** (was `all-MiniLM-L6-v2`, English-only) | **1024 dims** → `vector(1024)`; 8192-token window (measure at adoption). Symmetric. Also drives the semantic splitter |
-| Keyword search | Postgres FTS, **per-chunk config** (`english` for English, `simple` + CJK bigrams for zh/ja/ko), generated GIN-indexed tsvector | Same config **and same bigram function** at index and query time, **per row**. Never stem in application code |
+| Embeddings | `all-MiniLM-L6-v2`, local | **384 dims** → `vector(384)`. 512-token limit must exceed chunk caps. Also drives the semantic splitter |
+| Keyword search | Postgres FTS, **`english` config**, generated GIN-indexed tsvector | Same config at index and query time — **no exceptions**. Never stem in application code |
 | Vector index | **HNSW** on the embedding column | No training step, so it works on an empty table. `m`/`ef_construction` recorded in the schema; `ef_search` configurable |
 | Metrics | `jiwer` (WER + CER) · `pyannote.metrics` (DER) | **Dev dependencies only** — never imported by the served system |
 | Chunking | Merge + semantic split + link | Deterministic fallback mandatory |
@@ -468,8 +437,6 @@ stretch goal, not a threshold change, not reflexive weight-fiddling.
 ## Non-negotiables
 
 
-- **Multilingual support is compulsory** (`PLAN.md` §3 item 6, §7B, Task 17)
-  — core scope, not gated by §11. English must not regress.
 - **Build only what `PLAN.md` §3 scopes.** §11 items are gated: all core
   tasks Done, all primary criteria met, time remaining, **and explicit user
   approval** — one at a time.
@@ -489,7 +456,7 @@ stretch goal, not a threshold change, not reflexive weight-fiddling.
   resume point, and committing.
 
 
-## Five known traps
+## Four known traps
 
 
 1. **Text search configuration mismatch.** If the tsvector column and the
@@ -500,12 +467,5 @@ stretch goal, not a threshold change, not reflexive weight-fiddling.
    diarization scores near zero.
 3. **The 256-token embedder limit** (measured `max_seq_length`; 512 was wrong) must stay above the chunk size caps.
 4. **Slicing branches to K before fusion** silently discards the
-   cross-branch agreements fusion exists to find.
-5. **English-only leftovers (§7B).** An English-only embedder or a forced
-   `english`/`en` anywhere makes non-English content silently unfindable —
-   nothing errors. Unmapped languages must fall back to `simple` **with a
-   WARNING**, never to `english`. An asymmetric embedder with a missing or
-   swapped `query:`/`passage:` prefix loses recall silently (bge-m3 is
-   symmetric, so this only matters if the e5 latency fallback is used). The
-   CJK bigram function must be identical on the index and the query side.
+   cross-branch agreements fusion exists to find.
 

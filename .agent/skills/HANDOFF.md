@@ -7,12 +7,6 @@
 > agents or different models. Assume you have **no memory of prior sessions
 > and no access to earlier conversations.** Everything you need to resume is
 > in the repo files. Nothing important lives in chat history.
->
-> **⚠️ Compulsory feature added 2026-09-26: multilingual support.** For any
-> work on it, use **`MULTILINGUAL_UPDATE_PLAN.md`** (a self-contained
-> checklist with file:line references). Rationale: `PLAN.md` §7B. Read it before touching transcription, chunking, embeddings,
-> the schema or the keyword branch. It is core scope (Task 17), not a §11
-> stretch goal. Any English-only rule in this file is amended by §7B.
 
 
 ---
@@ -21,7 +15,7 @@
 ## 1. What this project is
 
 
-Hybrid (keyword + semantic) search over **multilingual** (§7B) 5–6 two-speaker audio conversations,
+Hybrid (keyword + semantic) search over 5–6 two-speaker audio conversations,
 8–10 minutes each. A search must return, for every hit: the **containing
 file**, the **timestamp**, and the **speaker**. The two branches are
 combined with **weighted RRF** and sliced to top-K, exposed over **five
@@ -96,49 +90,6 @@ lost work — the next agent will redo it or contradict it.
 **Update this section at the end of every session.**
 
 
-> **Session 4 update (2026-09-26) — read before the older text below.**
->
-> 1. Tasks 4 and 5 are complete per the recorded verification: 195 tests
->    passed; Task 4 ran three times on the golden audio, and Task 5 was
->    exercised against the real 313-chunk corpus.
-> 2. Run 3: 6/6 files, 313 chunks, no repetition loops, truncation, impure or
->    tiny chunks; speaker purity 0.991–0.997, max 37 tokens. Thirty warm
->    searches measured p50 15.1 ms / p95 21.0 ms. Formal labeled-set recall
->    and per-branch metrics are not yet measured.
-> 3. Known evaluation leads: keyword search returned no candidates for 17/34
->    ad-hoc natural-language queries; 34/307 turn-initial words overlap the
->    previous speaker (mostly stop words). Measure their impact before changing
->    behavior.
-> 4. **Next:** continue compulsory Task 17 using
->    `MULTILINGUAL_UPDATE_PLAN.md`; then build the labeled query set and formal
->    retrieval evaluation. Q19/Q20 remain open as recorded in `PROGRESS.md`.
-
-
-> **Session 2 update (2026-09-26) — read before the older text below.**
->
-> 1. **Multilingual support is now compulsory** (`PLAN.md` §7B, Task 17).
->    **All decisions are final:** any language, auto-detected · embedder
->    `BAAI/bge-m3` (`vector(1024)`) · per-chunk keyword config + CJK bigrams ·
->    eval on en + es/hi/zh (translations of 01–06) · thresholds per language
->    AND overall. Checklist: **`MULTILINGUAL_UPDATE_PLAN.md`**. Session 2
->    changed **only the skill/tracking files**. No code implements it yet.
-> 2. **The repo is ahead of the text below:** Task 4 code exists in `src/`
->    (alignment, both chunkers, ingest service, Whisper/pyannote/embedder/
->    Postgres adapters, `scripts/ingest.py`, unit tests) but its session was
->    never logged, and there is no record of a real-data run. Treat Task 4 as
->    **In Progress: code written, real-data run + verification pending**.
->    Verify it (Rule 18) before building on it. The WAVs are not in the
->    remote repo; they must be present locally for an ingest run.
-> 3. **Order from here:** finish Task 4 verification → Task 17 M1 (language
->    detection + storage) and M3 (sentence splitter) → Q22 embedder
->    measurement + M4 → M5 per-chunk keyword config **together with** Task 5
->    search → then Tasks 7, 6, 8… with M8 per-language evaluation once Q21
->    data exists. English recall before/after every M-step.
-> 4. **Needs the user:** only Q19 (QA ground truth) and Q20 (TTS generator;
->    if unknown, use the dev-only TTS in the checklist). Q21–Q24 are resolved.
-
-
-
 **Last session:** 2026-09-26 (session 1, Task 1: dataset verification)
 **Repo state:** Design documents plus a verified dataset. Provenance, checksums and
 defect analysis are in **`dataset/PROVENANCE.md`**. **Task 2 is nearly done**: a `.venv`
@@ -169,7 +120,7 @@ semantic-split soft minimum and cap. **All ship at defaults** — change any
 of them only with a before/after measurement.
 
 
-**Next task:** **Phase 2, Task 4: the ingestion pipeline** (high-risk: alignment + chunking; read `PLAN.md` §6, §8, §9 and plan the edge cases before coding). Tasks 1–3 are Done: 78 tests pass, the DB is initialised, and the ports and settings exist in `src/`. Build order per §14: deterministic chunker → full pipeline end to end → semantic splitter → baseline. **Do not use the `AUDIO_SEARCH_ANSWER_*` / NVIDIA / OpenAI vars in the user's `.env`**: they are stretch item #1 and the gate is closed.
+**Next task:** ⚠️ **First confirm with the user the multilingual scope change** (`PLAN.md` was edited at 12:06 on 2026-09-26 to make multilingual support compulsory, Task 17, plus `MULTILINGUAL_UPDATE_PLAN.md`; both are uncommitted and not yet acted on). It changes the embedder (bge-m3), the schema dimension, keyword config per chunk, and Whisper language detection. Otherwise: Task 7 (recall@k tests) and Task 6 (query set). Task 5 is merged. Task 4 is Done: the DB holds run 3 (313 chunks, word-level alignment). Re-ingest with `python scripts/ingest.py` (≈ 25 min, CPU-heavy). Old runs are snapshotted in `logs/chunks-run{1,2}-*.json` (gitignored). **Do not use the `AUDIO_SEARCH_ANSWER_*` / NVIDIA / OpenAI vars in the user's `.env`**: they are stretch item #1 and the gate is closed.
 
 
 **Do this next:**
@@ -194,7 +145,7 @@ of them only with a before/after measurement.
    values.
 
 
-**Blockers:** None for code. Multilingual *evaluation* needs the translated es/hi/zh dataset built first (checklist §4).
+**Blockers:** None. Every prerequisite decision is made.
 
 
 **When you reach Phase 2, build in this order:** deterministic chunker →
@@ -224,7 +175,6 @@ are required for every task.**
 | Task 3 — scaffold | §5 Architecture, §8 Data Model, §4 Stack, §7 (settings + tsvector config) |
 | Task 4 — ingestion + chunking | §6 Ingestion Pipeline (esp. Chunking), §8, §9 |
 | Task 5 — search + weighted fusion | **§7 Search in full**, §8, §9 |
-| **Task 17 — multilingual (compulsory)** | **`MULTILINGUAL_UPDATE_PLAN.md` only** (self-contained). §7B for the rationale |
 | Tasks 6, 7, 10 — evaluation | §10 Evaluation Plan, §2, §7 (tuning discipline) |
 | Task 8 — chunking QA | §10.1, §6 Chunking |
 | Task 9 — WER/DER/latency/throughput | §10.3, §10.4, §2, §9 Logging, §4B (scoring library) |
@@ -326,14 +276,6 @@ weights in `SOLUTION.md`.
 
 
 ## 9. Keyword branch — stemming via the `english` configuration
-
-
-> **Multilingual:** the configuration is **per chunk** (`chunk.search_config`,
-> `to_tsvector(search_config, search_text)`, where `search_text` = CJK
-> bigrams of `text`), `english` for English rows. The query goes through the
-> same bigram function and is parsed once per config present, filtered to
-> matching rows. zh/ja/ko → `simple`. Unmapped → `simple` + WARNING, never
-> `english`.
 
 
 Full spec: `PLAN.md` §7.
@@ -449,9 +391,6 @@ chunkers must agree below the cap**, asserted in a test.
   requirements file, logged in `PROGRESS.md`, `SETUP.md` updated if a fresh
   clone needs a new step. **Anything that changes the approved stack needs
   justification recorded first.**
-- **Multilingual support is compulsory** (`PLAN.md` §3 item 6, §7B, Task
-  17). Not gated by §11. **English recall must not regress** — measure
-  before/after every multilingual change.
 - **Build only what `PLAN.md` §3 scopes.** §11 items stay unbuilt until the
   gate opens: all core tasks Done, all **primary** §2 criteria met and
   recorded, time remaining, **and explicit user approval** for that item.
@@ -481,7 +420,7 @@ chunkers must agree below the cap**, asserted in a test.
 ---
 
 
-## 14. Five known traps
+## 14. Four known traps
 
 
 1. **Text search configuration mismatch.** If the tsvector column and the
@@ -494,8 +433,3 @@ chunkers must agree below the cap**, asserted in a test.
    `PLAN.md` §6. Re-verify if a cap changes.
 4. **Slicing branches to K before fusion** silently discards the
    cross-branch agreements fusion exists to find.
-5. **English-only leftovers (§7B).** A forced `language="en"`, a fixed
-   `english` config or an English-only embedder makes non-English content
-   silently unfindable. Unmapped languages fall back to `simple` **with a
-   WARNING**. An asymmetric embedder with a missing/swapped `query:` /
-   `passage:` prefix loses recall silently.

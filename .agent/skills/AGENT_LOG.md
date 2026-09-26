@@ -44,48 +44,13 @@ Continuation (same session), Task 3 (user: "see .env and start"):
 - `db/schema.sql` + `scripts/init_db.py`: created DB `audio_search` and applied the schema twice (idempotent).
 - Tests: 78 passed (43 data + 13 settings + 6 architecture + 16 live-DB schema). One schema test first failed because of **my test bug** (the helper generated a new id, so the link dangled). The deferred FK correctly rejected it. Fixed the helper and added an explicit dangling-link test. Architecture tests were mutation-checked with planted violations (all 3 caught).
 Open items: Task 4 next. Q20 is still open. The user should rotate the exposed NVIDIA key.
-
-## Session 2 — 2026-09-26 — Phase 1→2 (spec only)
-Model/agent: Claude Code (cloud session, branch `claude/upbeat-bell-4zoza6`)
-Prompt summary: "Read `.agent/skills`, find what changes are needed for multi-language support (no edits)", then "update the skill files with this as a compulsory feature so other running agents understand it properly."
-Key decisions:
-- **Multilingual support is compulsory core scope** (owner decision), not a §11 stretch goal. Spec: `PLAN.md` §7B (M1–M8), Task 17, amendments Q2a/Q4a/Q8a in §17.
-- Diarization, alignment and fusion are language-independent and stay unchanged.
-- Keyword rule "same config at index and query time" is kept, **per row** (`chunk.language regconfig`).
-- English golden set remains the regression baseline for every multilingual change.
-Deviations from PLAN: the plan itself was amended (§1 constraint row, §2 secondary metric, §3 item 6, §4 stack rows, new §7B, §7A keyword row, §8 fields, §13 Task 17, §14 phasing, §17 rows + consequence). No task renumbered.
-Packages installed: none.
-Files touched: `.agent/skills/PLAN.md`, `.agent/skills/skiil.md`, `.agent/skills/HANDOFF.md` (header notice, §1, §4 session-2 update, §5 map, §9, §13, §14 trap 5), `.agent/skills/PROGRESS.md` (Task 17, Q21–Q24, Decisions Log, Known Issues, Session History, gate row), this file. **No code, schema, test or dataset file changed.**
-Verified how: grep over `src/`, `db/`, `tests/`, `SETUP.md` for every English-specific assumption (`language="en"`, `english`, `all-MiniLM-L6-v2`, `_SENTENCE_END`, the `'english'::regconfig` test); the findings are the M-items in §7B. Candidate embedding-model dimensions/windows could **not** be verified (Hugging Face blocked from this container) — marked unverified in §7B/Q22. Markdown tables re-checked for broken rows after editing.
-Open items left: Q21 (target languages + non-English eval data), Q22 (embedder, by measurement), Q23 (CJK keyword), Q24 (per-language thresholds), Q19 (QA ground truth). Task 4 code exists but its session was never logged and no real-data run is recorded — verify it first. Then Task 17 M1/M3 → M4 → M5 with Task 5.
-Continuation (same session): the user answered Q21 (any language; eval data = translations of 01–06), Q23 ("choose whichever performs best") and Q24 ("both"), and asked the agent to choose the embedding model for an Apple Silicon MacBook Pro with 24 GB.
-- Decisions: `BAAI/bge-m3` (`vector(1024)`, symmetric, not gated); CJK keyword via character bigrams + `simple` (no extension); eval languages es/hi/zh; thresholds per language and overall. Recorded in the `PROGRESS.md` Decisions Log and in Q21–Q24.
-- `PLAN.md` rewritten in place so no section says "amended by §7B" any more. §7B now holds the final decisions only. New `MULTILINGUAL_UPDATE_PLAN.md`: a self-contained Task 17 checklist with file:line references to the code at `43abd98`.
-- Not verified: bge-m3 dims/window and the Kokoro voice list (Hugging Face blocked from this container). Both are flagged "measure at adoption" in the checklist.
-- Pushed mid-way at the user's request, then again at the end. No code changed.
-
-## Session 3 — 2026-09-26 — Phase 2
-Model/agent: GitHub Copilot (VS Code)
-Prompt summary: Sync current work and push the Task 5 hybrid-search implementation, including the project tracking files.
-Key decisions:
-- Added Task 5 as a forward commit on the latest GitHub `main`; did not force-push, which would replace published history and risk publishing WAV assets from the unrelated local history.
-- Kept Tasks 4 and 5 In Progress: the full unit suite passed, but real-audio and live-Postgres verification remain outstanding.
-- The pasted `MULTILINGUAL_UPDATE_PLAN.md` matched the version already on GitHub; preserved the latest multilingual plan and checklist.
-Deviations from PLAN: none. Task 5 keyword search remains English-only until the planned multilingual M5 work is implemented.
-Packages installed: none.
-Files touched: `.env.example`, `SETUP.md`, `.agent/skills/PROGRESS.md`, `.agent/skills/HANDOFF.md`, `.agent/skills/AGENT_LOG.md`, `src/api/search_wiring.py`, `src/api/settings.py`, `src/application/fusion.py`, `src/application/search.py`, `src/infra/postgres.py`, `tests/integration/test_search_repository.py`, `tests/unit/test_fusion.py`, `tests/unit/test_search_service.py`, `tests/unit/test_settings.py`.
-Verified how: `/Users/ankit/Desktop/HackthonG2/.venv/bin/python -m pytest -q tests/unit` in the synced checkout → 119 passed. Focused fusion/search/settings tests → 58 passed. `tests/integration/test_search_repository.py` with local environment configuration → 15 passed. `git diff --check` passed before the tracking-file update. Real-audio ingestion and full-corpus search baseline were not run.
-Open items left: search the real corpus and record retrieval baseline; verify Task 4 against real audio; implement Task 17 multilingual changes in the required order.
-
-## Session 4 — 2026-09-26 — Phase 2
-Model/agent: GitHub Copilot (VS Code)
-Prompt summary: Push the current `.agent` folder status while preserving the already-merged multilingual plan and checklist.
-Key decisions:
-- Kept the GitHub multilingual plan authoritative; the original checkout's `PLAN.md`, `HANDOFF.md`, and `skiil.md` are older and were not copied over it.
-- Carried the original checkout's recorded Task 4/5 run-3 evidence into the current tracking files. Did not force-push the unrelated local branch; its history contains the ten WAV assets.
-- Task 4/5 are recorded as Done based on the existing local run report: code, tests, real-data verification, and commits are present. Task 17 remains compulsory and unimplemented.
-Deviations from PLAN: none. The current search keyword path remains English-only pending Task 17 M5.
-Packages installed: none.
-Files touched: `.agent/skills/PROGRESS.md`, `.agent/skills/AGENT_LOG.md`, `.agent/skills/HANDOFF.md`.
-Verified how: compared local and remote agent docs; confirmed the multilingual checklist is identical on both. Transferred recorded evidence: 195 tests passed; three real-data ingests, with run 3 ingesting 6/6 files (313 chunks), no loops/truncation/impure chunks, max 37 tokens, speaker purity 0.991–0.997; 30 warm searches measured p50 15.1 ms / p95 21.0 ms. Tests were not rerun during this documentation-only sync.
-Open items left: implement Task 17 from `MULTILINGUAL_UPDATE_PLAN.md`; build the labeled query set and formal per-branch/per-language evaluation; investigate the measured keyword-query misses and turn-initial word leakage only through evaluation evidence.
+Continuation (same session), Task 4 (user: "yes start"; mid-task "is this safe run on this machine": answered with measured specs, 24 GB RAM / 743 GB free / ~3–4 GB peak, local-only processing):
+- Wrote the alignment (edge cases in the docstring first), chunking (merge/sentences/deterministic/semantic/link), adapters, ingest service, composition root, JSON logging, and `scripts/ingest.py`. Review caught a semantic-split ordering bug before the first test run. Two test expectations were wrong (not the code) and were fixed after checking the contract. A pgvector `Vector` read-back bug was caught by the round-trip integration test.
+- Three full real-data ingests, compared chunk-by-chunk against the corrected reference (Decisions Log). Run 1: one Whisper repetition loop, caused by my own `temperature=0.0` removing Whisper's loop guard. Default fallback + seed was tried and rejected (non-deterministic, and invented an undetectable sentence). Run 2 (prompt off): 104/313 speaker-impure chunks. Asked the user; they chose word-level alignment. Run 3: 0 loops, 0 impure. A remaining leak (34/307 turn-initial words, 29 stop words) was measured and recorded as a known issue, not fixed.
+- User asked for a second agent: spawned a fork in an isolated git worktree for Task 5 (search + weighted RRF), with explicit file boundaries and DB etiquette. Warned it via SendMessage before clearing the DB for run 3.
+Open items: merge and review the Task 5 branch; then Tasks 6/7.
+Continuation (same session), Task 5 merge ("reset now check": read as "check the results"; nothing reset):
+- The second agent (fork, isolated worktree) delivered Task 5 on branch `worktree-agent-a2ba30b823a3d3356` (commit 21841af) with a written report. Main agent reviewed `fusion.py` and `search.py` line by line against §7's three binding properties, resolved 3 conflict hunks in `infra/postgres.py` (kept main's `list_by_file` fix plus the branch's search methods), folded `search_wiring.py` into `container.py`, ran 195 tests (pass), and **re-measured the agent's real-data claims** (same top hits; latency p50 15.1 / p95 21.0 ms vs the agent's 12.7 / 15.3).
+- Found: keyword branch empty for 17/34 ad-hoc queries (AND semantics); recorded for Task 7.
+- **Found uncommitted edits by someone else**: `PLAN.md` (12:06, multilingual scope made compulsory) and a new `MULTILINGUAL_UPDATE_PLAN.md` (12:22), plus `.vscode/`. Not committed and not acted on; asked the user to confirm.
+- Staging accidentally picked up the agent worktree as an embedded repo; unstaged it and added `.claude/worktrees/` to `.gitignore`.

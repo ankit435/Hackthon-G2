@@ -430,9 +430,8 @@ the deliverable. A grader who cannot start the project cannot grade it.
    downloads multi-GB model weights.
 6. **Database** —  `db/schema.sql`, confirm the
    `vector` extension is enabled, the embedding dimension matches the model
-   (1024, `bge-m3`), and **the tsvector generated column is
-   `to_tsvector(search_config, search_text)`**, with the per-language check
-   (e.g. `spanish`/`spanish` → `t`).
+   (384), and **the tsvector generated column uses the `english`
+   configuration**.
 7. **Verify the install** — one command proving the system works, with the
    **expected output stated**.
 8. **Troubleshooting** — missing `ffmpeg`, HF/gated-model rejection,
@@ -674,21 +673,13 @@ generated, GIN-indexed `tsvector` column on chunk text.
 configuration, applied identically on both sides:
 
 
-- **The configuration is per chunk** (§7B): `chunk.search_config` is the
-  Postgres config mapped from the file's detected language (`english` for
-  English, `spanish`, `hindi`, …; `simple` for zh/ja/ko and for any language
-  Postgres has no config for, with a WARNING). The generated column is
-  `to_tsvector(search_config, search_text)`, where `search_text` is `text`
-  after the infra CJK-bigram function (the identity on non-CJK text).
-- The query is bigram-processed by **the same function**, then parsed once
-  per distinct `search_config` present, each pass filtered to rows with that
-  config. Both sides therefore **always** use the same configuration per row.
-  A mismatch means the indexed lexemes and the query lexemes are produced by
-  different rules, and matches are silently lost.
-- For English rows the Snowball English stemmer strips English stop words, so
-  `"archiving"`, `"archived"`, and `"archives"` all reduce to a common lexeme
-  and match each other (the same holds per language for every Snowball
-  config). This is what makes the keyword
+- Use the **English** configuration (`english`) when generating the stored
+  `tsvector` column and when parsing the query. Both sides **must** use the
+  same configuration — a mismatch means the indexed lexemes and the query
+  lexemes are produced by different rules, and matches are silently lost.
+- That configuration applies the Snowball English stemmer and strips English
+  stop words, so `"archiving"`, `"archived"`, and `"archives"` all reduce to
+  a common lexeme and match each other. This is what makes the keyword
   branch tolerant of inflection without any custom logic.
 - Because stemming is applied at index time via the **generated column**, it
   is consistent across every chunk by construction and cannot drift — never
@@ -1045,20 +1036,18 @@ works from that file and does not need to re-read this plan.
 | `speaker_id` | Which diarized speaker uttered this |
 | `text` | Transcribed chunk text |
 | `start_time` / `end_time` | Seconds into the file — satisfies the timestamp requirement |
-| `embedding` | pgvector column, **`vector(1024)`** (`BAAI/bge-m3`; measure the dimension at adoption) |
-| `language` | ISO 639-1 code of the file's detected language, returned with every hit |
-| `search_config` | `regconfig` mapped from `language` (`english`, `spanish`, `hindi`, …, `simple`) |
-| `search_text` | `text` after the infra CJK-bigram function (identity on non-CJK text) |
+| `embedding` | pgvector column, **`vector(384)`** — **the dimension must equal the multilingual model chosen under §7B / Q22**; re-verify and change it with that model |
+| `language` | **§7B.** Postgres text search configuration (`regconfig`) for this chunk, derived from the file's detected language. Drives the generated tsvector |
 | `prev_chunk_id` / `next_chunk_id` | Context stitching at display time |
 | `token_count` / `char_count` | Chunking QA |
 | `created_at` | Auditing / idempotency |
-| `tsvector` | Generated column `to_tsvector(search_config, search_text)`, GIN-indexed |
+| `tsvector` | Generated column over `text` using **the chunk's own `language` configuration** (§7B; was fixed `english`), GIN-indexed |
 
 
 ### `audio_file`
 `file_name`, `file_path`, checksum, duration, `created_at`. Joined on
 `audio_file_id` to satisfy the "return the containing file" requirement.
-Plus `language` (ISO 639-1 code detected by the transcriber) and
+**§7B adds** `language` (ISO 639-1 code from the transcriber) and
 `language_probability` (detection confidence).
 
 
@@ -1133,10 +1122,7 @@ the metric implementation against a tiny hand-computed example first.)*
 - Each labeled with ground-truth relevant chunk ids from manual review.
 - **Automated test**: pytest loads the query set, runs every query through
   the single-response search path, computes recall@5, recall@10 and MRR, and
-  asserts against §2 thresholds. Report overall **and** split by query type
-  **and by language** (en, es, hi, zh; thresholds gated per language and
-  overall), plus the cross-lingual slice (reported, not gated). Queries per
-  language are translations of the English set (§7B).
+  asserts against §2 thresholds. Report overall **and** split by query type.
 - **Also record per-branch recall** (keyword-only, semantic-only,
   pre-fusion) — makes weight decisions evidence-based (§7) and shows whether
   fusion adds value over either branch alone.
@@ -1147,17 +1133,13 @@ the metric implementation against a tiny hand-computed example first.)*
   branch; a chunk absent from a branch is neither penalised nor errored.
   Verify at least one case against a hand-computed score.
 - **Keyword branch tests**: an inflected query form matches its stemmed
-  indexed form **in English and in Spanish**, a Chinese query matches via
-  bigrams, an unmapped language falls back to `simple` with a WARNING, and
-  the query-side and index-side configurations match per row.
+  indexed form, and the query-side and index-side configurations match.
 
 
 ### 3. Upstream quality — WER/CER, DER, speaker attribution
 - **WER and CER** via `jiwer` (Q15): generated vs. reference transcript. The
   ceiling on everything. Report both — a high WER with a low CER means the
-  transcript is closer than it looks and the gap is tokenization. **Per
-  language**, using Whisper's basic normalizer for non-English text; **CER is
-  primary for `zh`**.
+  transcript is closer than it looks and the gap is tokenization.
 - **DER** via `pyannote.metrics` (Q15): diarized turns vs. reference turns.
   Using the reference implementation keeps the number consistent with the
   diarizer itself.
@@ -1263,9 +1245,9 @@ return a single result per call.
 | `SETUP.md` | Clean-machine setup incl. fusion weight configuration (§4A) |
 | `requirements.txt` / `requirements-dev.txt` | Pinned runtime and dev dependencies |
 | `.env.example` / `.gitignore` | Env vars with placeholders, **including weights and RRF k** |
-| `db/schema.sql` | Tables, per-chunk `to_tsvector(search_config, search_text)` generated column, GIN + **HNSW** indexes, `vector(1024)` |
+| `db/schema.sql` | Tables, per-chunk-language tsvector generated column (§7B; `english` for English), GIN + **HNSW** indexes, `vector(<dim of the chosen multilingual model>)` |
 | Postgres + pgvector |
-| Golden dataset | 5–6 audio files, 8–10 min, unique speaker pair each, with provenance and reference transcripts/speaker turns, **plus translated es/hi/zh versions of 01–06** (§7B) |
+| Golden dataset | 5–6 audio files, 8–10 min, unique speaker pair each, with provenance and reference transcripts/speaker turns |
 | Labeled query set | Committed as a data file, not embedded in test code |
 
 
@@ -1290,8 +1272,7 @@ as diagnostic** so a grader knows `/search` is the deliverable.
    `requirements-dev.txt`, `.env.example` (incl. weights and RRF k),
    `.gitignore`, first draft of `SETUP.md`
 3. Scaffold the repo: `src/domain`, `src/infra`, `src/application`,
-   `src/api`, `db/schema.sql` (`vector(384)` + `english` tsvector column — as built;
-   Task 17 changes these to `vector(1024)` + per-chunk config),
+   `src/api`, `db/schema.sql` (`vector(384)` + `english` tsvector column),
 ; define all domain ports and the settings object
 4. Implement the ingestion pipeline (transcribe → diarize → align → chunk →
    embed → index), including **both chunkers** (§6)
@@ -1312,12 +1293,11 @@ as diagnostic** so a grader knows `/search` is the deliverable.
 14. Write `SOLUTION.md`
 15. Write `AGENT_LOG.md`
 16. Maintain `PROGRESS.md` and `HANDOFF.md` throughout
-17. **Multilingual support — compulsory (§7B; checklist in
-    `MULTILINGUAL_UPDATE_PLAN.md`)**: Whisper auto-detects and stores the
-    language (M1); script-aware sentence splitting (M3); `BAAI/bge-m3`,
-    `vector(1024)` (M4); per-chunk keyword config + CJK bigrams (M5, lands
-    **with** Task 5's keyword branch); data model/settings/API (M6); docs
-    (M7); es/hi/zh translated evaluation data + per-language metrics (M8)
+17. **Multilingual support — compulsory (§7B)**: language detection + storage
+    (M1), script-aware sentence splitting (M3), multilingual embedder (M4,
+    Q22), per-chunk keyword configuration (M5), data model/settings/API (M6),
+    docs (M7), per-language evaluation (M8, Q21/Q24). M5 lands **before or
+    with** Task 5's keyword branch
 
 
 ---
@@ -1451,24 +1431,26 @@ decisions log with its reason — never change one silently.
 | # | Decision | Key constraint it imposes |
 |---|---|---|
 | Q1 | **Dataset**: user-provided synthetic two-speaker audio | Copyright-safe to commit. Reference transcripts and speaker turns exist → exact ground truth for WER, DER, speaker accuracy |
-| Q2 | **Transcription**: Whisper `large-v3-turbo` via faster-whisper, local, **language auto-detected** (2026-09-26; was forced `en`) | MIT-licensed, ~5× faster than large-v3 at near-identical accuracy, multilingual. Fallback `small` if hardware struggles. Requires `ffmpeg`. Optional override `AUDIO_SEARCH_TRANSCRIPTION_LANGUAGE`; detected language + probability stored per file |
+| Q2 | **Transcription**: Whisper `large-v3-turbo` via faster-whisper, local | MIT-licensed, ~5× faster than large-v3 at near-identical accuracy. Fallback `small` if hardware struggles. Requires `ffmpeg` |
+| Q2a | **Amended 2026-09-26 (§7B M1)**: language is **auto-detected** (setting `AUDIO_SEARCH_TRANSCRIPTION_LANGUAGE`, blank = auto), no longer forced to `en` | Detected language + probability stored per file; determinism settings unchanged |
 | Q3 | **Diarization**: `pyannote/speaker-diarization-3.1` | MIT, commercial use permitted. **Gated** — accept conditions on both `speaker-diarization-3.1` *and* `segmentation-3.0`, supply an HF token. Mono 16 kHz. Pass `num_speakers=2` |
-| Q4 | **Embeddings**: **`BAAI/bge-m3`** (dense), **1024-dim**, 8192-token window, local (2026-09-26, Q22; replaced English-only `all-MiniLM-L6-v2`) | Schema column is `vector(1024)`. Symmetric: no query/passage prefixes. Runs on CPU or `mps` on an Apple Silicon Mac with 24 GB. Also drives the semantic splitter. Measure dim/window at adoption |
+| Q4 | **Embeddings**: `all-MiniLM-L6-v2`, **384-dim**, local | Schema column is `vector(384)`. 512-token limit must stay above the chunk caps in §6. Also drives the semantic splitter |
+| Q4a | **Superseded 2026-09-26 (§7B M4)**: the embedder must be **multilingual**; `all-MiniLM-L6-v2` is English-only. Final model = Q22, chosen by measurement | Schema dimension follows the chosen model; asymmetric models need query/passage embedding in the port; full re-ingest |
 | Q5 | **Query set**: ~90 queries (15 × 6 files), 50/50 keyword/semantic | LLM-drafted, **every label human-verified**. Disclose in `AGENT_LOG.md` |
 | Q6 | **Chunking**: semantic-boundary splitting for long turns, deterministic fallback | Long turns drift across topics; a fixed-offset cut lands mid-topic and makes content unfindable. See §6 |
 | Q7 | **Fusion**: weighted RRF, per-branch weights from config, defaulting to 1.0 / 1.0 | Config read once at the composition root — never a query parameter. Equal weights are the permanent measured baseline. See §7 |
-| Q8 | **Keyword branch**: Postgres FTS with a **per-chunk configuration** mapped from the detected language (`english` for English; `simple` + CJK bigrams for zh/ja/ko), stemming via the generated tsvector column (2026-09-26) | The **same configuration at index and query time, per row**: the query is parsed once per config present, filtered to rows with that config. Same bigram function on both sides. Unmapped → `simple` + WARNING. Never stem in application code. See §7, §7B |
+| Q8 | **Keyword branch**: Postgres FTS with the `english` configuration, stemming via the generated tsvector column | The **same configuration at index time and query time**. Never stem in application code. See §7 |
+| Q8a | **Amended 2026-09-26 (§7B M5)**: configuration is **per chunk** (`chunk.language regconfig`), generated column `to_tsvector(language, text)`; the query is parsed once per configuration present, filtered to matching rows | "Same config at index and query time" still holds, per row. Unmapped language → `simple` + WARNING. CJK = Q23 |
 | Q9 | **API surface**: five endpoints — `/ingest` (list), `/search` (graded), `/search/keyword` and `/search/semantic` (diagnostic), `/evaluation` | Branch endpoints reuse the same repository methods and are never the graded path. See §7A |
 
 
 ### Consequences to honour while building
-- **Schema**: embedding dimension `1024` (`bge-m3`) must match the model. A mismatch
+- **Schema**: embedding dimension `384` must match the model. A mismatch
   fails at insert time, not query time.
 - **Text search configuration must match** on the generated column and the
   query parser — **per row** since §7B (each chunk's `language`). A mismatch loses matches silently, with no error.
 - **Chunk caps vs token limit**: the ~45s split cap must keep chunks inside
-  the embedder's window (`bge-m3`: 8192), for every language. If a cap or the
-  model changes, re-verify.
+  the 512-token window. If a cap is raised, re-verify.
 - **Semantic splitting must never break ingestion** — deterministic fallback
   on any embedder failure, logged at WARNING, count reported (§10.1).
 - **Fusion weights are config, not code.** Defaults 1.0 / 1.0, validated at
@@ -1497,7 +1479,7 @@ decisions log with its reason — never change one silently.
 |---|---|---|
 | Q10 | **Vector index: HNSW** (not ivfflat) | Better recall-at-speed than ivfflat and no training step, so it works on an empty table and stays correct as rows are added. Index build parameters (`m`, `ef_construction`) and the query-time `ef_search` are **configurable** — start at the extension defaults, change only with a measurement |
 | Q11 | **Per-branch candidate depth multiplier: configurable** | An env-backed setting, not a literal. Default to a small multiple of K. **Still slice to top-K only after fusion** — the multiplier controls how deep each branch fetches, never where the final cut happens |
-| Q12 | **Semantic-split soft minimum and cap: configurable, default ~20s / ~45s** | Env-backed named constants. **Change only if a precision/recall problem is traced to chunking** (§10.5), never speculatively. Any change must keep chunks inside the embedder's token window (Q4) |
+| Q12 | **Semantic-split soft minimum and cap: configurable, default ~20s / ~45s** | Env-backed named constants. **Change only if a precision/recall problem is traced to chunking** (§10.5), never speculatively. Any change must keep chunks inside the embedder's 512-token window (Q4) |
 | Q13 | **Fusion weights: change only if both precision and recall improve** | Beyond the §7 tuning discipline: a weight change that lifts recall while degrading precision (or either query type) is **not** an improvement and gets reverted. Equal weights stay the shipped default unless the evidence is unambiguous |
 | Q14 | **`/evaluation` supports both GET and POST** | GET for a quick no-body run in Swagger or a browser; POST for a body-parameterised run (e.g. a subset of the query set, a different top-K). **Both share one service method** — no divergent code paths, and neither mutates state |
 | Q15 | **Metrics libraries: `pyannote.metrics` for DER, `jiwer` for WER and CER** | Both pinned in `requirements-dev.txt` (evaluation-only, not runtime). `pyannote.metrics` is the reference DER implementation and is already consistent with the diarizer (Q3). `jiwer` gives WER **and CER** from one dependency — CER is the more forgiving read when WER is inflated by tokenization rather than genuine mishearing |
