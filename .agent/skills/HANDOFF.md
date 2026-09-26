@@ -8,8 +8,9 @@
 > and no access to earlier conversations.** Everything you need to resume is
 > in the repo files. Nothing important lives in chat history.
 >
-> **⚠️ Compulsory feature added 2026-09-26: multilingual support.** Read
-> `PLAN.md` **§7B** before touching transcription, chunking, embeddings,
+> **⚠️ Compulsory feature added 2026-09-26: multilingual support.** For any
+> work on it, use **`MULTILINGUAL_UPDATE_PLAN.md`** (a self-contained
+> checklist with file:line references). Rationale: `PLAN.md` §7B. Read it before touching transcription, chunking, embeddings,
 > the schema or the keyword branch. It is core scope (Task 17), not a §11
 > stretch goal. Any English-only rule in this file is amended by §7B.
 
@@ -97,9 +98,12 @@ lost work — the next agent will redo it or contradict it.
 
 > **Session 2 update (2026-09-26) — read before the older text below.**
 >
-> 1. **Multilingual support is now compulsory** (`PLAN.md` §7B, Task 17;
->    open questions Q21–Q24 in `PROGRESS.md`). Session 2 changed **only the
->    skill/tracking files** — no code implements it yet.
+> 1. **Multilingual support is now compulsory** (`PLAN.md` §7B, Task 17).
+>    **All decisions are final:** any language, auto-detected · embedder
+>    `BAAI/bge-m3` (`vector(1024)`) · per-chunk keyword config + CJK bigrams ·
+>    eval on en + es/hi/zh (translations of 01–06) · thresholds per language
+>    AND overall. Checklist: **`MULTILINGUAL_UPDATE_PLAN.md`**. Session 2
+>    changed **only the skill/tracking files**. No code implements it yet.
 > 2. **The repo is ahead of the text below:** Task 4 code exists in `src/`
 >    (alignment, both chunkers, ingest service, Whisper/pyannote/embedder/
 >    Postgres adapters, `scripts/ingest.py`, unit tests) but its session was
@@ -112,9 +116,8 @@ lost work — the next agent will redo it or contradict it.
 >    measurement + M4 → M5 per-chunk keyword config **together with** Task 5
 >    search → then Tasks 7, 6, 8… with M8 per-language evaluation once Q21
 >    data exists. English recall before/after every M-step.
-> 4. **Needs the user:** Q21 (target languages + non-English eval data),
->    Q23 (CJK keyword handling), Q24 (per-language thresholds), Q19 (QA
->    ground truth). Q22 is decided by measurement.
+> 4. **Needs the user:** only Q19 (QA ground truth) and Q20 (TTS generator;
+>    if unknown, use the dev-only TTS in the checklist). Q21–Q24 are resolved.
 
 
 
@@ -173,7 +176,7 @@ of them only with a before/after measurement.
    values.
 
 
-**Blockers:** ~~None~~ (Session 2): multilingual evaluation is blocked on **Q21** (no non-English data yet). Q23/Q24 needed before claiming multilingual results. Nothing blocks M1/M3.
+**Blockers:** None for code. Multilingual *evaluation* needs the translated es/hi/zh dataset built first (checklist §4).
 
 
 **When you reach Phase 2, build in this order:** deterministic chunker →
@@ -203,7 +206,7 @@ are required for every task.**
 | Task 3 — scaffold | §5 Architecture, §8 Data Model, §4 Stack, §7 (settings + tsvector config) |
 | Task 4 — ingestion + chunking | §6 Ingestion Pipeline (esp. Chunking), §8, §9 |
 | Task 5 — search + weighted fusion | **§7 Search in full**, §8, §9 |
-| **Task 17 — multilingual (compulsory)** | **§7B in full**, §6 (chunking), §7 (keyword branch), §8, §10, §17 (Q2a/Q4a/Q8a) |
+| **Task 17 — multilingual (compulsory)** | **`MULTILINGUAL_UPDATE_PLAN.md` only** (self-contained). §7B for the rationale |
 | Tasks 6, 7, 10 — evaluation | §10 Evaluation Plan, §2, §7 (tuning discipline) |
 | Task 8 — chunking QA | §10.1, §6 Chunking |
 | Task 9 — WER/DER/latency/throughput | §10.3, §10.4, §2, §9 Logging, §4B (scoring library) |
@@ -307,10 +310,12 @@ weights in `SOLUTION.md`.
 ## 9. Keyword branch — stemming via the `english` configuration
 
 
-> **§7B amendment:** the configuration is **per chunk** (`chunk.language`
-> regconfig, `to_tsvector(language, text)`), `english` for English rows. The
-> query is parsed once per configuration present, filtered to matching rows.
-> Unmapped language → `simple` + WARNING, never `english`. CJK = Q23.
+> **Multilingual:** the configuration is **per chunk** (`chunk.search_config`,
+> `to_tsvector(search_config, search_text)`, where `search_text` = CJK
+> bigrams of `text`), `english` for English rows. The query goes through the
+> same bigram function and is parsed once per config present, filtered to
+> matching rows. zh/ja/ko → `simple`. Unmapped → `simple` + WARNING, never
+> `english`.
 
 
 Full spec: `PLAN.md` §7.

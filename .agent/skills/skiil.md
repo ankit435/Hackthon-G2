@@ -22,8 +22,8 @@ labeled query set.
 
 **The system must ingest and search non-English conversations.** Decided by
 the project owner; **core scope, not a stretch goal** (`PLAN.md` §7B,
-Task 17). Anything below that says English-only, `english` config,
-`language="en"` or `all-MiniLM-L6-v2` is **amended by §7B**:
+Task 17). **Implementation checklist with file:line references:
+[MULTILINGUAL_UPDATE_PLAN.md](MULTILINGUAL_UPDATE_PLAN.md)**. All decisions are final:
 
 
 | Stage | Old (English-only) | Now required |
@@ -31,10 +31,11 @@ Task 17). Anything below that says English-only, `english` config,
 | Transcription | `language="en"` forced | Auto-detect (setting `AUDIO_SEARCH_TRANSCRIPTION_LANGUAGE`, blank = auto); store language + probability per file |
 | Diarization / alignment | — | **Unchanged** (language-independent) |
 | Sentence split | `.!?` + space | Also `。！？` (no space), `।` `॥`, `؟` `۔` |
-| Embeddings | `all-MiniLM-L6-v2` (English-only) | A **multilingual** local model, chosen by measurement (Q22; `multilingual-e5-small` recommended — verify dim/window first). Query vs passage embedding in the port if the model is asymmetric |
-| Keyword branch | `english` for every row | **Per-chunk** `language regconfig`; tsvector = `to_tsvector(language, text)`; query parsed once per config present. Unmapped → `simple` + WARNING. CJK = Q23 |
+| Embeddings | `all-MiniLM-L6-v2` (English-only, 384) | **`BAAI/bge-m3`**, dense, `vector(1024)`, 8192 tokens, symmetric (no prefixes), CPU or `mps` on a 24 GB Apple Silicon Mac. Measure dim/window at adoption |
+| Keyword branch | `english` for every row | **Per-chunk** `search_config` (mapped from language); `search_text` = CJK-bigram(`text`); tsvector = `to_tsvector(search_config, search_text)`; the query goes through the same bigram function and is parsed once per config present. zh/ja/ko → `simple` + bigrams. Unmapped → `simple` + WARNING |
 | Results | file, timestamp, speaker | + **language** |
-| Evaluation | English only | **Per language** + cross-lingual slice; CER primary for no-space scripts; target languages/data = Q21; per-language thresholds = Q24 |
+| Languages | English only | **Any** (auto-detected). Evaluated on en + **es, hi, zh** = translations of golden 01–06, re-synthesised (dev-only TTS, e.g. Kokoro-82M) |
+| Evaluation | English only | Thresholds gated **per language AND overall**; cross-lingual slice reported; CER primary for `zh` |
 
 
 **English must not regress** — the English golden set is the before/after
@@ -157,8 +158,9 @@ as diagnostic in their route descriptions.
 Full spec: `PLAN.md` §7.
 
 
-> **§7B amendment:** the configuration is now **per chunk** (`chunk.language`),
-> `english` for English rows. Everything below still applies, **per row**.
+> **Multilingual:** the configuration is **per chunk** (`chunk.search_config`,
+> `english` for English rows), over `search_text` (CJK bigrams). Everything
+> below still applies, **per row**.
 
 
 **Stemming is handled by Postgres, not application code.** Use the
@@ -421,8 +423,8 @@ interpreter. Never run a script outside the venv. Detail: `PLAN.md` §4A/§4B.
 |---|---|---|
 | Transcription | Whisper `large-v3-turbo`, faster-whisper, local | Needs `ffmpeg`. Fallback `small` if hardware struggles. **Language auto-detected (§7B M1)** |
 | Diarization | `pyannote/speaker-diarization-3.1` | **Gated**: accept conditions on `speaker-diarization-3.1` *and* `segmentation-3.0`, supply HF token. Mono 16 kHz. `num_speakers=2` |
-| Embeddings | **Multilingual local model (§7B M4, Q22)** — was `all-MiniLM-L6-v2` (English-only, 384 dims, 256 tokens) | Schema dimension = the chosen model's, measured. Token window must exceed chunk caps **per language**. Also drives the semantic splitter |
-| Keyword search | Postgres FTS, **per-chunk config** (`english` for English; §7B M5), generated GIN-indexed tsvector | Same config at index and query time **per row** — **no exceptions**. Never stem in application code |
+| Embeddings | **`BAAI/bge-m3`** (was `all-MiniLM-L6-v2`, English-only) | **1024 dims** → `vector(1024)`; 8192-token window (measure at adoption). Symmetric. Also drives the semantic splitter |
+| Keyword search | Postgres FTS, **per-chunk config** (`english` for English, `simple` + CJK bigrams for zh/ja/ko), generated GIN-indexed tsvector | Same config **and same bigram function** at index and query time, **per row**. Never stem in application code |
 | Vector index | **HNSW** on the embedding column | No training step, so it works on an empty table. `m`/`ef_construction` recorded in the schema; `ef_search` configurable |
 | Metrics | `jiwer` (WER + CER) · `pyannote.metrics` (DER) | **Dev dependencies only** — never imported by the served system |
 | Chunking | Merge + semantic split + link | Deterministic fallback mandatory |
@@ -503,5 +505,7 @@ stretch goal, not a threshold change, not reflexive weight-fiddling.
    `english`/`en` anywhere makes non-English content silently unfindable —
    nothing errors. Unmapped languages must fall back to `simple` **with a
    WARNING**, never to `english`. An asymmetric embedder with a missing or
-   swapped `query:`/`passage:` prefix loses recall silently.
+   swapped `query:`/`passage:` prefix loses recall silently (bge-m3 is
+   symmetric, so this only matters if the e5 latency fallback is used). The
+   CJK bigram function must be identical on the index and the query side.
 
