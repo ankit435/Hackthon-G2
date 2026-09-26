@@ -142,7 +142,8 @@ async def run_evaluation_get():
     """Runs retrieval evaluation on the query set and returns quality metrics."""
     try:
         eval_result = await app.state.evaluation_service.run()
-        return EvaluationResponse(config=app.state.search_service.config, summary=eval_result)
+        config = {**app.state.search_service.config, "embedding_model": app.state.settings.embedding_model}
+        return EvaluationResponse(config=config, summary=eval_result)
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)) from e
 
@@ -152,6 +153,8 @@ async def run_evaluation_post():
     """Runs retrieval evaluation on the query set and returns quality metrics."""
     try:
         eval_result = await app.state.evaluation_service.run()
-        return EvaluationResponse(config=app.state.search_service.config, summary=eval_result)
+        config = {**app.state.search_service.config, "embedding_model": app.state.settings.embedding_model}
+        return EvaluationResponse(config=config, summary=eval_result)
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)) from e
+
