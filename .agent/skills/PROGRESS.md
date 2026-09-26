@@ -19,7 +19,7 @@
 
 
 **Last updated:** 2026-09-26
-**Current phase:** Phase 1 — Foundation (Task 1 done; Task 2 waiting on the user's HF token; Task 3 next)
+**Current phase:** Phase 1 — Foundation (Tasks 1–2 done; Task 3 in progress)
 **Repo state:** Design documents plus a verified dataset (`dataset/`, provenance in
 `dataset/PROVENANCE.md`). Python 3.12 venv with pinned requirements, `.env.example`, a `SETUP.md` draft and
 `scripts/verify_env.py`. No application code or schema yet. Git repo initialised 2026-09-26.
@@ -42,6 +42,7 @@ Mirrors `PLAN.md` §13 one-to-one. Task numbers are stable — never renumber th
 | # | Task | Completed | Evidence |
 |---|---|---|---|
 | 1 | Dataset: golden set 01–06 (`dataset/golden_set.json`); provenance + defects in `dataset/PROVENANCE.md`; originals unmodified; D1-corrected references in `dataset/reference_corrected/` | 2026-09-26 | `python -m pytest` → 43 passed (checksums, durations, well-formedness, correction provenance/durations, **energy-based onset check 307/307**, QA quotes 30/30 unique). Mutation-tested: uncorrected times and an altered duration both fail. **One sub-item not verifiable from the data: "unique speaker pair per file" (Q20)**, carried as an open question, not claimed |
+| 2 | Environment: `.venv` (Python 3.12.14), pinned `requirements*.txt`, `.env.example` (all settings, `AUDIO_SEARCH_` prefix), `.gitignore`, `SETUP.md` draft, `scripts/verify_env.py` | 2026-09-26 | `python scripts/verify_env.py` → **ALL CHECKS PASSED (6/6)**; `pyannote/speaker-diarization-3.1` pipeline **loaded with the user's token in 6.9 s** (proves gated access to both repos); `pip check` clean. The clean-clone check remains Task 13 |
 
 
 ### 🔄 In Progress
@@ -49,7 +50,6 @@ Mirrors `PLAN.md` §13 one-to-one. Task numbers are stable — never renumber th
 
 | # | Task | Done so far | Remaining |
 |---|---|---|---|
-| 2 | Environment | `.venv` (Python 3.12.14); `requirements.txt` / `requirements-dev.txt` pinned and resolving exactly to the working env (`pip check` clean); `.env.example` with all five settings + weights + RRF k; `.gitignore`; `SETUP.md` draft; `scripts/verify_env.py` passes 5/6 checks | **HF token** (user must accept conditions on both pyannote repos and create a token), then `verify_env.py` 6/6. `CANDIDATE_DEPTH_MULTIPLIER` value is decided in Task 5 by design. Clean-clone check is Task 13 |
 
 
 ### ⬜ Not Done
@@ -115,9 +115,9 @@ Per `PLAN.md` §4A. All must exist and be current before Phase 2.
 | `.gitignore` (`.venv/`, `.env`, caches) | ✅ 2026-09-26 | Model weights live in `~/.cache/huggingface`, outside the repo |
 | `SETUP.md` drafted | ✅ Draft 2026-09-26 | Steps 1–8 per §4A. The text-search check SQL was verified locally (`english`/`english` → t, `english`/`simple` → f) |
 | `SETUP.md` verified on a clean clone | ⬜ Not done | Task 13 |
-| HF gated access accepted (both pyannote repos) | ⬜ **Waiting on user** | `speaker-diarization-3.1` **and** `segmentation-3.0`. No token on this machine (checked `~/.cache/huggingface/token`, env) |
+| HF gated access accepted (both pyannote repos) | ✅ 2026-09-26 | Token in `.env` (`HF_TOKEN`). The pipeline loads for real (6.9 s) |
 | `ffmpeg` installed | ✅ Verified | 9.0.2 (Homebrew). torchcodec 0.16 decodes with it (442.08 s file decoded exactly) |
-| Postgres + pgvector up; `vector` extension enabled | 🟡 Partly | Postgres 18.6 running (brew service); pgvector 0.8.6 **available**, not yet enabled in a project DB (Task 3) |
+| Postgres + pgvector up; `vector` extension enabled | 🟡 Partly | Postgres 18.6 running; the user's `AUDIO_SEARCH_DATABASE_URL` credentials connect, but database `audio_search` **does not exist yet** (Task 3 creates it). pgvector 0.8.6 is available |
 | tsvector generated column uses `english` config | ⬜ Not verified | **Must match the query-side config** |
 | HNSW index created on the embedding column | ⬜ Not done | Record `m` / `ef_construction` used (Q10) |
 | Five settings env-backed and read at the composition root | ⬜ Not done | RRF k, branch weights, HNSW `ef_search`, candidate depth multiplier, split soft-min/cap |
@@ -288,6 +288,8 @@ resolved; if unresolved, put it in Known Issues.
 
 | Date | Decision | Rationale | Affects |
 |---|---|---|---|
+| 2026-09-26 | **App env vars use the `AUDIO_SEARCH_` prefix** (pydantic-settings `env_prefix`). `HF_TOKEN` stays unprefixed | Adopted from the user's own `.env`. `HF_TOKEN` is the name huggingface_hub reads natively | Tasks 2, 3 |
+| 2026-09-26 | **The user's `.env` contains LLM answer-generation settings** (`AUDIO_SEARCH_ANSWER_*`, NVIDIA/OpenAI keys). **They are not used** | This is §11 stretch item #1 and the gate is CLOSED. Not scaffolded, not configured, not read by the settings object. Revisit only if the gate opens and the user approves | §11 |
 | 2026-09-26 | **D1 correction is shift-only, `t' = t − b·i`**, with b fitted on speech onsets. This deviates from the approved `t' = t − (a + b·i)`: the intercept is dropped, and ends are shifted by the same amount as starts | Measured: start and end slopes are equal (to within 0.0001), so the generator's durations are correct and only gaps drift. Onsets are sharp (sd ~5 ms) while offsets are fades (sd 10–19 ms). The intercepts (−0.01 start / +0.03 end) are silencedetect threshold bias, not generator error. Independently confirmed: 307/307 onsets by raw energy | Tasks 1, 6, 9 |
 | 2026-09-26 | Correction gates: start residual ≤ 40 ms; start/end slope disagreement ≤ 0.001 s/segment; corrected last end ≤ exact WAV duration + 10 ms. The first gate (a combined start+end residual ≤ 40 ms) was **replaced, not loosened** | The combined gate failed on fade-noisy end measurements (max 48–74 ms), which measure the detector, not the timing. The slope-agreement gate is the real test of the model. The 10 ms end tolerance is the generator's own duration resolution, and the observed error is ≤ 3.9 ms. Bounds use the sample-exact WAV duration because `duration_seconds` is rounded to 10 ms | Task 1 |
 | 2026-09-26 | **Python 3.12** for the venv (user approved) | Homebrew had only 3.14 (too new to trust across torch/ctranslate2/pyannote) and system 3.9 (below pyannote's ≥ 3.10) | Task 2, `SETUP.md` |
@@ -378,4 +380,4 @@ surprising you could not explain** (Rule 15). Empty is fine; stale is not.
 | # | Date | Phase | Tasks touched | Outcome |
 |---|---|---|---|---|
 | 0 | 2026-09-25 | — | — | Plan scoped; stack resolved; §4A environment + §4B install policy; §0 discipline; §0B engineering standard; semantic chunking (Q6); WER/DER/throughput secondary metrics; weighted RRF (Q7); stemming spec (Q8); five-endpoint API (Q9); missing-package policy (Q10) |
-| 1 | 2026-09-26 | 1 | 1 (Done), 2 | Dataset verified; `dataset/PROVENANCE.md` written; defects D1 (timestamp drift) and D2 (QA from another render) found and quantified; Q17/Q18 resolved (golden = 01–06); git init. Task 2: Python 3.12 venv, pinned requirements, `.env.example`, `SETUP.md` draft, `verify_env.py` (5/6, HF token pending); found embedder limit = 256 tokens and a duplicate-FFmpeg warning. Task 1 finished: D1 corrected (shift-only model, 307/307 onsets), 43 integrity tests, mutation-tested |
+| 1 | 2026-09-26 | 1 | 1 (Done), 2 (Done), 3 | Dataset verified; `dataset/PROVENANCE.md` written; defects D1 (timestamp drift) and D2 (QA from another render) found and quantified; Q17/Q18 resolved (golden = 01–06); git init. Task 2: Python 3.12 venv, pinned requirements, `.env.example`, `SETUP.md` draft, `verify_env.py` (5/6, HF token pending); found embedder limit = 256 tokens and a duplicate-FFmpeg warning. Task 1 finished: D1 corrected (shift-only model, 307/307 onsets), 43 integrity tests, mutation-tested |

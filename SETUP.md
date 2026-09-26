@@ -68,18 +68,18 @@ If it is missing, loading the pipeline fails with an authorization/gated-repo er
 ```bash
 cp .env.example .env
 ```
-Fill in `DATABASE_URL` and `HF_TOKEN`. Leave everything else at its default for the
+Fill in `AUDIO_SEARCH_DATABASE_URL` and `HF_TOKEN`. Leave everything else at its default for the
 baseline. The first ingest downloads model weights: Whisper `large-v3-turbo` is
 ~1.6 GB, the pyannote models are small, and MiniLM is ~90 MB. Expect a slow first run.
 
 | Variable | Default | Effect of changing it |
 |---|---|---|
-| `RRF_K` | `60` | Higher values flatten rank differences; lower values let the top ranks dominate. Change only with a before/after measurement |
-| `FUSION_WEIGHT_KEYWORD` | `1.0` | Scales the keyword branch's contribution `w / (k + rank)`. `0.0` disables the branch (diagnostic; logs WARNING). Negative values are rejected |
-| `FUSION_WEIGHT_SEMANTIC` | `1.0` | Same, for the semantic branch. **1.0 / 1.0 is the permanent measured baseline** |
-| `CANDIDATE_DEPTH_MULTIPLIER` | _set in Task 5_ | Each branch fetches `top_k × multiplier` candidates. Top-K is cut only after fusion |
-| `HNSW_EF_SEARCH` | `40` | Higher improves vector recall at the cost of latency. No reindex needed |
-| `SPLIT_SOFT_MIN_SECONDS` / `SPLIT_CAP_SECONDS` | `20` / `45` | Semantic split window for long turns. Chunks must stay under the embedder's **256-token** limit |
+| `AUDIO_SEARCH_RRF_K` | `60` | Higher values flatten rank differences; lower values let the top ranks dominate. Change only with a before/after measurement |
+| `AUDIO_SEARCH_FUSION_WEIGHT_KEYWORD` | `1.0` | Scales the keyword branch's contribution `w / (k + rank)`. `0.0` disables the branch (diagnostic; logs WARNING). Negative values are rejected |
+| `AUDIO_SEARCH_FUSION_WEIGHT_SEMANTIC` | `1.0` | Same, for the semantic branch. **1.0 / 1.0 is the permanent measured baseline** |
+| `AUDIO_SEARCH_CANDIDATE_DEPTH_MULTIPLIER` | _set in Task 5_ | Each branch fetches `top_k × multiplier` candidates. Top-K is cut only after fusion |
+| `AUDIO_SEARCH_HNSW_EF_SEARCH` | `40` | Higher improves vector recall at the cost of latency. No reindex needed |
+| `AUDIO_SEARCH_SPLIT_SOFT_MIN_SECONDS` / `AUDIO_SEARCH_SPLIT_CAP_SECONDS` | `20` / `45` | Semantic split window for long turns. Chunks must stay under the embedder's **256-token** limit |
 
 The weights are **configuration only**. `/search` accepts no weight parameters.
 
@@ -118,6 +118,6 @@ The exit code is 0 on success and 1 if any check fails.
 | `ffmpeg not on PATH`, or torchcodec fails to load `libavutil` | ffmpeg missing | Install ffmpeg (step 1) and reopen the shell |
 | `401`/`403`, "gated repo", "Cannot access" when loading diarization | Conditions not accepted on **both** pyannote repos, or `HF_TOKEN` unset | Step 4 |
 | `type "vector" does not exist` | pgvector not enabled in this database | `CREATE EXTENSION vector;` (step 6) |
-| `expected 384 dimensions, not N` | Embedding model changed without a schema change | Restore `EMBEDDING_MODEL`, or change the schema and re-ingest |
+| `expected 384 dimensions, not N` | Embedding model changed without a schema change | Restore `AUDIO_SEARCH_EMBEDDING_MODEL`, or change the schema and re-ingest |
 | Keyword search returns nothing for words that are clearly in the transcript | **Text search configuration mismatch**: the tsvector column and the query parser use different configs | Both must be `english`. Check with `SELECT to_tsvector('english','archived') @@ websearch_to_tsquery('english','archiving');` → `t` |
 | macOS prints `objc: Class AVF… is implemented in both …` | PyAV (faster-whisper) and Homebrew ffmpeg each bring their own libavdevice | Printed at import. It has not caused a failure so far, but macOS warns it *may*. See `PROGRESS.md` Known Issues. The pipeline decodes each file once and passes the waveform to both models, so the two decoders are never both used on a file |

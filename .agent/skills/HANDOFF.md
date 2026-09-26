@@ -120,7 +120,7 @@ semantic-split soft minimum and cap. **All ship at defaults** — change any
 of them only with a before/after measurement.
 
 
-**Next task:** Task 3 (scaffold, schema, ports, settings). Task 2 closes when the user supplies the HF token and `python scripts/verify_env.py` passes 6/6.
+**Next task:** Task 3 (scaffold, schema, ports, settings). Task 2 is Done (verify_env 6/6; the pyannote pipeline loads with the token). **Do not use the `AUDIO_SEARCH_ANSWER_*` / NVIDIA / OpenAI vars in the user's `.env`**: they are stretch item #1 and the gate is closed.
 
 
 **Do this next:**
