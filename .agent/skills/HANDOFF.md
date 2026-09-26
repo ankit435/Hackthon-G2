@@ -92,8 +92,10 @@ lost work — the next agent will redo it or contradict it.
 
 **Last session:** 2026-09-26 (session 1, Task 1: dataset verification)
 **Repo state:** Design documents plus a verified dataset. Provenance, checksums and
-defect analysis are in **`dataset/PROVENANCE.md`**. There is no source code, venv,
-schema or test yet. Git repo initialised and committed. **Golden set = files 01–06** (`dataset/golden_set.json`). The stack questions
+defect analysis are in **`dataset/PROVENANCE.md`**. **Task 2 is nearly done**: a `.venv`
+(Python 3.12.14), pinned `requirements*.txt`, `.env.example`, a `SETUP.md` draft, and
+`scripts/verify_env.py` passing 5/6 checks (HF token missing). No application code,
+schema or tests yet. Git repo initialised and committed. **Golden set = files 01–06** (`dataset/golden_set.json`). The stack questions
 (Q1–Q16) are resolved; do not re-open them. Q17/Q18 are resolved. Q19 is settled in Task 6. **Q20 (generator/voices) is still open with the user.**
 
 **Task 1 status: In Progress.** Verified, provenance recorded, golden set fixed, and
@@ -124,15 +126,14 @@ semantic-split soft minimum and cap. **All ship at defaults** — change any
 of them only with a before/after measurement.
 
 
-**Next task:** Task 2 (environment). Then finish Task 1's two venv-dependent items, then Task 3.
+**Next task:** Finish Task 1's two venv-dependent items (below), then Task 3. Task 2 closes when the user supplies the HF token and `python scripts/verify_env.py` passes 6/6.
 
 
 **Do this next:**
-1. **Task 2 first step**: create `.venv/`. **Python version is undecided.** Only
-   Homebrew 3.14.4 and system 3.9.6 are present. Check that torch, pyannote.audio
-   and faster-whisper/ctranslate2 have wheels for the chosen version before
-   committing to it. 3.12 is the conservative choice (`brew install python@3.12`,
-   recorded per §4B). Then do Task 1's remaining items (above) and commit.
+1. `source .venv/bin/activate`. Do Task 1's remaining items (D1 correction script,
+   data-integrity pytest), then commit. **Before Task 4:** read `PROGRESS.md` Known
+   Issues. The duplicate-FFmpeg warning means ingestion should decode each file once.
+   The embedder limit is 256 tokens, not 512.
 2. **Task 2** — set up the environment per `PLAN.md` §4A/§4B: `.venv/`,
    `requirements.txt` and `requirements-dev.txt` (pinned), `.env.example`
    (**including the fusion weight and RRF k variables**), `.gitignore`,
@@ -435,7 +436,7 @@ chunkers must agree below the cap**, asserted in a test.
 2. **Diarizer speaker ids are arbitrary per file.** Align predicted to
    reference labels before scoring speaker accuracy, or a correct
    diarization scores near zero.
-3. **The 512-token embedder limit** must stay above the chunk size caps in
+3. **The 256-token embedder limit** (measured; `PLAN.md` says 512, which is wrong) must stay above the chunk size caps in
    `PLAN.md` §6. Re-verify if a cap changes.
 4. **Slicing branches to K before fusion** silently discards the
    cross-branch agreements fusion exists to find.

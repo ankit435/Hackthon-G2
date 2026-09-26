@@ -19,9 +19,10 @@
 
 
 **Last updated:** 2026-09-26
-**Current phase:** Phase 1 — Foundation (Task 1 in progress; waiting on the Task 2 venv)
+**Current phase:** Phase 1 — Foundation (Tasks 1–2 in progress; Task 2 waiting on the user's HF token)
 **Repo state:** Design documents plus a verified dataset (`dataset/`, provenance in
-`dataset/PROVENANCE.md`). No implementation code, no venv, no schema. Git repo initialised 2026-09-26.
+`dataset/PROVENANCE.md`). Python 3.12 venv with pinned requirements, `.env.example`, a `SETUP.md` draft and
+`scripts/verify_env.py`. No application code or schema yet. Git repo initialised 2026-09-26.
 Golden set = files 01–06 (`dataset/golden_set.json`). The dataset deviates from the plan's spec,
 and the ground truth has two verified defects. See Known Issues and Q17–Q20.
 
@@ -44,6 +45,7 @@ _(nothing yet)_
 
 | # | Task | Done so far | Remaining |
 |---|---|---|---|
+| 2 | Environment | `.venv` (Python 3.12.14); `requirements.txt` / `requirements-dev.txt` pinned and resolving exactly to the working env (`pip check` clean); `.env.example` with all five settings + weights + RRF k; `.gitignore`; `SETUP.md` draft; `scripts/verify_env.py` passes 5/6 checks | **HF token** (user must accept conditions on both pyannote repos and create a token), then `verify_env.py` 6/6. `CANDIDATE_DEPTH_MULTIPLIER` value is decided in Task 5 by design. Clean-clone check is Task 13 |
 | 1 | Dataset | All 10 files verified; provenance in `dataset/PROVENANCE.md`; golden set = 01–06 in `dataset/golden_set.json` (checksums verified); originals unmodified; D1/D2 diagnosed; Q17/Q18 resolved; committed | **Needs the venv (Task 2)**: (a) the D1 correction script → `dataset/reference_corrected/` for 01–06, verified with last end ≤ duration and residual ≤ 40 ms; (b) a pytest data-integrity test replacing the Session 1 jq/ffmpeg checks. Q19 (QA derivation) is settled in Task 6. Q20 (generator/voices) is still open with the user |
 
 
@@ -52,8 +54,7 @@ _(nothing yet)_
 
 | # | Task | Phase | Blocked by |
 |---|---|---|---|
-| 2 | Environment per §4A/§4B: venv, `requirements.txt`, `requirements-dev.txt`, `.env.example` (incl. weights + RRF k), `.gitignore`, first draft `SETUP.md` | 1 | — ready |
-| 3 | Scaffold repo (`src/domain`, `src/infra`, `src/application`, `src/api`, `db/schema.sql` with `vector(384)`, `english` tsvector column, GIN + **HNSW** indexes,); define all domain ports and the settings object (5 configurable values) | 1 | 2 |
+| 3 | Scaffold repo (`src/domain`, `src/infra`, `src/application`, `src/api`, `db/schema.sql` with `vector(384)`, `english` tsvector column, GIN + **HNSW** indexes,); define all domain ports and the settings object (5 configurable values) | 1 | — ready (venv exists) |
 | 4 | Ingestion pipeline: transcribe → diarize → align → chunk → embed → index, incl. **both chunkers** ⚠️ *high-risk: alignment, chunking* | 2 | 1, 3 |
 | 5 | Hybrid search service: keyword + semantic → **weighted RRF with configurable weights** → hydrated ranked top-K ⚠️ *high-risk: fusion* | 2 | 3, 4 |
 | 6 | Labeled query set: ~90 queries (15 × 6 files), 50/50 keyword/semantic, LLM-drafted + human-verified | 3 | 4 |
@@ -104,20 +105,20 @@ Per `PLAN.md` §4A. All must exist and be current before Phase 2.
 
 | Artifact | Status | Note |
 |---|---|---|
-| `.venv/` created and gitignored | ⬜ Not done | |
-| `requirements.txt` (pinned runtime deps) | ⬜ Not done | |
-| `requirements-dev.txt` (pytest, pytest-asyncio, WER/DER scoring) | ⬜ Not done | |
-| `.env.example` committed | ⬜ Not done | DB URL, HF token, **fusion weights, RRF k** |
-| `.gitignore` (`.venv/`, `.env`, caches) | ⬜ Not done | |
-| `SETUP.md` drafted | ⬜ Not done | must document fusion config vars + text search config check |
+| `.venv/` created and gitignored | ✅ 2026-09-26 | Python 3.12.14 (Homebrew `python@3.12`) |
+| `requirements.txt` (pinned runtime deps) | ✅ 2026-09-26 | Direct deps + behaviour-relevant transitive pins (torch family, decoders, transformers, hf-hub, numpy) |
+| `requirements-dev.txt` (pytest, pytest-asyncio, WER/DER scoring) | ✅ 2026-09-26 | `-r requirements.txt` + pytest, pytest-asyncio, httpx, jiwer, pyannote.metrics |
+| `.env.example` committed | ✅ 2026-09-26 | DB URL, HF token, models, **fusion weights, RRF k**, depth multiplier (blank until Task 5), ef_search, split min/cap, log level |
+| `.gitignore` (`.venv/`, `.env`, caches) | ✅ 2026-09-26 | Model weights live in `~/.cache/huggingface`, outside the repo |
+| `SETUP.md` drafted | ✅ Draft 2026-09-26 | Steps 1–8 per §4A. The text-search check SQL was verified locally (`english`/`english` → t, `english`/`simple` → f) |
 | `SETUP.md` verified on a clean clone | ⬜ Not done | Task 13 |
-| HF gated access accepted (both pyannote repos) | ⬜ Not done | `speaker-diarization-3.1` **and** `segmentation-3.0` |
-| `ffmpeg` installed | ⬜ Not verified | Whisper requires it; most common first-run failure | ⬜ Not verified | For Postgres + pgvector |
-| Postgres + pgvector up; `vector` extension enabled | ⬜ Not done | |
+| HF gated access accepted (both pyannote repos) | ⬜ **Waiting on user** | `speaker-diarization-3.1` **and** `segmentation-3.0`. No token on this machine (checked `~/.cache/huggingface/token`, env) |
+| `ffmpeg` installed | ✅ Verified | 9.0.2 (Homebrew). torchcodec 0.16 decodes with it (442.08 s file decoded exactly) |
+| Postgres + pgvector up; `vector` extension enabled | 🟡 Partly | Postgres 18.6 running (brew service); pgvector 0.8.6 **available**, not yet enabled in a project DB (Task 3) |
 | tsvector generated column uses `english` config | ⬜ Not verified | **Must match the query-side config** |
 | HNSW index created on the embedding column | ⬜ Not done | Record `m` / `ef_construction` used (Q10) |
 | Five settings env-backed and read at the composition root | ⬜ Not done | RRF k, branch weights, HNSW `ef_search`, candidate depth multiplier, split soft-min/cap |
-| `jiwer` + `pyannote.metrics` in `requirements-dev.txt` | ⬜ Not done | Evaluation-only (Q15) |
+| `jiwer` + `pyannote.metrics` in `requirements-dev.txt` | ✅ 2026-09-26 | jiwer 4.0.0, pyannote.metrics 4.1. Note: pyannote.metrics is **also a transitive runtime dep of pyannote.audio 4**. The rule "served system never imports it" still applies to our code |
 
 
 ### Installed Packages Log
@@ -129,8 +130,17 @@ Missing packages are installed, not worked around; but never silently.
 
 | Date | Package / tool | Version pinned | Where | Why |
 |---|---|---|---|---|
-| _(planned)_ | `jiwer` | — | `requirements-dev.txt` | WER + CER scoring (Q15) |
-| _(planned)_ | `pyannote.metrics` | — | `requirements-dev.txt` | DER scoring (Q15) |
+| 2026-09-26 | Python (Homebrew `python@3.12`) | 3.12.14 | system (brew) + `SETUP.md` | Venv interpreter. Only 3.14/3.9 were present; 3.12 is the conservative choice for torch/pyannote/ctranslate2 (user approved) |
+| 2026-09-26 | `faster-whisper` | 1.2.1 | `requirements.txt` | Transcription (locked stack) |
+| 2026-09-26 | `pyannote.audio` | 4.0.7 | `requirements.txt` | Diarization; runs `speaker-diarization-3.1` (docs: `Pipeline.from_pretrained(..., token=...)`) |
+| 2026-09-26 | `sentence-transformers` | 6.1.0 | `requirements.txt` | Embeddings + semantic splitter |
+| 2026-09-26 | `fastapi`, `uvicorn[standard]` | 0.141.1, 0.54.0 | `requirements.txt` | API (locked stack) |
+| 2026-09-26 | `psycopg[binary]`, `pgvector` | 3.3.6, 0.5.0 | `requirements.txt` | Postgres driver + vector type adapter (infra only) |
+| 2026-09-26 | `pydantic`, `pydantic-settings` | 2.13.5, 2.15.0 | `requirements.txt` | Single env-backed settings object at the composition root (§5), with boundary validation of weights |
+| 2026-09-26 | `torch`, `torchaudio`, `torchcodec`, `ctranslate2`, `av`, `transformers`, `huggingface-hub`, `numpy` | 2.14.0, 2.11.0, 0.16.0, 4.8.2, 18.1.0, 5.17.0, 1.33.0, 2.5.3 | `requirements.txt` | Transitive; pinned because they change decoding/model behaviour |
+| 2026-09-26 | `pytest`, `pytest-asyncio`, `httpx` | 9.1.1, 1.4.0, 0.28.1 | `requirements-dev.txt` | Tests; httpx is required by FastAPI's TestClient |
+| 2026-09-26 | `jiwer` | 4.0.0 | `requirements-dev.txt` | WER + CER scoring (Q15) |
+| 2026-09-26 | `pyannote.metrics` | 4.1 | `requirements-dev.txt` | DER scoring (Q15) |
 
 
 ---
@@ -222,7 +232,7 @@ surface it. Inventing a default and moving on is a defect.
 | Q1 | Audio sources for the golden dataset; copyright-safe to commit? | ✅ **Resolved** | **User-provided synthetic two-speaker dataset.** Generated, not recorded from real speakers — no third-party copyright, no personal voice data, safe to commit publicly. Speakers already labelled `SPEAKER_00` / `SPEAKER_01`. ~~durations (~9 min observed) sit inside the 8–10 min band~~ **Corrected 2026-09-26 (repo wins): 10 files, 5.8–7.4 min (01–08) and 1.8/2.1 min (09/10). None is in the 8–10 min band. See Q17.** **Bonus**: reference transcripts and true speaker turns exist, giving exact ground truth for WER, DER, and speaker-attribution accuracy at no extra labelling cost. Record per-file provenance in the repo. |
 | Q2 | Whisper model size; local vs hosted | ✅ **Resolved** | **`large-v3-turbo` via faster-whisper, run locally.** Turbo keeps large-v3's encoder but cuts decoder layers, running ~5× faster at near-identical accuracy. MIT-licensed. Local keeps the pipeline offline and reproducible for a grader with no API key. ~30 min of total audio makes even a slow model a one-time cost, and transcript quality is the ceiling on every downstream metric. **Requires `ffmpeg`.** **Fallback**: `small` (244M) — document the swap and re-run evaluation. |
 | Q3 | pyannote model; license | ✅ **Resolved** | **`pyannote/speaker-diarization-3.1`. MIT-licensed, commercial use permitted.** 3.1 runs segmentation and embedding in pure PyTorch (no onnxruntime). **Setup gotcha for `SETUP.md`**: *gated* — accept conditions on **both** `pyannote/speaker-diarization-3.1` **and** `pyannote/segmentation-3.0`, then supply an HF access token. Requires mono 16 kHz (automatic). Set `num_speakers=2` — every file is known two-speaker, which removes a whole error class. **If it fails to load, fix the access — never silently substitute a different diarizer** (§4B). |
-| Q4 | SentenceTransformer model; embedding dimension | ✅ **Resolved** | **`all-MiniLM-L6-v2`, 384 dimensions** → schema vector column is `vector(384)`. Small, fast on CPU, no API key. Also drives the semantic splitter (Q6). **512-token context is the real constraint** — covers the ~15–45s chunks, but any change to the chunk caps must be re-checked against it. **Upgrade path if semantic recall misses**: swap to a BGE-family model, **verify its dimension on the model card first**, update the schema, re-ingest — the adapter boundary makes this a one-file change. |
+| Q4 | SentenceTransformer model; embedding dimension | ✅ **Resolved** | **`all-MiniLM-L6-v2`, 384 dimensions** → schema vector column is `vector(384)`. Small, fast on CPU, no API key. Also drives the semantic splitter (Q6). ~~512-token context~~ **Corrected 2026-09-26 (measured): `max_seq_length` = 256 tokens**, and longer input is silently truncated. At the dataset's ~3 words/s, a 45 s chunk ≈ 135 words ≈ ~175 tokens: it fits, with ~30% margin (not 2×). Task 8 must assert the max chunk token count < 256. **Upgrade path if semantic recall misses**: swap to a BGE-family model, **verify its dimension on the model card first**, update the schema, re-ingest — the adapter boundary makes this a one-file change. |
 | Q5 | Labeled query set size; LLM-drafted vs manual | ✅ **Resolved** | **~90 queries** (15 per file × 6 files), **50/50 keyword vs semantic** so both branches are measured independently. **LLM-drafts, human-verifies — always.** Every candidate query and ground-truth chunk id gets human confirmation against the transcript. Disclose in `AGENT_LOG.md`. At ≥90 queries a single bad result shifts recall by ~1%, so the metric is stable. |
 | Q6 | Chunking strategy for long conversational turns | ✅ **Resolved** | **Semantic-boundary splitting with deterministic fallback** (`PLAN.md` §6). Long turns drift across two or three topics; a fixed-offset cut lands mid-topic and produces two chunks each holding half of two ideas — the content becomes unfindable despite being transcribed correctly. Splitting at the lowest-similarity sentence boundary keeps each chunk about one thing. **Four mandatory safeguards**: deterministic fallback on embedder failure (WARNING + counted), injected `Embedder` port only, ingest-time only so the evaluated path stays deterministic, and an asserted equivalence test between the two chunkers below the cap. |
 | Q7 | How are the two branches combined? | ✅ **Resolved** | **Weighted RRF with configurable per-branch weights, defaulting to 1.0 / 1.0** (`PLAN.md` §7). Rank-based fusion is scale-free, which is what makes a weight meaningful — it expresses trust in a branch's *ordering* rather than an artefact of incomparable score magnitudes. Weights live in the env-backed settings read once at the composition root and are injected into the search service; the fusion function stays pure and stateless. **Deliberately not a query parameter** — per-request weights would make the evaluated path caller-dependent and non-reproducible, breaking Rule 8. Branches retrieve deeper than K; **top-K is applied only after fusion**. |
@@ -237,7 +247,7 @@ surface it. Inventing a default and moving on is a defect.
 | Q20 | Generator/TTS engine and voices? Is each file's speaker pair unique? | 🟡 **Open — needs user** | Provenance cannot name the generator from the files alone. Unique-voice-pair-per-file cannot be verified from labels (`SPEAKER_00/01` everywhere). Could be checked later with pyannote speaker embeddings if the user cannot answer. |
 | Q10 | ivfflat or HNSW for the vector index? | ✅ **Resolved** | **HNSW.** Better recall-at-speed than ivfflat and no training step, so it works on an empty table and stays correct as rows are added — ivfflat needs representative data present before building, which is awkward in a pipeline that ingests incrementally. `m` and `ef_construction` are recorded in `db/schema.sql`; **query-time `ef_search` is an env-backed setting** so recall and latency can be traded without a reindex. Start at the extension defaults. |
 | Q11 | How deep does each branch retrieve before fusion? | ✅ **Resolved** | **A configurable multiple of K** — an env-backed setting, not a literal. Default to a small multiple. The multiplier controls only how deep each branch *fetches*; **the top-K slice still happens after fusion**, never before. |
-| Q12 | Are the semantic-split thresholds tunable? | ✅ **Resolved** | **Configurable, defaults ~20s soft minimum and ~45s cap.** Env-backed settings, not literals. **Change only if a precision/recall problem is traced to chunking** (§10.5) — never speculatively. Any change must keep chunks inside the embedder's 512-token window (Q4). |
+| Q12 | Are the semantic-split thresholds tunable? | ✅ **Resolved** | **Configurable, defaults ~20s soft minimum and ~45s cap.** Env-backed settings, not literals. **Change only if a precision/recall problem is traced to chunking** (§10.5) — never speculatively. Any change must keep chunks inside the embedder's **256-token** window (Q4, corrected). |
 | Q13 | When may the fusion weights be changed from 1.0 / 1.0? | ✅ **Resolved** | **Only when both precision and recall improve.** Stricter than the §7 tuning discipline alone: a change that lifts recall while degrading precision — or that helps one query type at the other's expense — is **not** an improvement and gets reverted. Equal weights stay the shipped default unless the evidence is unambiguous across both query types. |
 | Q14 | Is `/evaluation` GET or POST? | ✅ **Resolved** | **Both.** GET for a quick no-body run in Swagger or a browser; POST for a body-parameterised run (a subset of the query set, a different top-K). **Both share one service method** — no divergent code paths — and neither mutates state. |
 | Q15 | Which libraries compute WER, CER and DER? | ✅ **Resolved** | **`jiwer` for WER and CER; `pyannote.metrics` for DER.** Both pinned in `requirements-dev.txt` — evaluation-only, never imported by the served system. `pyannote.metrics` is the reference DER implementation and is consistent with the diarizer itself (Q3). `jiwer` gives WER **and CER** from one dependency; **report both** — a high WER with a low CER means the gap is tokenization rather than genuine mishearing, which changes where you look next. |
@@ -275,6 +285,11 @@ resolved; if unresolved, put it in Known Issues.
 
 | Date | Decision | Rationale | Affects |
 |---|---|---|---|
+| 2026-09-26 | **Python 3.12** for the venv (user approved) | Homebrew had only 3.14 (too new to trust across torch/ctranslate2/pyannote) and system 3.9 (below pyannote's ≥ 3.10) | Task 2, `SETUP.md` |
+| 2026-09-26 | **pyannote.audio 4.0.7** (not 3.x) runs the locked `speaker-diarization-3.1` pipeline. The model is unchanged | 4.x is current and documented to load 3.1 with `token=`. 3.x depends on torchaudio I/O APIs that were removed in recent torchaudio. Audio can be passed in memory (`{"waveform", "sample_rate"}`) | Task 4 |
+| 2026-09-26 | **Embedder token limit is 256, not 512.** Measured `max_seq_length=256`; Q4, Q12 and HANDOFF trap 3 corrected (`PLAN.md` still says 512; this entry supersedes it) | Silent truncation past 256 tokens would drop the end of long chunks from the embedding. The current 45 s cap fits (~175 tokens), but with only ~30% margin | Tasks 4, 8 |
+| 2026-09-26 | `scripts/verify_env.py` is the `SETUP.md` step-7 verify command (stdlib + installed libs; exit 1 on any failure) | §4A requires one command with stated expected output | Tasks 2, 13 |
+| 2026-09-26 | `.env.example` leaves `CANDIDATE_DEPTH_MULTIPLIER` **blank** | `PLAN.md` §17 assigns the value to Task 5. A placeholder number now would be an unrecorded default (Rule 2) | Task 5 |
 | 2026-09-26 | **Golden set = files 01–06 (Q17, user decision)**, enumerated in `dataset/golden_set.json`. Files 07–10 are retained but excluded | This is closest to the 5–6 file spec. The 2-minute files 09/10 (whose QA came from longer versions) drop out. Excluding by manifest rather than deleting keeps the user's data intact and makes the choice explicit and reviewable | Tasks 4, 6, 7, 9 |
 | 2026-09-26 | **D1 fix = derived corrected copy (Q18, user decision)**. The script writes `dataset/reference_corrected/*.json` with a per-file linear fit, and the originals stay untouched | The error is systematic (residual ≤ 38 ms), so a fitted correction is exact enough, and it is auditable | Tasks 1, 9 |
 | 2026-09-26 | Git repo initialised at the project root (user approved). Repo-local identity is `ankit <xenaditya1@gmail.com>` because no global git identity was configured | Rule 18: nothing is Done until committed | all |
@@ -345,6 +360,7 @@ surprising you could not explain** (Rule 15). Empty is fine; stale is not.
 | **D2** `all.json` `evidence_time_ranges` match no reference segment (0/134). Offsets 6.8–420 s; they come from a longer render. 09/10 segment indices are wrong in 9/10 items | **High** for Task 6 | `dataset/all.json` | Quotes resolve uniquely (134/134). Derivation plan pending Q19 |
 | Golden files are 5.9–7.4 min, below the 8–10 min spec | Low | `dataset/golden_set.json` | Accepted (Q17). Disclose in `SOLUTION.md` |
 | WAVs are 22.05 kHz mono; pyannote wants 16 kHz | Low | ingestion | pyannote/faster-whisper resample internally. Verify in Task 4 |
+| **Two FFmpeg builds in one process**: PyAV 18.1 (faster-whisper) bundles libavdevice 62, and torchcodec loads Homebrew libavdevice 63. macOS prints `objc: Class AVFFrameReceiver is implemented in both…` and warns of possible crashes | Medium | ingestion (Task 4) | Not yet seen to fail (decode + imports OK). Mitigation plan: decode each file **once**, then pass the numpy waveform to faster-whisper and the in-memory dict to pyannote. If a crash appears, investigate before working around it (Rule 15) |
 | `dataset/.DS_Store` present | Low | `dataset/` | Ignored via `.gitignore` (created early, in Session 1) |
 
 
@@ -357,4 +373,4 @@ surprising you could not explain** (Rule 15). Empty is fine; stale is not.
 | # | Date | Phase | Tasks touched | Outcome |
 |---|---|---|---|---|
 | 0 | 2026-09-25 | — | — | Plan scoped; stack resolved; §4A environment + §4B install policy; §0 discipline; §0B engineering standard; semantic chunking (Q6); WER/DER/throughput secondary metrics; weighted RRF (Q7); stemming spec (Q8); five-endpoint API (Q9); missing-package policy (Q10) |
-| 1 | 2026-09-26 | 1 | 1 | Dataset verified; `dataset/PROVENANCE.md` written; defects D1 (timestamp drift) and D2 (QA from another render) found and quantified; Q17–Q20 raised; not committed (no git repo) |
+| 1 | 2026-09-26 | 1 | 1, 2 | Dataset verified; `dataset/PROVENANCE.md` written; defects D1 (timestamp drift) and D2 (QA from another render) found and quantified; Q17/Q18 resolved (golden = 01–06); git init. Task 2: Python 3.12 venv, pinned requirements, `.env.example`, `SETUP.md` draft, `verify_env.py` (5/6, HF token pending); found embedder limit = 256 tokens and a duplicate-FFmpeg warning |

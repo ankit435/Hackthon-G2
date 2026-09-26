@@ -465,7 +465,7 @@ stretch goal, not a threshold change, not reflexive weight-fiddling.
 2. **Diarizer speaker ids are arbitrary per file.** Align predicted to
    reference labels before scoring speaker accuracy, or a correct
    diarization scores near zero.
-3. **The 512-token embedder limit** must stay above the chunk size caps.
+3. **The 256-token embedder limit** (measured `max_seq_length`; 512 was wrong) must stay above the chunk size caps.
 4. **Slicing branches to K before fusion** silently discards the
    cross-branch agreements fusion exists to find.
 
