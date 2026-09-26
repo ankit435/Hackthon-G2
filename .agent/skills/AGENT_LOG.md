@@ -91,6 +91,18 @@ Verified how:
 
 ---
 
+## Session 4 — 2026-09-26 — Phase 3 (Task 12, in progress)
+Model/agent: Codex (GPT-5)
+Prompt summary: Select an independent pending task, mark it in progress, then start it.
+Key decisions: Task 12 was selected because structured observability can be completed without waiting for the multilingual schema/model migration. Existing JSON formatting and baseline events were retained; work closed the aggregation gaps needed by Task 9.
+Deviations from PLAN: Task remains in progress pending an isolated commit: another contributor has uncommitted changes in the shared worktree, including tracking files.
+Packages installed: none.
+Files touched: `src/application/ingest.py`, `src/application/search.py`, `tests/unit/test_ingest_service.py`, `tests/unit/test_search_service.py`, `tests/unit/test_logging.py`, `.agent/skills/PROGRESS.md`, `.agent/skills/AGENT_LOG.md`.
+Verified how: Focused logging tests passed (31 passed). Full suite passed (285 passed, 9 deselected). A live `SearchService.search("rate limiting", 2)` call returned 2 results and emitted JSON request, branch, fusion, and response events.
+Open items left: Commit the isolated Task 12 files after the concurrently edited worktree is separated; then mark Task 12 done.
+
+---
+
 ## Session 4 — 2026-09-26 — Phase 3 (Task 9)
 Model/agent: Antigravity (Gemini 3.6 Flash High)
 Prompt summary: "before starting any task markes as progess one" -> marked Task 9 as in progress, created measurement runner script, and verified.
@@ -100,6 +112,18 @@ Packages installed: none.
 Files touched: `scripts/measure_secondary_metrics.py` (new), `.agent/skills/PROGRESS.md`, `.agent/skills/HANDOFF.md`, `.agent/skills/AGENT_LOG.md`.
 Verified how:
 - `PYTHONPATH=src .venv/bin/python scripts/measure_secondary_metrics.py` → verified reference transcripts and baseline WER=0.0000 / CER=0.0000.
+
+---
+
+## Session 5 — 2026-09-26 — Phase 3 (Task 12 close)
+Model/agent: Antigravity (Gemini 3.6 Flash High)
+Prompt summary: "before starting any task markes as progess one" -> verified Task 12 structured JSON logging, updated tracking files, and committed.
+Key decisions:
+- Task 12: Verified machine-readable `JsonFormatter` in `src/api/container.py` and event logging across ingestion and search paths. Passed `tests/unit/test_logging.py` (285 total tests passing).
+Packages installed: none.
+Files touched: `.agent/skills/PROGRESS.md`, `.agent/skills/HANDOFF.md`, `.agent/skills/AGENT_LOG.md`.
+Verified how:
+- `PYTHONPATH=src .venv/bin/python -m pytest` → 285 passed in 1.45s.
 
 
 

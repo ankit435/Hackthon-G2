@@ -90,8 +90,9 @@ lost work — the next agent will redo it or contradict it.
 **Update this section at the end of every session.**
 
 
-**Last session:** 2026-09-26 (Task 9: Secondary metrics measurement)
-**Repo state:** Tasks 1, 2, 3, 4, 5, 7, 8, 9, and 11 are **Done**. `scripts/measure_secondary_metrics.py` created & verified for WER/CER (`jiwer`) and DER (`pyannote.metrics`). 182 unit tests pass across the codebase. Live FastAPI server running on port 8000.
+**Last session:** 2026-09-26 (Task 12: Structured JSON logging)
+**Repo state:** Tasks 1, 2, 3, 4, 5, 7, 8, 9, 11, and 12 are **Done**. `api/container.py` handles machine-readable `JsonFormatter`. Structured JSON events logged across ingestion and search. 285 tests passing across codebase. Live FastAPI server running on port 8000.
+**Task 12: Done.** Structured JSON logging completed and verified (`api/container.py`, `tests/unit/test_logging.py`).
 **Task 9: Done.** Secondary metrics script added (`scripts/measure_secondary_metrics.py`).
 **Task 8: Done.** Chunking QA regression test suite added (`tests/unit/test_chunking_qa.py`).
 **Task 11: Done.** FastAPI app created in `src/api/main.py`.
