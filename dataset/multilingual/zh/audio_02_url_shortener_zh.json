@@ -5,7 +5,7 @@
   "language": "zh",
   "topic": "大规模短链接服务",
   "source_topic": "URL Shortener at Scale",
-  "duration_seconds": null,
+  "duration_seconds": 409.998,
   "speakers": [
     "SPEAKER_00",
     "SPEAKER_01"
@@ -15,365 +15,365 @@
       "index": 0,
       "speaker": "SPEAKER_00",
       "text": "今天的问题是一个每月处理十亿次跳转的短链接服务。",
-      "start": null,
-      "end": null
+      "start": 0.0,
+      "end": 5.035
     },
     {
       "index": 1,
       "speaker": "SPEAKER_01",
       "text": "我们先确定读写比例，因为这一个数字决定了架构的大部分。",
-      "start": null,
-      "end": null
+      "start": 5.285,
+      "end": 10.042
     },
     {
       "index": 2,
       "speaker": "SPEAKER_00",
       "text": "假设每写一次就有一百次读。也就是每月大约一千万个新链接和十亿次跳转。",
-      "start": null,
-      "end": null
+      "start": 10.292,
+      "end": 17.737
     },
     {
       "index": 3,
       "speaker": "SPEAKER_01",
       "text": "平均大约每秒四百次跳转，在爆款事件期间，我们应该按大概五倍的峰值来规划。",
-      "start": null,
-      "end": null
+      "start": 17.987,
+      "end": 24.473
     },
     {
       "index": 4,
       "speaker": "SPEAKER_00",
       "text": "写入路径小到一个主数据库就能处理，但读取路径需要非常积极的缓存。",
-      "start": null,
-      "end": null
+      "start": 24.723,
+      "end": 31.763
     },
     {
       "index": 5,
       "speaker": "SPEAKER_01",
       "text": "同意。功能需求很简单。为长网址生成一个短码，查询时跳转，并且可以选择让链接过期。",
-      "start": null,
-      "end": null
+      "start": 32.013,
+      "end": 39.074
     },
     {
       "index": 6,
       "speaker": "SPEAKER_00",
       "text": "我们还应该支持自定义别名，因为市场团队总是想要一个好读的短码，而不是一串随机字符。",
-      "start": null,
-      "end": null
+      "start": 39.324,
+      "end": 48.071
     },
     {
       "index": 7,
       "speaker": "SPEAKER_01",
       "text": "还有数据分析。点击次数、来源页面和大致地理位置，才是这类产品的客户真正愿意付费的东西。",
-      "start": null,
-      "end": null
+      "start": 48.321,
+      "end": 55.937
     },
     {
       "index": 8,
       "speaker": "SPEAKER_00",
       "text": "我们从短码生成开始。短码应该多长，用什么字符集？",
-      "start": null,
-      "end": null
+      "start": 56.187,
+      "end": 61.157
     },
     {
       "index": 9,
       "speaker": "SPEAKER_01",
       "text": "六十二进制，用数字和大小写字母。七个字符大约有三点五万亿种组合，远远超出我们的需要。",
-      "start": null,
-      "end": null
+      "start": 61.407,
+      "end": 68.81
     },
     {
       "index": 10,
       "speaker": "SPEAKER_00",
       "text": "七是个不错的默认值，不过我们也可以从六开始再逐步增加。六个字符就已经有五百六十亿种可能。",
-      "start": null,
-      "end": null
+      "start": 69.06,
+      "end": 77.935
     },
     {
       "index": 11,
       "speaker": "SPEAKER_01",
       "text": "真正的问题是怎么选出一个短码。有两类方法：带冲突检查的随机生成，以及对计数器的确定性编码。",
-      "start": null,
-      "end": null
+      "start": 78.185,
+      "end": 86.291
     },
     {
       "index": 12,
       "speaker": "SPEAKER_00",
       "text": "计数器编码很有吸引力，因为它从构造上就不会冲突。我们拿一个全局唯一的整数，把它编码成六十二进制。",
-      "start": null,
-      "end": null
+      "start": 86.541,
+      "end": 96.739
     },
     {
       "index": 13,
       "speaker": "SPEAKER_01",
       "text": "但顺序递增的整数会泄露信息。任何人都能枚举短码，把整个链接数据库遍历一遍，这是个隐私问题。",
-      "start": null,
-      "end": null
+      "start": 96.989,
+      "end": 105.159
     },
     {
       "index": 14,
       "speaker": "SPEAKER_00",
       "text": "我们可以在编码前用一个可逆的置换把计数器打乱，这样短码看起来是随机的，但仍然唯一。",
-      "start": null,
-      "end": null
+      "start": 105.409,
+      "end": 113.665
     },
     {
       "index": 15,
       "speaker": "SPEAKER_01",
       "text": "用 Feistel 网络，或者简单地取键空间上的模乘法逆元，都能很好地做到这一点。唯一，实际上无法猜测，也不需要冲突检查。",
-      "start": null,
-      "end": null
+      "start": 113.915,
+      "end": 123.451
     },
     {
       "index": 16,
       "speaker": "SPEAKER_00",
       "text": "另一种方案是随机短码，插入时遇到重复就失败。在填充率低的时候冲突很少，重试的代价几乎可以忽略。",
-      "start": null,
-      "end": null
+      "start": 123.701,
+      "end": 133.813
     },
     {
       "index": 17,
       "speaker": "SPEAKER_01",
       "text": "这种方式更容易理解，我大概会先上线它。条件插入让正确性变成了数据库的职责。",
-      "start": null,
-      "end": null
+      "start": 134.063,
+      "end": 140.783
     },
     {
       "index": 18,
       "speaker": "SPEAKER_00",
       "text": "对于唯一计数器，我们可以用号段分配器。每个应用节点领取一段一百万个标识符，在本地发放。",
-      "start": null,
-      "end": null
+      "start": 141.033,
+      "end": 150.292
     },
     {
       "index": 19,
       "speaker": "SPEAKER_01",
       "text": "这样可以避免热点行，而且分配器短暂宕机也不影响，因为每个节点手里都缓冲了一百万个标识符。",
-      "start": null,
-      "end": null
+      "start": 150.542,
+      "end": 158.499
     },
     {
       "index": 20,
       "speaker": "SPEAKER_00",
       "text": "代价是节点重启时序列里会出现空洞，但对我们的场景来说，这些空洞完全没有影响。",
-      "start": null,
-      "end": null
+      "start": 158.749,
+      "end": 167.197
     },
     {
       "index": 21,
       "speaker": "SPEAKER_01",
       "text": "我们来谈存储。核心表以短码为主键，存长网址、所有者、创建时间和过期时间。",
-      "start": null,
-      "end": null
+      "start": 167.447,
+      "end": 174.039
     },
     {
       "index": 22,
       "speaker": "SPEAKER_00",
       "text": "这是纯粹的键值访问模式，所以分布式键值存储，或者以短码为主键的关系型数据库，都可以。",
-      "start": null,
-      "end": null
+      "start": 174.289,
+      "end": 183.164
     },
     {
       "index": 23,
       "speaker": "SPEAKER_01",
       "text": "我会选择按短码分区的键值存储，因为我们在关键路径上的查询从不扫描，也从不做连接。",
-      "start": null,
-      "end": null
+      "start": 183.414,
+      "end": 191.03
     },
     {
       "index": 24,
       "speaker": "SPEAKER_00",
       "text": "每月一千万个链接，一年就是一亿两千万个，每一行连同网址大概五百字节。",
-      "start": null,
-      "end": null
+      "start": 191.28,
+      "end": 198.512
     },
     {
       "index": 25,
       "speaker": "SPEAKER_01",
       "text": "所以核心数据每年大约六十 GB，量很小。分析事件会比链接表大得多。",
-      "start": null,
-      "end": null
+      "start": 198.762,
+      "end": 204.735
     },
     {
       "index": 26,
       "speaker": "SPEAKER_00",
       "text": "对读取路径来说，在存储前面加缓存是必须的。链接的热度服从很强的幂律分布。",
-      "start": null,
-      "end": null
+      "start": 204.985,
+      "end": 213.156
     },
     {
       "index": 27,
       "speaker": "SPEAKER_01",
       "text": "一小部分短码产生了绝大多数跳转，所以即使一个不大的缓存也能获得很高的命中率。",
-      "start": null,
-      "end": null
+      "start": 213.406,
+      "end": 220.489
     },
     {
       "index": 28,
       "speaker": "SPEAKER_00",
       "text": "我们应该以短码为键缓存解析后的长网址，设置过期时间，并在链接被编辑或删除时显式失效。",
-      "start": null,
-      "end": null
+      "start": 220.739,
+      "end": 230.211
     },
     {
       "index": 29,
       "speaker": "SPEAKER_01",
       "text": "被删除的链接很重要。如果有人下架了一个恶意链接，缓存里的旧条目还会继续提供它，所以失效必须及时。",
-      "start": null,
-      "end": null
+      "start": 230.461,
+      "end": 238.93
     },
     {
       "index": 30,
       "speaker": "SPEAKER_00",
       "text": "我们可以把失效事件发布到消息总线上，让每个缓存节点都订阅，而不是只依赖过期。",
-      "start": null,
-      "end": null
+      "start": 239.18,
+      "end": 247.308
     },
     {
       "index": 31,
       "speaker": "SPEAKER_01",
       "text": "至于跳转本身，我们是返回永久的三零一，还是临时的三零二？",
-      "start": null,
-      "end": null
+      "start": 247.558,
+      "end": 252.486
     },
     {
       "index": 32,
       "speaker": "SPEAKER_00",
       "text": "三零二，因为永久跳转会被浏览器缓存，我们就再也看不到之后的点击了。",
-      "start": null,
-      "end": null
+      "start": 252.736,
+      "end": 259.712
     },
     {
       "index": 33,
       "speaker": "SPEAKER_01",
       "text": "对，而且回访用户的数据分析会完全丢失。为了保留这些数据，多一点负载是值得的。",
-      "start": null,
-      "end": null
+      "start": 259.962,
+      "end": 266.383
     },
     {
       "index": 34,
       "speaker": "SPEAKER_00",
       "text": "接下来是分析流水线。我们不应该在跳转路径上同步写数据库。",
-      "start": null,
-      "end": null
+      "start": 266.633,
+      "end": 272.863
     },
     {
       "index": 35,
       "speaker": "SPEAKER_01",
       "text": "绝对不应该。我们把点击事件发到队列里，立刻返回跳转，让消费者异步地做汇总。",
-      "start": null,
-      "end": null
+      "start": 273.113,
+      "end": 279.875
     },
     {
       "index": 36,
       "speaker": "SPEAKER_00",
       "text": "消费者可以把事件汇总成按链接、按小时的计数器，原始事件则在廉价存储里保留一段有限的时间。",
-      "start": null,
-      "end": null
+      "start": 280.125,
+      "end": 289.576
     },
     {
       "index": 37,
       "speaker": "SPEAKER_01",
       "text": "我们应该让消费者以事件标识为键做到幂等，因为至少一次投递意味着一定会出现重复。",
-      "start": null,
-      "end": null
+      "start": 289.826,
+      "end": 296.823
     },
     {
       "index": 38,
       "speaker": "SPEAKER_00",
       "text": "我们来讲讲滥用问题，因为短链接服务是钓鱼和传播恶意软件的常用工具。",
-      "start": null,
-      "end": null
+      "start": 297.073,
+      "end": 304.412
     },
     {
       "index": 39,
       "speaker": "SPEAKER_01",
       "text": "我们需要在创建时用信誉服务检查提交的网址，并且定期重新检查，因为一个干净的域名以后可能会变成恶意的。",
-      "start": null,
-      "end": null
+      "start": 304.662,
+      "end": 313.345
     },
     {
       "index": 40,
       "speaker": "SPEAKER_00",
       "text": "对于被标记为可疑的链接，我们还应该支持一个中间警告页，而不是一律直接封禁。",
-      "start": null,
-      "end": null
+      "start": 313.595,
+      "end": 321.403
     },
     {
       "index": 41,
       "speaker": "SPEAKER_01",
       "text": "还要按账号限制创建链接的频率，因为批量创建成千上万个链接是很强的滥用信号。",
-      "start": null,
-      "end": null
+      "start": 321.653,
+      "end": 328.927
     },
     {
       "index": 42,
       "speaker": "SPEAKER_00",
       "text": "在可用性方面，跳转路径必须能扛住整个区域的故障。这就需要在多个区域部署只读副本。",
-      "start": null,
-      "end": null
+      "start": 329.177,
+      "end": 337.625
     },
     {
       "index": 43,
       "speaker": "SPEAKER_01",
       "text": "由于大多数情况下链接创建后就不会再改，读取使用异步复制完全可以接受。",
-      "start": null,
-      "end": null
+      "start": 337.875,
+      "end": 344.169
     },
     {
       "index": 44,
       "speaker": "SPEAKER_00",
       "text": "写入路径可以留在单一的主区域，我们接受远方用户的创建延迟稍高一些。",
-      "start": null,
-      "end": null
+      "start": 344.419,
+      "end": 351.416
     },
     {
       "index": 45,
       "speaker": "SPEAKER_01",
       "text": "这种不对称是正确的选择。创建只发生一次，跳转会发生一百次，所以我们为跳转做优化。",
-      "start": null,
-      "end": null
+      "start": 351.666,
+      "end": 359.047
     },
     {
       "index": 46,
       "speaker": "SPEAKER_00",
       "text": "那自定义别名和生成的短码冲突怎么办？我们需要一个统一的命名空间和一个预留机制。",
-      "start": null,
-      "end": null
+      "start": 359.297,
+      "end": 367.468
     },
     {
       "index": 47,
       "speaker": "SPEAKER_01",
       "text": "我会为自定义别名预留单独的前缀或长度，这样生成的短码就永远不会和用户自选的短码冲突。",
-      "start": null,
-      "end": null
+      "start": 367.718,
+      "end": 375.547
     },
     {
       "index": 48,
       "speaker": "SPEAKER_00",
       "text": "好。我来总结一下。用打乱后的计数器生成六十二进制短码，键值存储，大量缓存加上事件驱动的失效。",
-      "start": null,
-      "end": null
+      "start": 375.797,
+      "end": 386.101
     },
     {
       "index": 49,
       "speaker": "SPEAKER_01",
       "text": "再加上用临时跳转保留分析数据、异步点击流水线、多区域只读副本，以及一层滥用检测。",
-      "start": null,
-      "end": null
+      "start": 386.351,
+      "end": 393.541
     },
     {
       "index": 50,
       "speaker": "SPEAKER_00",
       "text": "我觉得这个问题有意思的地方在于，存储量其实很小，而设计真正关心的是缓存和滥用。",
-      "start": null,
-      "end": null
+      "start": 393.791,
+      "end": 402.132
     },
     {
       "index": 51,
       "speaker": "SPEAKER_01",
       "text": "没错。简单版本是一个周末就能做完的项目。生产版本主要是围绕安全和读取规模的运维问题。",
-      "start": null,
-      "end": null
+      "start": 402.382,
+      "end": 409.998
     }
   ],
   "translation": {
@@ -383,5 +383,22 @@
     "translation_file": "multilingual/translations/zh/audio_02_url_shortener.txt",
     "translation_sha256": "6ffb7e4b63f1e33c9a45952d90742d244303036a679cd6f498cf9c4e72ccf43c"
   },
-  "synthesis": null
+  "synthesis": {
+    "engine": "kokoro-onnx",
+    "engine_version": "0.6.1",
+    "model": "Kokoro-82M v1.0 (kokoro-v1.0.onnx)",
+    "model_sha256": "7d5df8ecf7d4b1878015a32686053fd0eebe2bc377234608764cc0ef3636a6c5",
+    "g2p": "misaki zh + espeak-ng en-us for English words",
+    "voices": {
+      "SPEAKER_00": "zf_xiaobei",
+      "SPEAKER_01": "zm_yunjian"
+    },
+    "speed": 1.0,
+    "gap_seconds": 0.25,
+    "sample_rate": 16000,
+    "resampled_from": 24000,
+    "format": "wav pcm_s16le mono",
+    "timing": "exact: sample offsets of each synthesised segment",
+    "wav_sha256": "bf760199aad2777903856fafa1cd9a6690160b76b5a06bdecbece50f8ac2a20b"
+  }
 }

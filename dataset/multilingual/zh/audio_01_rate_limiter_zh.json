@@ -5,7 +5,7 @@
   "language": "zh",
   "topic": "分布式限流器",
   "source_topic": "Distributed Rate Limiter",
-  "duration_seconds": null,
+  "duration_seconds": 499.51,
   "speakers": [
     "SPEAKER_00",
     "SPEAKER_01"
@@ -15,393 +15,393 @@
       "index": 0,
       "speaker": "SPEAKER_00",
       "text": "我们来为一个公开 API 设计一个分布式限流器。",
-      "start": null,
-      "end": null
+      "start": 0.0,
+      "end": 4.437
     },
     {
       "index": 1,
       "speaker": "SPEAKER_01",
       "text": "第一个需求是每个普通客户端每分钟一百个请求，我们还需要为和我们签了合同的合作伙伴提供一个更高的等级。",
-      "start": null,
-      "end": null
+      "start": 4.687,
+      "end": 13.605
     },
     {
       "index": 2,
       "speaker": "SPEAKER_00",
       "text": "所以我们至少需要两个策略等级。我们是按 API 密钥、用户身份，还是来源 IP 地址来计算限额？",
-      "start": null,
-      "end": null
+      "start": 13.855,
+      "end": 22.9
     },
     {
       "index": 3,
       "speaker": "SPEAKER_01",
       "text": "我会把 API 密钥作为主要身份来计算，只有在登录和重置密码这类不需要认证的接口上才退回到 IP 地址。",
-      "start": null,
-      "end": null
+      "start": 23.15,
+      "end": 31.769
     },
     {
       "index": 4,
       "speaker": "SPEAKER_00",
       "text": "有道理。单纯按 IP 限流在企业 NAT 后面会严重失效，因为成千上万的用户共用同一个出口地址。",
-      "start": null,
-      "end": null
+      "start": 32.019,
+      "end": 41.128
     },
     {
       "index": 5,
       "speaker": "SPEAKER_01",
       "text": "对，而且在移动运营商那里也会失效。一个运营商网关背后可能有非常多的用户，我们会误伤正常流量。",
-      "start": null,
-      "end": null
+      "start": 41.378,
+      "end": 49.293
     },
     {
       "index": 6,
       "speaker": "SPEAKER_00",
       "text": "我们来谈谈算法。最直接的起点是固定窗口计数器，每个密钥每分钟一个计数器。",
-      "start": null,
-      "end": null
+      "start": 49.543,
+      "end": 57.415
     },
     {
       "index": 7,
       "speaker": "SPEAKER_01",
       "text": "固定窗口成本低，也容易理解，但它会在窗口边界允许两倍于限额的突发流量。",
-      "start": null,
-      "end": null
+      "start": 57.665,
+      "end": 63.851
     },
     {
       "index": 8,
       "speaker": "SPEAKER_00",
       "text": "没错。一个客户端可以在一分钟的最后一秒发一百个请求，再在下一分钟的第一秒发一百个。",
-      "start": null,
-      "end": null
+      "start": 64.101,
+      "end": 72.677
     },
     {
       "index": 9,
       "speaker": "SPEAKER_01",
       "text": "对公开 API 来说这是个实际问题，因为后端在两秒之内就收到了两百个请求，而策略写的是每分钟一百个。",
-      "start": null,
-      "end": null
+      "start": 72.927,
+      "end": 81.759
     },
     {
       "index": 10,
       "speaker": "SPEAKER_00",
       "text": "滑动窗口日志可以精确地解决这个问题。我们为每个请求保存一个时间戳，然后统计最近六十秒内的记录。",
-      "start": null,
-      "end": null
+      "start": 82.009,
+      "end": 92.207
     },
     {
       "index": 11,
       "speaker": "SPEAKER_01",
       "text": "精确，但是代价高。一个每分钟一百个请求的密钥就要保存一百个时间戳，内存随流量线性增长。",
-      "start": null,
-      "end": null
+      "start": 92.457,
+      "end": 100.179
     },
     {
       "index": 12,
       "speaker": "SPEAKER_00",
       "text": "所以实际可行的折中方案是滑动窗口计数器，用加权平均把上一个窗口和当前窗口结合起来。",
-      "start": null,
-      "end": null
+      "start": 100.429,
+      "end": 110.051
     },
     {
       "index": 13,
       "speaker": "SPEAKER_01",
       "text": "这样只需为每个密钥保存两个整数，就能把精度控制在很小的误差范围内，对高流量 API 来说是个不错的权衡。",
-      "start": null,
-      "end": null
+      "start": 110.301,
+      "end": 119.218
     },
     {
       "index": 14,
       "speaker": "SPEAKER_00",
       "text": "还有令牌桶，我喜欢它，因为它把突发容量作为一个核心概念直接表达出来。",
-      "start": null,
-      "end": null
+      "start": 119.468,
+      "end": 126.764
     },
     {
       "index": 15,
       "speaker": "SPEAKER_01",
       "text": "同意。桶里有一个最大令牌数，令牌以固定速率补充，只有能取走一个令牌的请求才会被放行。",
-      "start": null,
-      "end": null
+      "start": 127.014,
+      "end": 134.502
     },
     {
       "index": 16,
       "speaker": "SPEAKER_00",
       "text": "所以一个一直很安静的客户端会积累令牌，可以发一小波突发请求，这通常正是 API 调用方真正想要的。",
-      "start": null,
-      "end": null
+      "start": 134.752,
+      "end": 144.757
     },
     {
       "index": 17,
       "speaker": "SPEAKER_01",
       "text": "我们应该给桶设上限，这样闲置的客户端就不能积累无限的突发量。容量一百、每秒补充一点六七个令牌，正好符合我们的策略。",
-      "start": null,
-      "end": null
+      "start": 145.007,
+      "end": 154.586
     },
     {
       "index": 18,
       "speaker": "SPEAKER_00",
       "text": "接下来看分布式的部分。我们会运行很多无状态的 API 网关节点，所以计数器不能放在本地内存里。",
-      "start": null,
-      "end": null
+      "start": 154.836,
+      "end": 164.18
     },
     {
       "index": 19,
       "speaker": "SPEAKER_01",
       "text": "如果每个节点各自维护计数器，那么有十个节点时，一个客户端实际上能拿到十倍的限额，前提是负载均衡器把流量平均分配。",
-      "start": null,
-      "end": null
+      "start": 164.43,
+      "end": 174.649
     },
     {
       "index": 20,
       "speaker": "SPEAKER_00",
       "text": "所以我们需要共享状态。标准的选择是 Redis，用客户端标识和时间窗口作为键，并使用原子自增操作。",
-      "start": null,
-      "end": null
+      "start": 174.899,
+      "end": 185.011
     },
     {
       "index": 21,
       "speaker": "SPEAKER_01",
       "text": "我们应该把整个检查和扣减放在同一个 Lua 脚本里，这样读取、比较和写入在 Redis 这边都是原子的。",
-      "start": null,
-      "end": null
+      "start": 185.261,
+      "end": 192.962
     },
     {
       "index": 22,
       "speaker": "SPEAKER_00",
       "text": "这就避免了经典的竞态条件，也就是两个网关节点都读到九十九，然后都决定放行这个请求。",
-      "start": null,
-      "end": null
+      "start": 193.212,
+      "end": 202.3
     },
     {
       "index": 23,
       "speaker": "SPEAKER_01",
       "text": "对于令牌桶，脚本会计算距离上次补充过去了多少时间，加上这段时间应得的令牌，限制在容量以内，然后尝试消耗一个。",
-      "start": null,
-      "end": null
+      "start": 202.55,
+      "end": 212.278
     },
     {
       "index": 24,
       "speaker": "SPEAKER_00",
       "text": "我们把令牌数量和上次补充的时间戳放在同一个哈希里，这样一次往返就能完成整个判断。",
-      "start": null,
-      "end": null
+      "start": 212.528,
+      "end": 221.189
     },
     {
       "index": 25,
       "speaker": "SPEAKER_01",
       "text": "这里延迟预算很重要。每个请求都要付出这个成本，所以我们希望 Redis 调用保持在几毫秒以内。",
-      "start": null,
-      "end": null
+      "start": 221.439,
+      "end": 228.885
     },
     {
       "index": 26,
       "speaker": "SPEAKER_00",
       "text": "这意味着 Redis 集群应该和网关集群在同一个区域，最好还在同一组可用区里。",
-      "start": null,
-      "end": null
+      "start": 229.135,
+      "end": 236.452
     },
     {
       "index": 27,
       "speaker": "SPEAKER_01",
       "text": "我们还应该按键分片，这样一个特别活跃的客户端就不会把所有负载都压到一个 Redis 主节点上。",
-      "start": null,
-      "end": null
+      "start": 236.702,
+      "end": 244.147
     },
     {
       "index": 28,
       "speaker": "SPEAKER_00",
       "text": "Redis Cluster 会把键哈希到一个槽位上，所以只要我们的键空间足够大，分布自然就是均衡的。",
-      "start": null,
-      "end": null
+      "start": 244.397,
+      "end": 252.568
     },
     {
       "index": 29,
       "speaker": "SPEAKER_01",
       "text": "但一个滥用的客户端仍然只是一个键，而一个键总会落在同一个节点上。这就是我们的热点键问题。",
-      "start": null,
-      "end": null
+      "start": 252.818,
+      "end": 260.647
     },
     {
       "index": 30,
       "speaker": "SPEAKER_00",
       "text": "对这种情况，我们可以把计数器本身拆分，把限额分到几个子计数器上，每个请求随机选择其中一个。",
-      "start": null,
-      "end": null
+      "start": 260.897,
+      "end": 270.497
     },
     {
       "index": 31,
       "speaker": "SPEAKER_01",
       "text": "这样可以减少争用，但会损失一些精度，因为各个子计数器会出现偏差，其中一个可能比其他的先用完。",
-      "start": null,
-      "end": null
+      "start": 270.747,
+      "end": 278.897
     },
     {
       "index": 32,
       "speaker": "SPEAKER_00",
       "text": "面对极端流量的另一种做法是本地令牌分配模型，每个网关节点从 Redis 租用一部分预算。",
-      "start": null,
-      "end": null
+      "start": 279.147,
+      "end": 287.872
     },
     {
       "index": 33,
       "speaker": "SPEAKER_01",
       "text": "也就是说，一个节点一次申请十个令牌，在本地直接发放，不需要任何网络调用，等租约快用完了再回去申请。",
-      "start": null,
-      "end": null
+      "start": 288.122,
+      "end": 296.826
     },
     {
       "index": 34,
       "speaker": "SPEAKER_00",
       "text": "这能把 Redis 的调用频率降低一个数量级，而精度损失最多就是突发时刻那些还没用掉的租约。",
-      "start": null,
-      "end": null
+      "start": 297.076,
+      "end": 306.185
     },
     {
       "index": 35,
       "speaker": "SPEAKER_01",
       "text": "我们来讨论故障处理。当 Redis 无法访问，或者慢到超出我们的超时时间，会发生什么？",
-      "start": null,
-      "end": null
+      "start": 306.435,
+      "end": 313.198
     },
     {
       "index": 36,
       "speaker": "SPEAKER_00",
       "text": "我们需要一个明确的策略。失败放行意味着允许流量通过，保护可用性。失败拒绝意味着拒绝请求，保护后端。",
-      "start": null,
-      "end": null
+      "start": 313.448,
+      "end": 323.496
     },
     {
       "index": 37,
       "speaker": "SPEAKER_01",
       "text": "对公开 API，我会让普通接口失败放行，而对创建账号、批量导出这类昂贵或敏感的接口失败拒绝。",
-      "start": null,
-      "end": null
+      "start": 323.746,
+      "end": 331.916
     },
     {
       "index": 38,
       "speaker": "SPEAKER_00",
       "text": "当共享存储不可用时，我们还应该降级到本地内存限流器，这样至少还有一个上限，而不是完全没有。",
-      "start": null,
-      "end": null
+      "start": 332.166,
+      "end": 341.575
     },
     {
       "index": 39,
       "speaker": "SPEAKER_01",
       "text": "很好。本地降级应该使用保守的限额，因为每个节点都独立执行，实际总量会乘以集群的节点数。",
-      "start": null,
-      "end": null
+      "start": 341.825,
+      "end": 349.568
     },
     {
       "index": 40,
       "speaker": "SPEAKER_00",
       "text": "现在说响应约定。拒绝时我们返回状态码四百二十九，也就是请求过多，并带上 Retry-After 头。",
-      "start": null,
-      "end": null
+      "start": 349.818,
+      "end": 358.842
     },
     {
       "index": 41,
       "speaker": "SPEAKER_01",
       "text": "而且每个响应里都应该包含限额、剩余额度和重置时间戳，这样守规矩的客户端就能自己控制节奏。",
-      "start": null,
-      "end": null
+      "start": 359.092,
+      "end": 367.306
     },
     {
       "index": 42,
       "speaker": "SPEAKER_00",
       "text": "这些响应头把限流器从一种惩罚变成了一种协议。客户端可以主动退避，而不是一直猛冲然后被封。",
-      "start": null,
-      "end": null
+      "start": 367.556,
+      "end": 377.22
     },
     {
       "index": 43,
       "speaker": "SPEAKER_01",
       "text": "我们还应该在客户端文档里推荐带随机抖动的指数退避，否则所有被拒绝的客户端都会在同一个重置时刻一起重试。",
-      "start": null,
-      "end": null
+      "start": 377.47,
+      "end": 386.686
     },
     {
       "index": 44,
       "speaker": "SPEAKER_00",
       "text": "这种同步的重试风暴是真实存在的故障模式。随机抖动能把恢复流量分散开，而不是制造第二个峰值。",
-      "start": null,
-      "end": null
+      "start": 386.936,
+      "end": 396.749
     },
     {
       "index": 45,
       "speaker": "SPEAKER_01",
       "text": "规则配置怎么办？我会把策略放在一个控制平面里，再推送给各个网关，而不是写死在代码里。",
-      "start": null,
-      "end": null
+      "start": 396.999,
+      "end": 404.572
     },
     {
       "index": 46,
       "speaker": "SPEAKER_00",
       "text": "对，一个带版本化规则的策略服务，这样修改合作伙伴等级就不需要重新部署。网关会缓存这些规则，并定期刷新。",
-      "start": null,
-      "end": null
+      "start": 404.822,
+      "end": 415.958
     },
     {
       "index": 47,
       "speaker": "SPEAKER_01",
       "text": "我们还应该支持按接口单独覆盖。一个便宜的读取接口和一个昂贵的搜索接口不应该共用同一份预算。",
-      "start": null,
-      "end": null
+      "start": 416.208,
+      "end": 424.166
     },
     {
       "index": 48,
       "speaker": "SPEAKER_00",
       "text": "加权成本模型可以很好地处理这个问题。一次搜索请求消耗五个令牌，而一次简单读取只消耗一个。",
-      "start": null,
-      "end": null
+      "start": 424.416,
+      "end": 434.272
     },
     {
       "index": 49,
       "speaker": "SPEAKER_01",
       "text": "在可观测性方面，我们需要按等级统计放行和拒绝的数量、被拒绝最多的密钥，以及限流器本身的延迟。",
-      "start": null,
-      "end": null
+      "start": 434.522,
+      "end": 442.799
     },
     {
       "index": 50,
       "speaker": "SPEAKER_00",
       "text": "当拒绝率超过某个阈值时我们应该告警，因为这通常意味着要么是攻击，要么是某个客户端发布了有问题的循环。",
-      "start": null,
-      "end": null
+      "start": 443.049,
+      "end": 453.46
     },
     {
       "index": 51,
       "speaker": "SPEAKER_01",
       "text": "还有一个问题是多区域。如果一个客户端可以访问两个区域，我们是执行全局限额，还是按区域限额？",
-      "start": null,
-      "end": null
+      "start": 453.71,
+      "end": 461.39
     },
     {
       "index": 52,
       "speaker": "SPEAKER_00",
       "text": "跨区域的同步检查会增加几十毫秒，所以我会按区域执行预算，再为了计费异步地进行对账。",
-      "start": null,
-      "end": null
+      "start": 461.64,
+      "end": 470.258
     },
     {
       "index": 53,
       "speaker": "SPEAKER_01",
       "text": "这是个合理的权衡。限流器保护的是容量，而容量本来就是按区域的，精确的全局计数只对合同有意义。",
-      "start": null,
-      "end": null
+      "start": 470.508,
+      "end": 478.402
     },
     {
       "index": 54,
       "speaker": "SPEAKER_00",
       "text": "所以总结一下：在 Redis 里用原子 Lua 脚本实现令牌桶，热点键用本地租约，明确的失败放行策略，以及标准的响应头。",
-      "start": null,
-      "end": null
+      "start": 478.652,
+      "end": 489.873
     },
     {
       "index": 55,
       "speaker": "SPEAKER_01",
       "text": "再加上版本化的策略控制平面、按接口加权的成本，以及按区域执行。我觉得这样就把整个设计从头到尾都覆盖了。",
-      "start": null,
-      "end": null
+      "start": 490.123,
+      "end": 499.51
     }
   ],
   "translation": {
@@ -411,5 +411,22 @@
     "translation_file": "multilingual/translations/zh/audio_01_rate_limiter.txt",
     "translation_sha256": "d1c5b4bd79d84e03cf79f4de2bea8de08614dad2de4d2c5634f58964c4e2b29b"
   },
-  "synthesis": null
+  "synthesis": {
+    "engine": "kokoro-onnx",
+    "engine_version": "0.6.1",
+    "model": "Kokoro-82M v1.0 (kokoro-v1.0.onnx)",
+    "model_sha256": "7d5df8ecf7d4b1878015a32686053fd0eebe2bc377234608764cc0ef3636a6c5",
+    "g2p": "misaki zh + espeak-ng en-us for English words",
+    "voices": {
+      "SPEAKER_00": "zf_xiaobei",
+      "SPEAKER_01": "zm_yunjian"
+    },
+    "speed": 1.0,
+    "gap_seconds": 0.25,
+    "sample_rate": 16000,
+    "resampled_from": 24000,
+    "format": "wav pcm_s16le mono",
+    "timing": "exact: sample offsets of each synthesised segment",
+    "wav_sha256": "cc11ce13953f79ab6b0d2bcca5298d6651308de4410e8888a46a92119de4d156"
+  }
 }

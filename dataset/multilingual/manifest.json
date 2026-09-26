@@ -10,9 +10,9 @@
       "audio": "es/audio_01_rate_limiter_es.wav",
       "reference": "es/audio_01_rate_limiter_es.json",
       "segments": 56,
-      "duration_seconds": null,
-      "sha256": null,
-      "status": "pending_synthesis"
+      "duration_seconds": 520.203,
+      "sha256": "be3bfa24c4d5c9ab02754990e7563c9a37639017c9c4797629f2bf413d80eb8a",
+      "status": "synthesized"
     },
     {
       "audio_id": "audio_02_url_shortener_es",
@@ -21,9 +21,9 @@
       "audio": "es/audio_02_url_shortener_es.wav",
       "reference": "es/audio_02_url_shortener_es.json",
       "segments": 52,
-      "duration_seconds": null,
-      "sha256": null,
-      "status": "pending_synthesis"
+      "duration_seconds": 465.593,
+      "sha256": "ca13725c6bdee617da2872d8d3ca33398694f3e6ac2fb58cf2ae1e9a55596909",
+      "status": "synthesized"
     },
     {
       "audio_id": "audio_03_chat_system_es",
@@ -32,9 +32,9 @@
       "audio": "es/audio_03_chat_system_es.wav",
       "reference": "es/audio_03_chat_system_es.json",
       "segments": 51,
-      "duration_seconds": null,
-      "sha256": null,
-      "status": "pending_synthesis"
+      "duration_seconds": 432.831,
+      "sha256": "bc2974c889586594cf1a338997b5b411631f1b86e9f612c45f39d7bae3eefa44",
+      "status": "synthesized"
     },
     {
       "audio_id": "audio_04_news_feed_es",
@@ -43,9 +43,9 @@
       "audio": "es/audio_04_news_feed_es.wav",
       "reference": "es/audio_04_news_feed_es.json",
       "segments": 50,
-      "duration_seconds": null,
-      "sha256": null,
-      "status": "pending_synthesis"
+      "duration_seconds": 431.173,
+      "sha256": "2ab483e574babfecb2d24901d75617c82c61670c13120c4dc56869621c80dd87",
+      "status": "synthesized"
     },
     {
       "audio_id": "audio_05_payment_idempotency_es",
@@ -54,9 +54,9 @@
       "audio": "es/audio_05_payment_idempotency_es.wav",
       "reference": "es/audio_05_payment_idempotency_es.json",
       "segments": 54,
-      "duration_seconds": null,
-      "sha256": null,
-      "status": "pending_synthesis"
+      "duration_seconds": 435.672,
+      "sha256": "8a859bd2a877082deac5b2df165a4f12348461c0b699b5edfe9cb6c58e264e15",
+      "status": "synthesized"
     },
     {
       "audio_id": "audio_06_video_streaming_es",
@@ -65,9 +65,9 @@
       "audio": "es/audio_06_video_streaming_es.wav",
       "reference": "es/audio_06_video_streaming_es.json",
       "segments": 50,
-      "duration_seconds": null,
-      "sha256": null,
-      "status": "pending_synthesis"
+      "duration_seconds": 420.079,
+      "sha256": "dcd44623a91f4dc58ff45c14bf96282f49e1f7617f479c926da6bd69411ee740",
+      "status": "synthesized"
     },
     {
       "audio_id": "audio_01_rate_limiter_hi",
@@ -76,9 +76,9 @@
       "audio": "hi/audio_01_rate_limiter_hi.wav",
       "reference": "hi/audio_01_rate_limiter_hi.json",
       "segments": 56,
-      "duration_seconds": null,
-      "sha256": null,
-      "status": "pending_synthesis"
+      "duration_seconds": 614.966,
+      "sha256": "5e28bfa12a4dd9a116697a1b60698cc53b4611deb73368fca185c1fd1f37a210",
+      "status": "synthesized"
     },
     {
       "audio_id": "audio_02_url_shortener_hi",
@@ -87,9 +87,9 @@
       "audio": "hi/audio_02_url_shortener_hi.wav",
       "reference": "hi/audio_02_url_shortener_hi.json",
       "segments": 52,
-      "duration_seconds": null,
-      "sha256": null,
-      "status": "pending_synthesis"
+      "duration_seconds": 535.246,
+      "sha256": "c74625dbab0a0e191156574c87c602f26b08b106dcc410b21b77aad4166986bc",
+      "status": "synthesized"
     },
     {
       "audio_id": "audio_03_chat_system_hi",
@@ -98,9 +98,9 @@
       "audio": "hi/audio_03_chat_system_hi.wav",
       "reference": "hi/audio_03_chat_system_hi.json",
       "segments": 51,
-      "duration_seconds": null,
-      "sha256": null,
-      "status": "pending_synthesis"
+      "duration_seconds": 514.303,
+      "sha256": "928936072a95d097a13f005e59d3afd5cddfbd2521657cc5906c3733d0388add",
+      "status": "synthesized"
     },
     {
       "audio_id": "audio_04_news_feed_hi",
@@ -109,9 +109,9 @@
       "audio": "hi/audio_04_news_feed_hi.wav",
       "reference": "hi/audio_04_news_feed_hi.json",
       "segments": 50,
-      "duration_seconds": null,
-      "sha256": null,
-      "status": "pending_synthesis"
+      "duration_seconds": 499.439,
+      "sha256": "c2dec173bcf9b5820034082e50267ada3c7edc05ca971d2f5e37ba6eefd52fcc",
+      "status": "synthesized"
     },
     {
       "audio_id": "audio_05_payment_idempotency_hi",
@@ -120,9 +120,9 @@
       "audio": "hi/audio_05_payment_idempotency_hi.wav",
       "reference": "hi/audio_05_payment_idempotency_hi.json",
       "segments": 54,
-      "duration_seconds": null,
-      "sha256": null,
-      "status": "pending_synthesis"
+      "duration_seconds": 539.629,
+      "sha256": "9fd9f3e0d595e3b5fc6a5a3cef072dc6c69662890193a6ecf5e45fa7ecff95c7",
+      "status": "synthesized"
     },
     {
       "audio_id": "audio_06_video_streaming_hi",
@@ -131,9 +131,9 @@
       "audio": "hi/audio_06_video_streaming_hi.wav",
       "reference": "hi/audio_06_video_streaming_hi.json",
       "segments": 50,
-      "duration_seconds": null,
-      "sha256": null,
-      "status": "pending_synthesis"
+      "duration_seconds": 501.445,
+      "sha256": "ae2d9956902e8489305a3d1b34cafb4cffc02e4c09302230ebe802de4767207d",
+      "status": "synthesized"
     },
     {
       "audio_id": "audio_01_rate_limiter_zh",
@@ -142,9 +142,9 @@
       "audio": "zh/audio_01_rate_limiter_zh.wav",
       "reference": "zh/audio_01_rate_limiter_zh.json",
       "segments": 56,
-      "duration_seconds": null,
-      "sha256": null,
-      "status": "pending_synthesis"
+      "duration_seconds": 499.51,
+      "sha256": "cc11ce13953f79ab6b0d2bcca5298d6651308de4410e8888a46a92119de4d156",
+      "status": "synthesized"
     },
     {
       "audio_id": "audio_02_url_shortener_zh",
@@ -153,9 +153,9 @@
       "audio": "zh/audio_02_url_shortener_zh.wav",
       "reference": "zh/audio_02_url_shortener_zh.json",
       "segments": 52,
-      "duration_seconds": null,
-      "sha256": null,
-      "status": "pending_synthesis"
+      "duration_seconds": 409.998,
+      "sha256": "bf760199aad2777903856fafa1cd9a6690160b76b5a06bdecbece50f8ac2a20b",
+      "status": "synthesized"
     },
     {
       "audio_id": "audio_03_chat_system_zh",
@@ -164,9 +164,9 @@
       "audio": "zh/audio_03_chat_system_zh.wav",
       "reference": "zh/audio_03_chat_system_zh.json",
       "segments": 51,
-      "duration_seconds": null,
-      "sha256": null,
-      "status": "pending_synthesis"
+      "duration_seconds": 408.276,
+      "sha256": "c29e1f6c73e44bd1b8c31d9e2c309c7038d08a65a29cb3316479db19461ee68a",
+      "status": "synthesized"
     },
     {
       "audio_id": "audio_04_news_feed_zh",
@@ -175,9 +175,9 @@
       "audio": "zh/audio_04_news_feed_zh.wav",
       "reference": "zh/audio_04_news_feed_zh.json",
       "segments": 50,
-      "duration_seconds": null,
-      "sha256": null,
-      "status": "pending_synthesis"
+      "duration_seconds": 404.271,
+      "sha256": "379307bd2a2b8695d7af28c02da0a45b16a9f60bd233b298e9f5d1550209410e",
+      "status": "synthesized"
     },
     {
       "audio_id": "audio_05_payment_idempotency_zh",
@@ -186,9 +186,9 @@
       "audio": "zh/audio_05_payment_idempotency_zh.wav",
       "reference": "zh/audio_05_payment_idempotency_zh.json",
       "segments": 54,
-      "duration_seconds": null,
-      "sha256": null,
-      "status": "pending_synthesis"
+      "duration_seconds": 434.455,
+      "sha256": "ad8a9cc7c030c88c074863025e340b8077551abfd1c5b8cbef79fb3ae3b713b8",
+      "status": "synthesized"
     },
     {
       "audio_id": "audio_06_video_streaming_zh",
@@ -197,9 +197,9 @@
       "audio": "zh/audio_06_video_streaming_zh.wav",
       "reference": "zh/audio_06_video_streaming_zh.json",
       "segments": 50,
-      "duration_seconds": null,
-      "sha256": null,
-      "status": "pending_synthesis"
+      "duration_seconds": 388.335,
+      "sha256": "033173fffe95c47d9e702d0072f3e60503aa4162dbea5a27c56df46c9bbb5459",
+      "status": "synthesized"
     }
   ]
 }

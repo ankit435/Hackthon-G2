@@ -5,7 +5,7 @@
   "language": "zh",
   "topic": "视频流媒体与分发流水线",
   "source_topic": "Video Streaming and Delivery Pipeline",
-  "duration_seconds": null,
+  "duration_seconds": 388.335,
   "speakers": [
     "SPEAKER_00",
     "SPEAKER_01"
@@ -15,351 +15,351 @@
       "index": 0,
       "speaker": "SPEAKER_00",
       "text": "我们来设计一个视频平台，覆盖大规模场景下的上传、处理和播放。",
-      "start": null,
-      "end": null
+      "start": 0.0,
+      "end": 6.421
     },
     {
       "index": 1,
       "speaker": "SPEAKER_01",
       "text": "我会把它拆成三个相对独立的系统。上传接入、转码流水线和分发路径。",
-      "start": null,
-      "end": null
+      "start": 6.671,
+      "end": 12.751
     },
     {
       "index": 2,
       "speaker": "SPEAKER_00",
       "text": "先说上传，在不可靠的网络上传大文件，意味着我们需要可断点续传的分片上传。",
-      "start": null,
-      "end": null
+      "start": 13.001,
+      "end": 20.937
     },
     {
       "index": 3,
       "speaker": "SPEAKER_01",
       "text": "客户端先申请一个上传会话，把文件分成若干片，每片独立上传，只重传失败的分片。",
-      "start": null,
-      "end": null
+      "start": 21.187,
+      "end": 28.334
     },
     {
       "index": 4,
       "speaker": "SPEAKER_00",
       "text": "使用预签名网址直接上传到存储，文件的字节就完全不会经过我们的应用服务器。",
-      "start": null,
-      "end": null
+      "start": 28.584,
+      "end": 36.328
     },
     {
       "index": 5,
       "speaker": "SPEAKER_01",
       "text": "这很重要。让好几 GB 的文件经过应用节点转发，既浪费带宽，又会长时间占用连接。",
-      "start": null,
-      "end": null
+      "start": 36.578,
+      "end": 43.81
     },
     {
       "index": 6,
       "speaker": "SPEAKER_00",
       "text": "所有分片到齐后，存储会把对象组装好，我们再发出一个事件来启动处理流程。",
-      "start": null,
-      "end": null
+      "start": 44.06,
+      "end": 51.996
     },
     {
       "index": 7,
       "speaker": "SPEAKER_01",
       "text": "大部分复杂度都在处理流水线里。我们需要多种不同分辨率和码率的版本。",
-      "start": null,
-      "end": null
+      "start": 52.246,
+      "end": 58.433
     },
     {
       "index": 8,
       "speaker": "SPEAKER_00",
       "text": "自适应码率流媒体需要一个码率阶梯，比如从二百四十 p 到四 K，每一档都用合适的码率编码。",
-      "start": null,
-      "end": null
+      "start": 58.683,
+      "end": 67.28
     },
     {
       "index": 9,
       "speaker": "SPEAKER_01",
       "text": "每个版本再切成很短的分段，通常是两到六秒，并配上一个列出所有可用版本的清单文件。",
-      "start": null,
-      "end": null
+      "start": 67.53,
+      "end": 74.762
     },
     {
       "index": 10,
       "speaker": "SPEAKER_00",
       "text": "然后播放器会根据测得的吞吐量和缓冲区水位，在播放过程中切换版本。",
-      "start": null,
-      "end": null
+      "start": 75.012,
+      "end": 82.607
     },
     {
       "index": 11,
       "speaker": "SPEAKER_01",
       "text": "这种切换只有在各个版本的分段对齐、关键帧位于完全相同的时间戳时才能生效。",
-      "start": null,
-      "end": null
+      "start": 82.857,
+      "end": 89.641
     },
     {
       "index": 12,
       "speaker": "SPEAKER_00",
       "text": "没错。关键帧不对齐会导致明显的画面异常或切换失败，所以编码器必须配置固定的关键帧间隔。",
-      "start": null,
-      "end": null
+      "start": 89.891,
+      "end": 99.491
     },
     {
       "index": 13,
       "speaker": "SPEAKER_01",
       "text": "至于转码本身，我们应该把源文件切成多段，分别独立编码，以此实现并行。",
-      "start": null,
-      "end": null
+      "start": 99.741,
+      "end": 105.586
     },
     {
       "index": 14,
       "speaker": "SPEAKER_00",
       "text": "这样就把一个漫长的串行任务变成了一个大规模的并行任务，只要工作节点足够，两个小时的电影几分钟就能处理完。",
-      "start": null,
-      "end": null
+      "start": 105.836,
+      "end": 116.652
     },
     {
       "index": 15,
       "speaker": "SPEAKER_01",
       "text": "我们需要一个基于有向任务图的作业编排器，因为缩略图提取、音频处理和各个版本的转码都可以同时进行。",
-      "start": null,
-      "end": null
+      "start": 116.902,
+      "end": 125.137
     },
     {
       "index": 16,
       "speaker": "SPEAKER_00",
       "text": "重试需要在分段级别保持幂等，这样一个工作节点失败，只意味着重新编码那一段。",
-      "start": null,
-      "end": null
+      "start": 125.387,
+      "end": 133.173
     },
     {
       "index": 17,
       "speaker": "SPEAKER_01",
       "text": "我们还应该区分优先级。热门创作者的一段短视频，不应该在同一个队列里排在一个四小时的上传后面。",
-      "start": null,
-      "end": null
+      "start": 133.423,
+      "end": 141.551
     },
     {
       "index": 18,
       "speaker": "SPEAKER_00",
       "text": "按预计时长和账号等级设置多个队列，基本就能解决这个问题，另外再给重新处理的任务单独留一条通道。",
-      "start": null,
-      "end": null
+      "start": 141.801,
+      "end": 151.871
     },
     {
       "index": 19,
       "speaker": "SPEAKER_01",
       "text": "成本控制在这里极其重要，因为转码非常消耗算力，通常是最大的一笔开支。",
-      "start": null,
-      "end": null
+      "start": 152.121,
+      "end": 158.627
     },
     {
       "index": 20,
       "speaker": "SPEAKER_00",
       "text": "所以对不热门的内容，我们应该延迟生成完整的码率阶梯，一开始只生成最常用的那个版本。",
-      "start": null,
-      "end": null
+      "start": 158.877,
+      "end": 167.368
     },
     {
       "index": 21,
       "speaker": "SPEAKER_01",
       "text": "之后如果某个视频火了，再按需补齐其余版本，这样就不用为没人看的内容付费。",
-      "start": null,
-      "end": null
+      "start": 167.618,
+      "end": 174.167
     },
     {
       "index": 22,
       "speaker": "SPEAKER_00",
       "text": "竞价实例或可抢占实例也很适合这种工作负载，因为分段级别的重试让中断的代价很小。",
-      "start": null,
-      "end": null
+      "start": 174.417,
+      "end": 183.313
     },
     {
       "index": 23,
       "speaker": "SPEAKER_01",
       "text": "接下来是分发。内容分发网络承担了主要的工作，从离观众最近的边缘节点提供分段。",
-      "start": null,
-      "end": null
+      "start": 183.563,
+      "end": 190.731
     },
     {
       "index": 24,
       "speaker": "SPEAKER_00",
       "text": "我们的源站只会看到缓存未命中的请求，所以相对于总的分发带宽，源站集群可以很小。",
-      "start": null,
-      "end": null
+      "start": 190.981,
+      "end": 199.579
     },
     {
       "index": 25,
       "speaker": "SPEAKER_01",
       "text": "缓存命中率是需要死死盯住的指标。未命中率哪怕只差几个百分点，都会变成很大的源站成本。",
-      "start": null,
-      "end": null
+      "start": 199.829,
+      "end": 207.701
     },
     {
       "index": 26,
       "speaker": "SPEAKER_00",
       "text": "分段的网址应该稳定且不可变，这样就能以很长的过期时间被完美缓存。",
-      "start": null,
-      "end": null
+      "start": 207.951,
+      "end": 215.012
     },
     {
       "index": 27,
       "speaker": "SPEAKER_01",
       "text": "清单文件就不一样了。对于直播内容，清单会不断更新，需要很短的缓存时间。",
-      "start": null,
-      "end": null
+      "start": 215.262,
+      "end": 221.534
     },
     {
       "index": 28,
       "speaker": "SPEAKER_00",
       "text": "这种区分，也就是不可变的分段和易变的清单，是流媒体缓存的核心思路。",
-      "start": null,
-      "end": null
+      "start": 221.784,
+      "end": 228.845
     },
     {
       "index": 29,
       "speaker": "SPEAKER_01",
       "text": "在访问控制方面，我们使用短期有效的签名网址，这样泄露出去的链接很快就会失效。",
-      "start": null,
-      "end": null
+      "start": 229.095,
+      "end": 236.071
     },
     {
       "index": 30,
       "speaker": "SPEAKER_00",
       "text": "而对于付费内容，要用带许可证服务器的数字版权管理，不过这会给客户端增加相当大的复杂度。",
-      "start": null,
-      "end": null
+      "start": 236.321,
+      "end": 245.388
     },
     {
       "index": 31,
       "speaker": "SPEAKER_01",
       "text": "我们还应该考虑预热分发。对于备受期待的新片，我们可以在上线前就把内容推送到边缘节点。",
-      "start": null,
-      "end": null
+      "start": 245.638,
+      "end": 253.126
     },
     {
       "index": 32,
       "speaker": "SPEAKER_00",
       "text": "否则第一波观众会同时缓存未命中，恰好在最糟糕的时刻冲垮源站。",
-      "start": null,
-      "end": null
+      "start": 253.376,
+      "end": 260.288
     },
     {
       "index": 33,
       "speaker": "SPEAKER_01",
       "text": "我们来谈谈直播，它会改变好几个前提假设。",
-      "start": null,
-      "end": null
+      "start": 260.538,
+      "end": 264.122
     },
     {
       "index": 34,
       "speaker": "SPEAKER_00",
       "text": "接入的是一路持续的流，而不是一个文件，使用 RTMP 之类的协议或者它的低延迟变体。",
-      "start": null,
-      "end": null
+      "start": 264.372,
+      "end": 272.543
     },
     {
       "index": 35,
       "speaker": "SPEAKER_01",
       "text": "转码必须实时进行，所以我们无法通过切分文件来并行。取而代之的是在不同版本之间并行。",
-      "start": null,
-      "end": null
+      "start": 272.793,
+      "end": 280.281
     },
     {
       "index": 36,
       "speaker": "SPEAKER_00",
       "text": "而且延迟成了一项核心需求。标准的分段流媒体会带来十到三十秒的延迟。",
-      "start": null,
-      "end": null
+      "start": 280.531,
+      "end": 287.997
     },
     {
       "index": 37,
       "speaker": "SPEAKER_01",
       "text": "低延迟模式使用更短的分段和分块传输，在分段还没完整生成时就推送部分内容。",
-      "start": null,
-      "end": null
+      "start": 288.247,
+      "end": 295.33
     },
     {
       "index": 38,
       "speaker": "SPEAKER_00",
       "text": "这样能把延迟降到几秒钟，代价是缓存效率更低，每个观众的请求数更多。",
-      "start": null,
-      "end": null
+      "start": 295.58,
+      "end": 303.004
     },
     {
       "index": 39,
       "speaker": "SPEAKER_01",
       "text": "我们还需要为接入准备故障切换路径，因为编码器连接一断，所有观众就只能看到黑屏。",
-      "start": null,
-      "end": null
+      "start": 303.254,
+      "end": 310.401
     },
     {
       "index": 40,
       "speaker": "SPEAKER_00",
       "text": "由主播向两个区域同时推流并自动切换，是重要活动的标准做法。",
-      "start": null,
-      "end": null
+      "start": 310.651,
+      "end": 317.392
     },
     {
       "index": 41,
       "speaker": "SPEAKER_01",
       "text": "在播放端，我们需要客户端的遥测数据来了解真实的质量，而不仅仅是服务端的指标。",
-      "start": null,
-      "end": null
+      "start": 317.642,
+      "end": 324.511
     },
     {
       "index": 42,
       "speaker": "SPEAKER_00",
       "text": "起播时间、卡顿率、平均码率和播放失败，这四个数字才真正描述了用户体验。",
-      "start": null,
-      "end": null
+      "start": 324.761,
+      "end": 332.335
     },
     {
       "index": 43,
       "speaker": "SPEAKER_01",
       "text": "卡顿率是用户感受最明显的。码率稍微低一点，几乎总是比卡住要好。",
-      "start": null,
-      "end": null
+      "start": 332.585,
+      "end": 338.217
     },
     {
       "index": 44,
       "speaker": "SPEAKER_00",
       "text": "因此播放器的自适应算法应该在往上切时保守，往下切时果断。",
-      "start": null,
-      "end": null
+      "start": 338.467,
+      "end": 344.781
     },
     {
       "index": 45,
       "speaker": "SPEAKER_01",
       "text": "在存储方面，我们保留原始母版用于重新处理，再加上所有版本，这会让占用空间成倍增加。",
-      "start": null,
-      "end": null
+      "start": 345.031,
+      "end": 352.711
     },
     {
       "index": 46,
       "speaker": "SPEAKER_00",
       "text": "我们应该对存储分层。母版放进冷归档存储，不热门的版本在需要时可以删除再重新生成。",
-      "start": null,
-      "end": null
+      "start": 352.961,
+      "end": 361.857
     },
     {
       "index": 47,
       "speaker": "SPEAKER_01",
       "text": "总结一下：直接上传到存储的断点续传，按分段并行转码并延迟生成码率阶梯，以及基于不可变分段的边缘分发。",
-      "start": null,
-      "end": null
+      "start": 362.107,
+      "end": 371.451
     },
     {
       "index": 48,
       "speaker": "SPEAKER_00",
       "text": "再加上签名访问、上线前的预热分发、单独的实时直播路径，以及客户端的质量遥测。",
-      "start": null,
-      "end": null
+      "start": 371.701,
+      "end": 379.936
     },
     {
       "index": 49,
       "speaker": "SPEAKER_01",
       "text": "这里的大多数决策都是由经济因素驱动的。转码算力和出口带宽占了大头，所以架构是跟着成本走的。",
-      "start": null,
-      "end": null
+      "start": 380.186,
+      "end": 388.335
     }
   ],
   "translation": {
@@ -369,5 +369,22 @@
     "translation_file": "multilingual/translations/zh/audio_06_video_streaming.txt",
     "translation_sha256": "1b15fd0f3f6d36a8891e23134eb4f44d16080f921930cb06a9af6336af2e4ce3"
   },
-  "synthesis": null
+  "synthesis": {
+    "engine": "kokoro-onnx",
+    "engine_version": "0.6.1",
+    "model": "Kokoro-82M v1.0 (kokoro-v1.0.onnx)",
+    "model_sha256": "7d5df8ecf7d4b1878015a32686053fd0eebe2bc377234608764cc0ef3636a6c5",
+    "g2p": "misaki zh + espeak-ng en-us for English words",
+    "voices": {
+      "SPEAKER_00": "zf_xiaobei",
+      "SPEAKER_01": "zm_yunjian"
+    },
+    "speed": 1.0,
+    "gap_seconds": 0.25,
+    "sample_rate": 16000,
+    "resampled_from": 24000,
+    "format": "wav pcm_s16le mono",
+    "timing": "exact: sample offsets of each synthesised segment",
+    "wav_sha256": "033173fffe95c47d9e702d0072f3e60503aa4162dbea5a27c56df46c9bbb5459"
+  }
 }
