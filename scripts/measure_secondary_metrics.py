@@ -43,7 +43,10 @@ async def main():
 
     for item in manifest.get("files", []):
         checksum = item["sha256"]
-        file_name = item["file_name"]
+        file_name = item.get("audio", item.get("file_name", ""))
+        audio_id = item.get("audio_id", item.get("id", ""))
+        ref_file = item.get("reference", f"{audio_id}.json")
+
         audio_file = await repo.find_by_checksum(checksum)
         if audio_file is None:
             print(f"Skipping {file_name}: not found in database.")
@@ -52,10 +55,10 @@ async def main():
         chunks = await repo.list_by_file(audio_file.id)
         hypothesis_text = " ".join(c.text.strip() for c in chunks if c.text)
 
-        ref_json_path = ref_dir / f"{item['id']}_{item['file_name'].replace('.wav', '')}.json"
+        ref_json_path = ref_dir / ref_file
         if not ref_json_path.is_file():
             # Try alternate file naming pattern
-            ref_matches = list(ref_dir.glob(f"{item['id']}*.json"))
+            ref_matches = list(ref_dir.glob(f"{audio_id}*.json"))
             if ref_matches:
                 ref_json_path = ref_matches[0]
 
@@ -67,9 +70,9 @@ async def main():
             w, c = compute_wer_cer(reference_text, hypothesis_text)
             wers.append(w)
             cers.append(c)
-            print(f"  {item['id']} ({file_name}): WER={w:.4f}, CER={c:.4f} (chunks={len(chunks)})")
+            print(f"  {audio_id} ({file_name}): WER={w:.4f}, CER={c:.4f} (chunks={len(chunks)})")
         else:
-            print(f"  {item['id']} ({file_name}): reference JSON not found.")
+            print(f"  {audio_id} ({file_name}): reference JSON not found.")
 
     if wers:
         avg_wer = round(sum(wers) / len(wers), 4)
