@@ -8,7 +8,8 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-EMBEDDING_DIM = 384  # must equal vector(384) in db/schema.sql
+sys.path.insert(0, str(ROOT / "src"))
+EMBEDDING_DIM = 1024  # must equal vector(1024) in db/schema.sql (BAAI/bge-m3)
 failures = []
 
 
@@ -47,10 +48,13 @@ def model_libs():
 
 def embedder():
     from sentence_transformers import SentenceTransformer
-    model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2", device="cpu")
+
+    from api.settings import load_settings
+    settings = load_settings()  # loads the *configured* model, not a hard-coded one (M4)
+    model = SentenceTransformer(settings.embedding_model, device=settings.embedding_device)
     dim = model.get_embedding_dimension()
     assert dim == EMBEDDING_DIM, f"embedding dim {dim} != schema {EMBEDDING_DIM}"
-    return f"dim={dim}, max_seq_length={model.max_seq_length}"
+    return f"model={settings.embedding_model} dim={dim}, max_seq_length={model.max_seq_length}"
 
 
 def env_file_value(key):

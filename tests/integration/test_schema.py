@@ -46,10 +46,10 @@ def test_pgvector_extension_enabled(conn):
     assert conn.execute("SELECT extversion FROM pg_extension WHERE extname='vector'").fetchone()
 
 
-def test_embedding_column_is_vector_384(conn):
+def test_embedding_column_is_vector_1024(conn):
     typ = conn.execute("SELECT format_type(atttypid, atttypmod) FROM pg_attribute "
                        "WHERE attrelid='chunk'::regclass AND attname='embedding'").fetchone()[0]
-    assert typ == "vector(384)"
+    assert typ == "vector(1024)"
 
 
 def test_generated_tsvector_uses_the_query_side_config(conn):
@@ -91,17 +91,17 @@ def test_websearch_parser_degrades_gracefully_on_malformed_input(tx):
 
 
 def test_wrong_embedding_dimension_is_rejected(tx):
-    with pytest.raises(psycopg.errors.DataException, match="384"):
-        insert_chunk(tx, insert_file(tx), 0, "x", embedding=str([0.1] * 383))
+    with pytest.raises(psycopg.errors.DataException, match="1024"):
+        insert_chunk(tx, insert_file(tx), 0, "x", embedding=str([0.1] * 1023))
 
 
 def test_hnsw_index_is_used_for_cosine_ordering(tx):
     fid = insert_file(tx)
     for i in range(3):
-        insert_chunk(tx, fid, i, f"chunk {i}", embedding=str([float(i + 1)] + [0.0] * 383))
+        insert_chunk(tx, fid, i, f"chunk {i}", embedding=str([float(i + 1)] + [0.0] * 1023))
     tx.execute("SET LOCAL enable_seqscan = off")  # tiny table: force the planner to show the index is usable
     plan = "\n".join(r[0] for r in tx.execute(
-        "EXPLAIN SELECT id FROM chunk ORDER BY embedding <=> %s::vector LIMIT 2", (str([1.0] + [0.0] * 383),)))
+        "EXPLAIN SELECT id FROM chunk ORDER BY embedding <=> %s::vector LIMIT 2", (str([1.0] + [0.0] * 1023),)))
     assert "chunk_embedding_hnsw" in plan
 
 

@@ -90,8 +90,11 @@ lost work — the next agent will redo it or contradict it.
 **Update this section at the end of every session.**
 
 
-**Last session:** 2026-09-26 (Task 12: Structured JSON logging)
-**Repo state:** Tasks 1, 2, 3, 4, 5, 7, 8, 9, 11, and 12 are **Done**. `api/container.py` handles machine-readable `JsonFormatter`. Structured JSON events logged across ingestion and search. 285 tests passing across codebase. Live FastAPI server running on port 8000.
+**Last session:** 2026-09-26 (Session 6: Tasks 10, 13, 14 complete; SOLUTION.md generated)
+**Repo state:** Tasks 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, and 14 are **Done**. `SOLUTION.md` design document generated. `SETUP.md` verified end-to-end (`verify_env.py` 6/6 passed). 285 tests passing across codebase. Live FastAPI server running on port 8000.
+**Task 14: Done.** `SOLUTION.md` design document and evaluation report written.
+**Task 13: Done.** Clean-clone setup and environment verified (`scripts/verify_env.py`).
+**Task 10: Done.** Failure-mode analysis documented for sub-threshold queries.
 **Task 12: Done.** Structured JSON logging completed and verified (`api/container.py`, `tests/unit/test_logging.py`).
 **Task 9: Done.** Secondary metrics script added (`scripts/measure_secondary_metrics.py`).
 **Task 8: Done.** Chunking QA regression test suite added (`tests/unit/test_chunking_qa.py`).

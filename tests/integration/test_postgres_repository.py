@@ -23,7 +23,7 @@ def audio_file():
         c.execute("DELETE FROM audio_file WHERE checksum = %s", (f.checksum,))
 
 
-def make_chunks(audio_file, n, embedding=(0.1,) * 384):
+def make_chunks(audio_file, n, embedding=(0.1,) * 1024):
     return [Chunk(id=cid, audio_file_id=audio_file.id, chunk_index=i, speaker=f"SPEAKER_0{i % 2}", text=f"chunk {i}",
                   start_time=i * 2.0, end_time=i * 2.0 + 1.5, token_count=4, char_count=7, language=audio_file.language,
                   prev_chunk_id=prev, next_chunk_id=nxt, embedding=embedding)
@@ -41,7 +41,7 @@ def test_round_trip_preserves_every_field(audio_file):
     assert [(c.id, c.chunk_index, c.speaker, c.text, c.start_time, c.end_time, c.prev_chunk_id, c.next_chunk_id)
             for c in back] == [(c.id, c.chunk_index, c.speaker, c.text, c.start_time, c.end_time,
                                 c.prev_chunk_id, c.next_chunk_id) for c in chunks]
-    assert len(back[0].embedding) == 384 and back[0].embedding[0] == pytest.approx(0.1)
+    assert len(back[0].embedding) == 1024 and back[0].embedding[0] == pytest.approx(0.1)
     assert {c.language for c in back} == {"es"}
 
 
@@ -52,7 +52,7 @@ def test_missing_checksum_returns_none():
 def test_failure_mid_write_leaves_nothing(audio_file):
     repo = PostgresRepository(URL)
     chunks = make_chunks(audio_file, 3)
-    bad = chunks[:2] + [make_chunks(audio_file, 3, embedding=(0.1,) * 383)[2]]  # last chunk: wrong dimension
+    bad = chunks[:2] + [make_chunks(audio_file, 3, embedding=(0.1,) * 1023)[2]]  # last chunk: wrong dimension
     with pytest.raises(RepositoryError, match="nothing was written"):
         asyncio.run(repo.add_with_chunks(audio_file, bad))
     assert asyncio.run(repo.find_by_checksum(audio_file.checksum)) is None

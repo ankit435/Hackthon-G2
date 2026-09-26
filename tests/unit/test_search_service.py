@@ -129,6 +129,9 @@ def test_request_log_carries_active_weights_and_k(caplog):
     assert len(req.query_hash) == 12 and not hasattr(req, "query")  # raw query only at DEBUG
     [resp] = [r for r in caplog.records if getattr(r, "event", "") == "search.response"]
     assert resp.results == 1 and resp.top_score == pytest.approx(1 / 61 + 0.5 / 61)
+    [fusion] = [r for r in caplog.records if getattr(r, "event", "") == "search.fusion.end"]
+    assert (fusion.keyword_candidates, fusion.semantic_candidates, fusion.fused) == (1, 1, 1)
+    assert fusion.duration_ms >= 0
 
 
 @pytest.mark.parametrize("query", ["", "   ", None, "x" * 1001])

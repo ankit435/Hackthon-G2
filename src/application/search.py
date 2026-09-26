@@ -80,8 +80,13 @@ class SearchService:
         keyword_hits, semantic_hits = await asyncio.gather(
             self._timed(Branch.KEYWORD, qh, self._chunks.keyword_search(text, depth)),
             self._timed(Branch.SEMANTIC, qh, self._semantic_hits(text, depth)))
+        fusion_started = time.perf_counter()
         fused = fuse({Branch.KEYWORD: keyword_hits, Branch.SEMANTIC: semantic_hits}, self._k, self._weights)
-        log.info("search.fusion.end", extra={"event": "search.fusion.end", "query_hash": qh, "fused": len(fused)})
+        log.info("search.fusion.end", extra={
+            "event": "search.fusion.end", "query_hash": qh, "fused": len(fused),
+            "keyword_candidates": len(keyword_hits), "semantic_candidates": len(semantic_hits),
+            "duration_ms": round((time.perf_counter() - fusion_started) * 1000, 2),
+        })
         # Slice only AFTER fusion: cutting each branch to top_k first would drop cross-branch agreement.
         results = await self._hydrate_in_order([(h.chunk_id, h.score) for h in fused[:top_k]], qh)
         log.info("search.response", extra={"event": "search.response", "query_hash": qh, "results": len(results),
@@ -100,4 +105,3 @@ class SearchService:
         text = self._validate(query, top_k)
         hits = await self._timed(Branch.SEMANTIC, _query_hash(text), self._semantic_hits(text, top_k))
         return await self._hydrate_in_order([(h.chunk_id, h.score) for h in hits], _query_hash(text))
-

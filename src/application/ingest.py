@@ -82,15 +82,20 @@ class IngestService:
 
     async def ingest(self, paths: Sequence[str | Path]) -> list[IngestOutcome]:
         """Each file independently: one failure never aborts the batch (PLAN.md §7A)."""
+        started = time.perf_counter()
+        log.info("ingest.batch.start", extra={"event": "ingest.batch.start", "files": len(paths)})
         outcomes = []
         for p in paths:
             outcomes.append(await self.ingest_one(Path(p)))
         summary = {s.value: sum(o.status is s for o in outcomes) for s in IngestStatus}
-        log.info("ingest.batch.end", extra={"event": "ingest.batch.end", "files": len(outcomes), **summary})
+        log.info("ingest.batch.end", extra={"event": "ingest.batch.end", "files": len(outcomes),
+                                             "duration_ms": round((time.perf_counter() - started) * 1000, 2),
+                                             **summary})
         return outcomes
 
     async def ingest_one(self, path: Path) -> IngestOutcome:
         outcome = IngestOutcome(path=str(path), status=IngestStatus.FAILED)
+        started = time.perf_counter()
         try:
             await self._run(path, outcome)
         except DomainError as e:
@@ -101,6 +106,18 @@ class IngestService:
             outcome.error_type, outcome.error = type(e).__name__, str(e)
             log.exception("ingest.file.failed", extra={"event": "ingest.failed", "file": str(path),
                                                        "stage": outcome.stage, "error_type": outcome.error_type})
+        finally:
+            # This is the aggregation event for Task 9: it gives throughput a single, stable
+            # per-file denominator, regardless of whether a file was ingested, skipped, or failed.
+            elapsed = time.perf_counter() - started
+            log.info("ingest.file.end", extra={
+                "event": "ingest.file.end", "file": str(path), "status": outcome.status.value,
+                "audio_file_id": outcome.audio_file_id, "audio_duration_seconds": outcome.duration_seconds,
+                "chunks": outcome.chunk_count, "duration_ms": round(elapsed * 1000, 2),
+                "audio_seconds_per_wall_second": round(outcome.duration_seconds / elapsed, 4)
+                if outcome.status is IngestStatus.INGESTED and outcome.duration_seconds and elapsed else None,
+                "stage_seconds": outcome.stage_seconds,
+            })
         return outcome
 
     async def _run(self, path: Path, outcome: IngestOutcome) -> None:

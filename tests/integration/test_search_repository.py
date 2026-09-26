@@ -20,7 +20,7 @@ URL = load_settings().database_url
 # The golden table is small enough that the planner prefers a sequential scan, which would hide
 # HNSW-specific behaviour (ef_search truncation, index usability). This connection forbids it.
 INDEX_ONLY_URL = make_conninfo(URL, options="-c enable_seqscan=off")
-DIM = 384
+DIM = 1024  # BAAI/bge-m3 (PLAN.md §7B, M4)
 
 
 def one_hot(i: int) -> tuple[float, ...]:
@@ -41,7 +41,7 @@ def seeded():
              "Nobody zorbifies a qwibble twice; qwibble qwibble.",
              "Flarnish the blorptastic crumbulator."]
     # Tiny values elsewhere keep cosine well-defined and distinct; dimension 383 is a spike none of the real
-    # MiniLM vectors align with exactly, so the exact-match row must rank first.
+    # bge-m3 vectors align with exactly, so the exact-match row must rank first.
     vectors = [tuple(v + 1e-3 for v in one_hot(383 - i)) for i in range(3)]
     chunks = [Chunk(id=cid, audio_file_id=f.id, chunk_index=i, speaker=f"SPEAKER_0{i % 2}", text=texts[i],
                     start_time=10.0 * i, end_time=10.0 * i + 8.0, token_count=12, char_count=len(texts[i]), language="en",

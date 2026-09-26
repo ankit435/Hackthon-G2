@@ -38,7 +38,7 @@ def configure_logging(level: str) -> None:
 
 
 def build_ingest_service(settings: Settings) -> IngestService:
-    embedder = SentenceTransformerEmbedder(settings.embedding_model)
+    embedder = SentenceTransformerEmbedder(settings.embedding_model, device=settings.embedding_device)
     return IngestService(
         decoder=TorchcodecDecoder(),
         transcriber=FasterWhisperTranscriber(settings.whisper_model, language=settings.transcription_language),
@@ -53,7 +53,7 @@ def build_search_service(settings: Settings, embedder: SentenceTransformerEmbedd
     """Search loads the embedder only: no Whisper, no pyannote. Pass a loaded embedder to share it with ingest."""
     return SearchService(
         PostgresRepository(settings.database_url, hnsw_ef_search=settings.hnsw_ef_search),
-        embedder or SentenceTransformerEmbedder(settings.embedding_model),
+        embedder or SentenceTransformerEmbedder(settings.embedding_model, device=settings.embedding_device),
         weights=settings.fusion_weights,
         rrf_k=settings.rrf_k,
         candidate_depth_multiplier=settings.candidate_depth_multiplier,

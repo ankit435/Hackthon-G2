@@ -94,3 +94,23 @@ def test_unknown_transcription_language_is_rejected():
 
 def test_transcription_language_defaults_to_autodetect():
     assert load_settings(database_url=DB).transcription_language is None
+
+
+def test_embedding_defaults_are_bge_m3_on_cpu():
+    s = load_settings(database_url=DB)
+    assert (s.embedding_model, s.embedding_device) == ("BAAI/bge-m3", "cpu")
+
+
+@pytest.mark.parametrize("device", ["cpu", "mps", "cuda"])
+def test_embedding_device_accepts_known_values(device):
+    assert load_settings(database_url=DB, embedding_device=device).embedding_device == device
+
+
+def test_unknown_embedding_device_is_rejected():
+    with pytest.raises(ConfigurationError, match="embedding_device"):
+        load_settings(database_url=DB, embedding_device="tpu")
+
+
+def test_embedding_model_is_overridable(monkeypatch):
+    monkeypatch.setenv("AUDIO_SEARCH_EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
+    assert load_settings(database_url=DB).embedding_model == "sentence-transformers/all-MiniLM-L6-v2"

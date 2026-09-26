@@ -1,5 +1,6 @@
 """IngestService with fakes: no models, no database (PLAN.md §5 dependency injection)."""
 import asyncio
+import logging
 from pathlib import Path
 
 import pytest
@@ -145,3 +146,15 @@ def test_low_confidence_language_is_logged_and_kept(wavs, caplog):
 def test_confident_language_does_not_warn(wavs, caplog):
     asyncio.run(service(FakeRepo(), transcriber=FakeTranscriber(language="en", probability=0.99)).ingest(wavs[:1]))
     assert not [r for r in caplog.records if getattr(r, "event", "") == "ingest.language.low_confidence"]
+
+
+def test_ingest_logs_per_file_and_batch_aggregation_events(wavs, caplog):
+    with caplog.at_level(logging.INFO, logger="application.ingest"):
+        outcomes = asyncio.run(service(FakeRepo()).ingest(wavs))
+    per_file = [r for r in caplog.records if getattr(r, "event", "") == "ingest.file.end"]
+    assert len(per_file) == len(outcomes)
+    assert all(r.status == "ingested" and r.audio_file_id and r.chunks == 2 for r in per_file)
+    assert all(r.duration_ms >= 0 and r.audio_seconds_per_wall_second is not None for r in per_file)
+    [batch] = [r for r in caplog.records if getattr(r, "event", "") == "ingest.batch.end"]
+    assert (batch.files, batch.ingested, batch.failed, batch.skipped_existing) == (2, 2, 0, 0)
+    assert batch.duration_ms >= 0

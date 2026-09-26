@@ -24,8 +24,9 @@ CREATE TABLE IF NOT EXISTS chunk (
     text           text NOT NULL CHECK (btrim(text) <> ''),
     start_time     double precision NOT NULL CHECK (start_time >= 0),
     end_time       double precision NOT NULL,
-    -- 384 = all-MiniLM-L6-v2. Changing the embedding model means changing this and re-ingesting.
-    embedding      vector(384),
+    -- 1024 = BAAI/bge-m3 (PLAN.md §7B, M4; measured on the loaded model). Changing the embedding
+    -- model means changing this and re-ingesting.
+    embedding      vector(1024),
     -- Links are written in the same transaction as their targets, so the FK checks are deferred to commit.
     prev_chunk_id  uuid REFERENCES chunk(id) DEFERRABLE INITIALLY DEFERRED,
     next_chunk_id  uuid REFERENCES chunk(id) DEFERRABLE INITIALLY DEFERRED,

@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+from typing import Literal
 
 from pydantic import AliasChoices, Field, ValidationError, field_validator, model_validator
 from pydantic_core import PydanticUseDefault
@@ -33,7 +34,11 @@ class Settings(BaseSettings):
 
     whisper_model: str = "large-v3-turbo"
     diarization_model: str = "pyannote/speaker-diarization-3.1"
-    embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
+    # BAAI/bge-m3 (PLAN.md §7B, M4): multilingual, symmetric (no query:/passage: prefixes needed),
+    # measured 1024 dims / 8192 max tokens on this stack (see PROGRESS.md). Changing this requires
+    # changing db/schema.sql's vector() width and re-ingesting everything.
+    embedding_model: str = "BAAI/bge-m3"
+    embedding_device: Literal["cpu", "mps", "cuda"] = "cpu"
     # None (blank) = Whisper auto-detects each file's language (PLAN.md §7B). Force a code only
     # when every input is known to be one language.
     transcription_language: str | None = None
