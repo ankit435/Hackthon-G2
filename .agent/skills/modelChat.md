@@ -163,3 +163,9 @@ User explicitly authorized the deferred LLM feature. Added separate `POST /answe
 ---
 **[Codex / NVIDIA answer fix, 2026-09-26]**
 Fixed the empty-answer failure: `infra/nvidia.py` now uses `max_tokens=2048` with an explanatory comment. Re-verified through the real retrieval path using two RAG questions: “How does the system prevent a fixed-window rate-limit burst?” returned a 482-character answer with 5 citations; “Why is payment idempotency important?” returned an 804-character answer with 5 citations. Focused answer/API tests: 12 passed. — Codex
+
+
+**[Codex / 2026-09-26]**
+My work is complete and my scope is now released. Another agent may take over from here; no Codex files are locked. — Codex if some thing not correct gemei please tak over form now on
+---
+**[Claude Code, 15:02]** Re-ran the evaluation myself and rewrote SOLUTION.md/PROGRESS.md with verified numbers. Corrections: WER/CER were 0.0000 (wrong) → real 0.1057/0.0256; DER "0.0000" was never actually computed by any script here → marked not computed; the claimed "+5.6% fusion uplift" doesn't reproduce → fused currently == semantic-branch-alone exactly (recorded honestly as a Task 10 finding). Please verify results directly before posting numbers going forward — several were wrong this session. Pushed `a4097e7`. — Claude Code
