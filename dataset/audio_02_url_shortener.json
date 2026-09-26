@@ -1,0 +1,324 @@
+{
+  "dataset": "Synthetic Two-Speaker Golden Audio Dataset",
+  "audio_id": "audio_02_url_shortener",
+  "topic": "URL Shortener at Scale",
+  "duration_seconds": 386.45,
+  "speakers": [
+    "SPEAKER_00",
+    "SPEAKER_01"
+  ],
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 4.168,
+      "speaker": "SPEAKER_00",
+      "text": "Today's problem is a URL shortener that serves a billion redirects per month."
+    },
+    {
+      "start": 4.468,
+      "end": 10.589,
+      "speaker": "SPEAKER_01",
+      "text": "Let's pin down the read to write ratio first, because that single number drives most of the architecture."
+    },
+    {
+      "start": 10.889,
+      "end": 16.598,
+      "speaker": "SPEAKER_00",
+      "text": "Assume one hundred reads for every write. So roughly ten million new links a month and a billion redirects."
+    },
+    {
+      "start": 16.898,
+      "end": 24.605,
+      "speaker": "SPEAKER_01",
+      "text": "That is about four hundred redirects per second on average, and we should plan for peaks of maybe five times that during viral events."
+    },
+    {
+      "start": 24.905,
+      "end": 31.245,
+      "speaker": "SPEAKER_00",
+      "text": "The write path is small enough that a single primary database can handle it, but the read path needs aggressive caching."
+    },
+    {
+      "start": 31.545,
+      "end": 40.534,
+      "speaker": "SPEAKER_01",
+      "text": "Agreed. The functional requirements are simple. Create a short code for a long URL, redirect on lookup, and optionally expire the link."
+    },
+    {
+      "start": 40.834,
+      "end": 47.373,
+      "speaker": "SPEAKER_00",
+      "text": "We should also support custom aliases, because marketing teams always want a readable code instead of a random string."
+    },
+    {
+      "start": 47.673,
+      "end": 55.281,
+      "speaker": "SPEAKER_01",
+      "text": "And analytics. Click counts, referrer, and rough geography are what customers actually pay for in this product category."
+    },
+    {
+      "start": 55.581,
+      "end": 60.81,
+      "speaker": "SPEAKER_00",
+      "text": "Let's start with code generation. How long should the short code be and what alphabet do we use?"
+    },
+    {
+      "start": 61.11,
+      "end": 70.923,
+      "speaker": "SPEAKER_01",
+      "text": "Base sixty two, using digits and both letter cases. Seven characters gives about three point five trillion combinations, which is far beyond our needs."
+    },
+    {
+      "start": 71.223,
+      "end": 78.354,
+      "speaker": "SPEAKER_00",
+      "text": "Seven is a good default, but we could start at six and grow. Six characters is already fifty six billion possibilities."
+    },
+    {
+      "start": 78.654,
+      "end": 87.222,
+      "speaker": "SPEAKER_01",
+      "text": "The real question is how we pick a code. There are two families, random generation with a collision check, and deterministic encoding of a counter."
+    },
+    {
+      "start": 87.522,
+      "end": 95.37,
+      "speaker": "SPEAKER_00",
+      "text": "Counter encoding is attractive because it is collision free by construction. We take a globally unique integer and base sixty two encode it."
+    },
+    {
+      "start": 95.67,
+      "end": 103.997,
+      "speaker": "SPEAKER_01",
+      "text": "But sequential integers leak information. Anyone can enumerate codes and walk the entire database of links, which is a privacy problem."
+    },
+    {
+      "start": 104.297,
+      "end": 111.741,
+      "speaker": "SPEAKER_00",
+      "text": "We can mitigate that by scrambling the counter with a reversible permutation before encoding, so the codes look random but remain unique."
+    },
+    {
+      "start": 112.041,
+      "end": 121.53,
+      "speaker": "SPEAKER_01",
+      "text": "A Feistel network or simple multiplicative inverse modulo the key space works well for that. Unique, unguessable in practice, and no collision check needed."
+    },
+    {
+      "start": 121.83,
+      "end": 129.909,
+      "speaker": "SPEAKER_00",
+      "text": "The alternative is random codes with an insert that fails on duplicate. At low fill ratios collisions are rare and a retry costs almost nothing."
+    },
+    {
+      "start": 130.209,
+      "end": 137.196,
+      "speaker": "SPEAKER_01",
+      "text": "That is simpler to reason about and I would probably ship it first. The conditional insert makes correctness the database's job."
+    },
+    {
+      "start": 137.496,
+      "end": 145.137,
+      "speaker": "SPEAKER_00",
+      "text": "For the unique counter we could use a range allocator. Each application node grabs a block of a million identifiers and serves them locally."
+    },
+    {
+      "start": 145.437,
+      "end": 152.075,
+      "speaker": "SPEAKER_01",
+      "text": "That avoids a hot row and survives a brief outage of the allocator, since each node has a million identifiers buffered."
+    },
+    {
+      "start": 152.375,
+      "end": 158.122,
+      "speaker": "SPEAKER_00",
+      "text": "The cost is gaps in the sequence when a node restarts, but gaps do not matter at all for our use case."
+    },
+    {
+      "start": 158.422,
+      "end": 167.004,
+      "speaker": "SPEAKER_01",
+      "text": "Let's talk storage. The core table is the short code as primary key, the long URL, the owner, the creation time and the expiry."
+    },
+    {
+      "start": 167.304,
+      "end": 175.464,
+      "speaker": "SPEAKER_00",
+      "text": "This is a pure key value access pattern, so a distributed key value store or a relational database with the code as the primary key both work."
+    },
+    {
+      "start": 175.764,
+      "end": 182.758,
+      "speaker": "SPEAKER_01",
+      "text": "I would pick a key value store partitioned by the short code, because our lookups never scan and never join on the hot path."
+    },
+    {
+      "start": 183.058,
+      "end": 189.409,
+      "speaker": "SPEAKER_00",
+      "text": "Ten million links per month is a hundred and twenty million a year, and each row is maybe five hundred bytes with the URL."
+    },
+    {
+      "start": 189.709,
+      "end": 197.337,
+      "speaker": "SPEAKER_01",
+      "text": "So around sixty gigabytes per year of primary data, which is small. The analytics events will be much larger than the link table."
+    },
+    {
+      "start": 197.637,
+      "end": 203.954,
+      "speaker": "SPEAKER_00",
+      "text": "For the read path, a cache in front of the store is essential. Link popularity follows a strong power law."
+    },
+    {
+      "start": 204.254,
+      "end": 212.036,
+      "speaker": "SPEAKER_01",
+      "text": "A small fraction of codes generate the overwhelming majority of redirects, so even a modest cache gets a very high hit ratio."
+    },
+    {
+      "start": 212.336,
+      "end": 219.931,
+      "speaker": "SPEAKER_00",
+      "text": "We should cache the resolved long URL keyed by the short code, with a time to live and explicit invalidation when a link is edited or deleted."
+    },
+    {
+      "start": 220.231,
+      "end": 228.802,
+      "speaker": "SPEAKER_01",
+      "text": "Deleted links matter. If someone takes down a malicious link, a stale cache entry keeps serving it, so invalidation needs to be prompt."
+    },
+    {
+      "start": 229.102,
+      "end": 236.152,
+      "speaker": "SPEAKER_00",
+      "text": "We can publish invalidation events on a message bus and have every cache node subscribe, rather than relying purely on expiry."
+    },
+    {
+      "start": 236.452,
+      "end": 241.762,
+      "speaker": "SPEAKER_01",
+      "text": "For the redirect itself, do we return a permanent three oh one or a temporary three oh two?"
+    },
+    {
+      "start": 242.062,
+      "end": 248.089,
+      "speaker": "SPEAKER_00",
+      "text": "Three oh two, because a permanent redirect is cached by the browser and we would never see the subsequent clicks."
+    },
+    {
+      "start": 248.389,
+      "end": 255.009,
+      "speaker": "SPEAKER_01",
+      "text": "Right, and we would lose analytics entirely for repeat visitors. The small extra load is worth keeping the data."
+    },
+    {
+      "start": 255.309,
+      "end": 260.877,
+      "speaker": "SPEAKER_00",
+      "text": "Now the analytics pipeline. We should not write to the database synchronously on the redirect path."
+    },
+    {
+      "start": 261.177,
+      "end": 268.9,
+      "speaker": "SPEAKER_01",
+      "text": "Definitely not. We emit a click event to a queue, return the redirect immediately, and let a consumer aggregate asynchronously."
+    },
+    {
+      "start": 269.2,
+      "end": 276.201,
+      "speaker": "SPEAKER_00",
+      "text": "The consumer can roll the events into per link per hour counters, and we keep the raw events in cheap storage for a limited window."
+    },
+    {
+      "start": 276.501,
+      "end": 284.224,
+      "speaker": "SPEAKER_01",
+      "text": "We should make the consumer idempotent, keyed on an event identifier, because at least once delivery means duplicates will happen."
+    },
+    {
+      "start": 284.524,
+      "end": 290.228,
+      "speaker": "SPEAKER_00",
+      "text": "Let's cover abuse, since URL shorteners are a favorite tool for phishing and malware distribution."
+    },
+    {
+      "start": 290.528,
+      "end": 299.749,
+      "speaker": "SPEAKER_01",
+      "text": "We need to scan submitted URLs against a reputation service at creation time, and rescan periodically because a clean domain can turn malicious later."
+    },
+    {
+      "start": 300.049,
+      "end": 306.495,
+      "speaker": "SPEAKER_00",
+      "text": "We should also support an interstitial warning page for links flagged as suspicious, rather than a hard block in every case."
+    },
+    {
+      "start": 306.795,
+      "end": 313.149,
+      "speaker": "SPEAKER_01",
+      "text": "And rate limit link creation per account, because bulk creation of thousands of links is a strong abuse signal."
+    },
+    {
+      "start": 313.449,
+      "end": 320.289,
+      "speaker": "SPEAKER_00",
+      "text": "For availability, the redirect path must survive a regional failure. That argues for read replicas in multiple regions."
+    },
+    {
+      "start": 320.589,
+      "end": 328.054,
+      "speaker": "SPEAKER_01",
+      "text": "Since links are immutable after creation in most cases, asynchronous replication is perfectly acceptable for reads."
+    },
+    {
+      "start": 328.354,
+      "end": 334.763,
+      "speaker": "SPEAKER_00",
+      "text": "The write path can stay in a single home region, and we accept slightly higher creation latency for distant users."
+    },
+    {
+      "start": 335.063,
+      "end": 343.338,
+      "speaker": "SPEAKER_01",
+      "text": "That asymmetry is the right call. Creation happens once, redirects happen a hundred times, so we optimize for the redirect."
+    },
+    {
+      "start": 343.638,
+      "end": 349.921,
+      "speaker": "SPEAKER_00",
+      "text": "What about custom aliases colliding with generated codes? We need one namespace and a reservation mechanism."
+    },
+    {
+      "start": 350.221,
+      "end": 357.923,
+      "speaker": "SPEAKER_01",
+      "text": "I would reserve a separate prefix or length for custom aliases, so generated codes can never collide with user chosen ones."
+    },
+    {
+      "start": 358.223,
+      "end": 366.681,
+      "speaker": "SPEAKER_00",
+      "text": "Good. Let me summarize. Base sixty two codes from a scrambled counter, key value storage, heavy caching with event driven invalidation."
+    },
+    {
+      "start": 366.981,
+      "end": 375.259,
+      "speaker": "SPEAKER_01",
+      "text": "Plus temporary redirects to preserve analytics, an asynchronous click pipeline, multi region read replicas and an abuse scanning layer."
+    },
+    {
+      "start": 375.559,
+      "end": 382.103,
+      "speaker": "SPEAKER_00",
+      "text": "I think the interesting part of this problem is how small the storage is and how much the design is really about cache and abuse."
+    },
+    {
+      "start": 382.403,
+      "end": 390.649,
+      "speaker": "SPEAKER_01",
+      "text": "Exactly. The naive version is a weekend project. The production version is mostly operational concerns around safety and read scale."
+    }
+  ]
+}

@@ -1,0 +1,108 @@
+{
+  "dataset": "Synthetic Two-Speaker Golden Audio Dataset",
+  "audio_id": "audio_09_log_search",
+  "topic": "Distributed Log Search and Observability Infrastructure",
+  "duration_seconds": 107.22,
+  "speakers": [
+    "SPEAKER_00",
+    "SPEAKER_01"
+  ],
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 5.461,
+      "speaker": "SPEAKER_00",
+      "text": "Let's design a distributed log search and observability system for high volume application logs."
+    },
+    {
+      "start": 5.761,
+      "end": 11.671,
+      "speaker": "SPEAKER_01",
+      "text": "So let's say ten terabytes daily, with a requirement that logs are searchable within a minute of being emitted."
+    },
+    {
+      "start": 11.971,
+      "end": 19.367,
+      "speaker": "SPEAKER_00",
+      "text": "The pipeline has four stages. Collection at the source, a buffering transport, indexing and storage, then the query layer."
+    },
+    {
+      "start": 19.667,
+      "end": 27.223,
+      "speaker": "SPEAKER_01",
+      "text": "That buffer is essential. When the indexing tier slows down or fails, the buffer absorbs hours of data instead of dropping it."
+    },
+    {
+      "start": 27.523,
+      "end": 33.644,
+      "speaker": "SPEAKER_00",
+      "text": "We should enforce that with bounded local buffers on the agent, dropping oldest data rather than growing without limit."
+    },
+    {
+      "start": 33.944,
+      "end": 40.795,
+      "speaker": "SPEAKER_01",
+      "text": "Silent data loss is the real danger. A visible gap with a counter is recoverable knowledge, a silent one is not."
+    },
+    {
+      "start": 41.095,
+      "end": 44.838,
+      "speaker": "SPEAKER_00",
+      "text": "Let's compare inverted indexing with label only indexing at this scale."
+    },
+    {
+      "start": 45.138,
+      "end": 53.669,
+      "speaker": "SPEAKER_01",
+      "text": "That gives fast full text search but the index can approach or exceed the size of the raw data, which is very expensive at ten terabytes a day."
+    },
+    {
+      "start": 53.969,
+      "end": 60.794,
+      "speaker": "SPEAKER_00",
+      "text": "The alternative is to index only labels and timestamps, and store the log body as compressed chunks scanned at query time."
+    },
+    {
+      "start": 61.094,
+      "end": 66.504,
+      "speaker": "SPEAKER_01",
+      "text": "So the label index does the heavy pruning and the brute force scan only touches a manageable volume."
+    },
+    {
+      "start": 66.804,
+      "end": 74.481,
+      "speaker": "SPEAKER_00",
+      "text": "We should be careful about label cardinality. Putting a request identifier or a user identifier into a label explodes the index."
+    },
+    {
+      "start": 74.781,
+      "end": 82.244,
+      "speaker": "SPEAKER_01",
+      "text": "That is the single most common way people destroy these systems. High cardinality belongs in the log body, not in the labels."
+    },
+    {
+      "start": 82.544,
+      "end": 89.822,
+      "speaker": "SPEAKER_00",
+      "text": "That makes retention trivial, because expiring old data is dropping whole partitions rather than deleting individual records."
+    },
+    {
+      "start": 90.122,
+      "end": 93.723,
+      "speaker": "SPEAKER_01",
+      "text": "What retention policy do you recommend for different log types?"
+    },
+    {
+      "start": 94.023,
+      "end": 101.101,
+      "speaker": "SPEAKER_00",
+      "text": "Debug logs for a week, application logs for a month, audit and security logs for a year or more depending on regulation."
+    },
+    {
+      "start": 101.401,
+      "end": 108.46,
+      "speaker": "SPEAKER_01",
+      "text": "The rule of thumb is to alert on metrics and investigate with logs and traces, because alerting on logs is expensive and noisy."
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+# Runtime dependencies — pinned (PLAN.md §4A). Python 3.12.
+# Direct dependencies:
+faster-whisper==1.2.1
+pyannote.audio==4.0.7
+sentence-transformers==6.1.0
+fastapi==0.141.1
+uvicorn[standard]==0.54.0
+psycopg[binary]==3.3.6
+pgvector==0.5.0
+pydantic==2.13.5
+pydantic-settings==2.15.0
+# Transitive, pinned because they change model/decoding behaviour:
+torch==2.14.0
+torchaudio==2.11.0
+torchcodec==0.16.0
+ctranslate2==4.8.2
+av==18.1.0
+transformers==5.17.0
+huggingface-hub==1.33.0
+numpy==2.5.3

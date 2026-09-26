@@ -1,0 +1,126 @@
+{
+  "dataset": "Synthetic Two-Speaker Golden Audio Dataset",
+  "audio_id": "audio_10_multiregion_db",
+  "topic": "Multi-Region Database Architecture and Consistency",
+  "duration_seconds": 123.26,
+  "speakers": [
+    "SPEAKER_00",
+    "SPEAKER_01"
+  ],
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 3.418,
+      "speaker": "SPEAKER_00",
+      "text": "Let's discuss designing a multi region database architecture."
+    },
+    {
+      "start": 3.718,
+      "end": 11.622,
+      "speaker": "SPEAKER_01",
+      "text": "The first thing to establish is why. Is this for disaster recovery, for read latency, or for data residency compliance?"
+    },
+    {
+      "start": 11.922,
+      "end": 18.201,
+      "speaker": "SPEAKER_00",
+      "text": "Those three motivations lead to quite different architectures, so conflating them is a common and expensive mistake."
+    },
+    {
+      "start": 18.501,
+      "end": 25.191,
+      "speaker": "SPEAKER_01",
+      "text": "Disaster recovery can be satisfied by an asynchronous standby that is normally idle, which is the simplest option."
+    },
+    {
+      "start": 25.491,
+      "end": 32.604,
+      "speaker": "SPEAKER_00",
+      "text": "And read after write consistency breaks. A user writes to the primary, then reads from a local replica and sees stale data."
+    },
+    {
+      "start": 32.904,
+      "end": 39.87,
+      "speaker": "SPEAKER_01",
+      "text": "The version token approach is cleaner. The client carries the last observed position and the replica waits until it has caught up."
+    },
+    {
+      "start": 40.17,
+      "end": 46.043,
+      "speaker": "SPEAKER_00",
+      "text": "That converts a correctness problem into a latency problem, which is a much better failure mode for the user."
+    },
+    {
+      "start": 46.343,
+      "end": 49.166,
+      "speaker": "SPEAKER_01",
+      "text": "What about automatic failover during an outage?"
+    },
+    {
+      "start": 49.466,
+      "end": 56.806,
+      "speaker": "SPEAKER_00",
+      "text": "With asynchronous replication, any unreplicated writes at the moment of failure are lost. That is the recovery point objective."
+    },
+    {
+      "start": 57.106,
+      "end": 64.83,
+      "speaker": "SPEAKER_01",
+      "text": "Automatic failover also brings the split brain risk, where a network partition leads to two regions both believing they are primary."
+    },
+    {
+      "start": 65.13,
+      "end": 72.059,
+      "speaker": "SPEAKER_00",
+      "text": "That is why promotion should require a quorum or an external coordinator with fencing, never a simple local heartbeat timeout."
+    },
+    {
+      "start": 72.359,
+      "end": 75.557,
+      "speaker": "SPEAKER_01",
+      "text": "How do we handle multi master conflict resolution?"
+    },
+    {
+      "start": 75.857,
+      "end": 83.199,
+      "speaker": "SPEAKER_00",
+      "text": "Last writer wins by timestamp is the simplest resolution, but it silently discards data and depends on clock synchronization."
+    },
+    {
+      "start": 83.499,
+      "end": 90.187,
+      "speaker": "SPEAKER_01",
+      "text": "Clock skew makes that genuinely dangerous. An earlier write with a fast clock can override a later, correct one."
+    },
+    {
+      "start": 90.487,
+      "end": 97.077,
+      "speaker": "SPEAKER_00",
+      "text": "Right. A bank balance with an overdraft rule cannot be expressed as a simple counter, because the constraint is global."
+    },
+    {
+      "start": 97.377,
+      "end": 103.577,
+      "speaker": "SPEAKER_01",
+      "text": "So the practical approach is to partition write ownership. Each record has a home region that owns its writes."
+    },
+    {
+      "start": 103.877,
+      "end": 107.525,
+      "speaker": "SPEAKER_00",
+      "text": "What discipline is required for schema migrations across regions?"
+    },
+    {
+      "start": 107.825,
+      "end": 115.944,
+      "speaker": "SPEAKER_01",
+      "text": "Every migration must be backward compatible, applied in stages, because different regions run different schema versions temporarily."
+    },
+    {
+      "start": 116.244,
+      "end": 124.741,
+      "speaker": "SPEAKER_00",
+      "text": "The expand and contract pattern is the discipline here. Add the new column, dual write, backfill, migrate readers, then remove the old one."
+    }
+  ]
+}

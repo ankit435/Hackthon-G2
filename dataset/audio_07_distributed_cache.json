@@ -1,0 +1,324 @@
+{
+  "dataset": "Synthetic Two-Speaker Golden Audio Dataset",
+  "audio_id": "audio_07_distributed_cache",
+  "topic": "Distributed Cache Design",
+  "duration_seconds": 345.96,
+  "speakers": [
+    "SPEAKER_00",
+    "SPEAKER_01"
+  ],
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 5.438,
+      "speaker": "SPEAKER_00",
+      "text": "Let's design a distributed caching layer that sits between our services and the primary databases."
+    },
+    {
+      "start": 5.738,
+      "end": 13.143,
+      "speaker": "SPEAKER_01",
+      "text": "First question, is this a cache aside design where the application manages it, or a read through cache that fronts the database?"
+    },
+    {
+      "start": 13.443,
+      "end": 20.513,
+      "speaker": "SPEAKER_00",
+      "text": "Cache aside is the most common. The application checks the cache, and on a miss it reads the database and populates the cache."
+    },
+    {
+      "start": 20.813,
+      "end": 27.469,
+      "speaker": "SPEAKER_01",
+      "text": "It is simple and the failure mode is benign. If the cache is unavailable, everything still works, just slower."
+    },
+    {
+      "start": 27.769,
+      "end": 33.871,
+      "speaker": "SPEAKER_00",
+      "text": "Read through hides the logic behind the cache client, which is cleaner, but it couples the cache to the data source."
+    },
+    {
+      "start": 34.171,
+      "end": 40.816,
+      "speaker": "SPEAKER_01",
+      "text": "For writes we have write through, write behind and simple invalidation. I would default to invalidation on write."
+    },
+    {
+      "start": 41.116,
+      "end": 47.045,
+      "speaker": "SPEAKER_00",
+      "text": "Agreed. Writing the new value into the cache on update creates a race where a concurrent stale read overwrites it."
+    },
+    {
+      "start": 47.345,
+      "end": 54.221,
+      "speaker": "SPEAKER_01",
+      "text": "Deleting the entry instead means the next reader repopulates from the database, which is always correct if slightly slower."
+    },
+    {
+      "start": 54.521,
+      "end": 61.985,
+      "speaker": "SPEAKER_00",
+      "text": "There is still a subtle race. A reader can load a value, then a writer updates and invalidates, then the reader writes its stale value."
+    },
+    {
+      "start": 62.285,
+      "end": 68.784,
+      "speaker": "SPEAKER_01",
+      "text": "That window is narrow but real. Techniques like delayed double deletion or versioned writes reduce it substantially."
+    },
+    {
+      "start": 69.084,
+      "end": 75.056,
+      "speaker": "SPEAKER_00",
+      "text": "Versioned values are cleaner. We store the row version with the cached value and refuse to overwrite a newer version."
+    },
+    {
+      "start": 75.356,
+      "end": 80.072,
+      "speaker": "SPEAKER_01",
+      "text": "Let's talk about distribution. How do we decide which node holds which key?"
+    },
+    {
+      "start": 80.372,
+      "end": 87.145,
+      "speaker": "SPEAKER_00",
+      "text": "Naive modulo hashing on the node count remaps almost every key when the cluster size changes, which is catastrophic."
+    },
+    {
+      "start": 87.445,
+      "end": 94.157,
+      "speaker": "SPEAKER_01",
+      "text": "Consistent hashing fixes that. Keys and nodes map onto a ring, and adding a node only moves the keys in one arc."
+    },
+    {
+      "start": 94.457,
+      "end": 100.288,
+      "speaker": "SPEAKER_00",
+      "text": "With virtual nodes, each physical node owns many points on the ring, which smooths out the distribution."
+    },
+    {
+      "start": 100.588,
+      "end": 107.533,
+      "speaker": "SPEAKER_01",
+      "text": "Without virtual nodes the load is quite uneven, because random placement of a few points leaves some arcs much larger than others."
+    },
+    {
+      "start": 107.833,
+      "end": 113.96,
+      "speaker": "SPEAKER_00",
+      "text": "A typical configuration uses a hundred or more virtual nodes per physical node to keep the variance acceptable."
+    },
+    {
+      "start": 114.26,
+      "end": 120.822,
+      "speaker": "SPEAKER_01",
+      "text": "Rendezvous hashing is an alternative that gives similar properties with simpler reasoning, though it is less common in practice."
+    },
+    {
+      "start": 121.122,
+      "end": 124.879,
+      "speaker": "SPEAKER_00",
+      "text": "Now eviction. When memory fills, which entries do we drop?"
+    },
+    {
+      "start": 125.179,
+      "end": 131.799,
+      "speaker": "SPEAKER_01",
+      "text": "Least recently used is the default and works well for typical skewed access, but it is vulnerable to a large scan."
+    },
+    {
+      "start": 132.099,
+      "end": 138.956,
+      "speaker": "SPEAKER_00",
+      "text": "Right, one batch job reading a million cold keys can evict the entire hot working set, which we call cache pollution."
+    },
+    {
+      "start": 139.256,
+      "end": 146.677,
+      "speaker": "SPEAKER_01",
+      "text": "Least frequently used resists that, but it has the opposite problem. Old popular items linger after they stop being popular."
+    },
+    {
+      "start": 146.977,
+      "end": 154.759,
+      "speaker": "SPEAKER_00",
+      "text": "Segmented approaches solve both. A small probationary segment absorbs new entries, and only items accessed again get promoted."
+    },
+    {
+      "start": 155.059,
+      "end": 160.989,
+      "speaker": "SPEAKER_01",
+      "text": "That way a one time scan passes through the probationary area without disturbing the protected working set."
+    },
+    {
+      "start": 161.289,
+      "end": 166.075,
+      "speaker": "SPEAKER_00",
+      "text": "We should also set a time to live on everything, even when we invalidate explicitly."
+    },
+    {
+      "start": 166.375,
+      "end": 173.657,
+      "speaker": "SPEAKER_01",
+      "text": "Yes, the expiry is a safety net. If an invalidation is ever missed, the staleness is bounded rather than permanent."
+    },
+    {
+      "start": 173.957,
+      "end": 180.138,
+      "speaker": "SPEAKER_00",
+      "text": "Let's cover the three classic failure patterns. Cache penetration, cache breakdown and cache avalanche."
+    },
+    {
+      "start": 180.438,
+      "end": 187.298,
+      "speaker": "SPEAKER_01",
+      "text": "Penetration is when requests ask for keys that do not exist anywhere, so every request misses and hits the database."
+    },
+    {
+      "start": 187.598,
+      "end": 194.599,
+      "speaker": "SPEAKER_00",
+      "text": "The fix is to cache the negative result with a short expiry, or to use a bloom filter to reject impossible keys immediately."
+    },
+    {
+      "start": 194.899,
+      "end": 201.937,
+      "speaker": "SPEAKER_01",
+      "text": "Breakdown is when a single very hot key expires and thousands of concurrent requests all stampede to the database at once."
+    },
+    {
+      "start": 202.237,
+      "end": 207.998,
+      "speaker": "SPEAKER_00",
+      "text": "We solve that with a mutex, where only one request recomputes and the others wait briefly for the result."
+    },
+    {
+      "start": 208.298,
+      "end": 215.337,
+      "speaker": "SPEAKER_01",
+      "text": "Or with probabilistic early expiration, where requests randomly refresh the value shortly before it actually expires."
+    },
+    {
+      "start": 215.637,
+      "end": 221.009,
+      "speaker": "SPEAKER_00",
+      "text": "I like that approach because it avoids the lock entirely and spreads the refresh load smoothly over time."
+    },
+    {
+      "start": 221.309,
+      "end": 227.535,
+      "speaker": "SPEAKER_01",
+      "text": "Avalanche is when a large number of keys expire simultaneously, usually because they were all loaded together."
+    },
+    {
+      "start": 227.835,
+      "end": 234.519,
+      "speaker": "SPEAKER_00",
+      "text": "Adding random jitter to every expiry time prevents the synchronized wave, which is a one line fix with a large payoff."
+    },
+    {
+      "start": 234.819,
+      "end": 240.694,
+      "speaker": "SPEAKER_01",
+      "text": "Hot keys are the other operational headache. One key can exceed the throughput of the single node that owns it."
+    },
+    {
+      "start": 240.994,
+      "end": 246.704,
+      "speaker": "SPEAKER_00",
+      "text": "Client side local caching of the hottest keys helps, with a very short lifetime to bound the staleness."
+    },
+    {
+      "start": 247.004,
+      "end": 253.125,
+      "speaker": "SPEAKER_01",
+      "text": "We can also replicate a hot key across several nodes with a suffix, and have clients pick one at random."
+    },
+    {
+      "start": 253.425,
+      "end": 259.414,
+      "speaker": "SPEAKER_00",
+      "text": "That multiplies read capacity for that key at the cost of more complex invalidation across all the replicas."
+    },
+    {
+      "start": 259.714,
+      "end": 264.349,
+      "speaker": "SPEAKER_01",
+      "text": "Let's discuss sizing. How do we decide how much memory the cache needs?"
+    },
+    {
+      "start": 264.649,
+      "end": 271.826,
+      "speaker": "SPEAKER_00",
+      "text": "Start from the working set. Measure the distinct keys accessed in a representative window and multiply by the average entry size."
+    },
+    {
+      "start": 272.126,
+      "end": 278.686,
+      "speaker": "SPEAKER_01",
+      "text": "Then check the hit ratio curve. There is usually a knee where adding memory stops improving the hit rate meaningfully."
+    },
+    {
+      "start": 278.986,
+      "end": 286.071,
+      "speaker": "SPEAKER_00",
+      "text": "Serialization format matters too. A compact binary encoding can halve the memory compared to verbose text formats."
+    },
+    {
+      "start": 286.371,
+      "end": 294.362,
+      "speaker": "SPEAKER_01",
+      "text": "And compression for larger values, though we should measure, because the CPU cost can outweigh the memory savings for small entries."
+    },
+    {
+      "start": 294.662,
+      "end": 299.15,
+      "speaker": "SPEAKER_00",
+      "text": "On availability, do we replicate the cache or treat node loss as acceptable?"
+    },
+    {
+      "start": 299.45,
+      "end": 305.734,
+      "speaker": "SPEAKER_01",
+      "text": "If the database can absorb the miss traffic from one lost node, replication is unnecessary complexity."
+    },
+    {
+      "start": 306.034,
+      "end": 312.969,
+      "speaker": "SPEAKER_00",
+      "text": "But if the cache is load bearing, meaning the database cannot survive without it, we need replicas and a careful warm up procedure."
+    },
+    {
+      "start": 313.269,
+      "end": 320.921,
+      "speaker": "SPEAKER_01",
+      "text": "Cold start is genuinely dangerous there. Restarting an empty cache in front of a saturated database can take the whole system down."
+    },
+    {
+      "start": 321.221,
+      "end": 327.296,
+      "speaker": "SPEAKER_00",
+      "text": "Gradual warm up, admitting traffic slowly while the cache fills, is the safe procedure for that scenario."
+    },
+    {
+      "start": 327.596,
+      "end": 335.69,
+      "speaker": "SPEAKER_01",
+      "text": "To summarize, cache aside with invalidation, consistent hashing with virtual nodes, segmented eviction and jittered expiry."
+    },
+    {
+      "start": 335.99,
+      "end": 343.117,
+      "speaker": "SPEAKER_00",
+      "text": "Plus negative caching, single flight refresh for hot keys, local client caches and a deliberate plan for cold start."
+    },
+    {
+      "start": 343.417,
+      "end": 350.162,
+      "speaker": "SPEAKER_01",
+      "text": "The general lesson is that a cache changes your failure modes as much as your performance, so both need design attention."
+    }
+  ]
+}

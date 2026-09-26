@@ -1,0 +1,13 @@
+{
+  "name": "Synthetic Two-Speaker Golden Audio Dataset — golden subset",
+  "decision": "PROGRESS.md Q17 (2026-09-26): golden set is files 01-06. Files 07-10 remain in dataset/ unmodified but are NOT ingested or evaluated.",
+  "qa_source": "all.json, filtered to these audio_ids (30 items)",
+  "files": [
+    {"audio_id": "audio_01_rate_limiter", "audio": "audio_01_rate_limiter.wav", "reference": "audio_01_rate_limiter.json", "duration_seconds": 442.08, "sha256": "9aa13f2f6ca27812d7ded9c12dcb6ba6160f7402edd20c230cd21095f7328a2c"},
+    {"audio_id": "audio_02_url_shortener", "audio": "audio_02_url_shortener.wav", "reference": "audio_02_url_shortener.json", "duration_seconds": 386.45, "sha256": "0bb38f644593dd055011960c545952653d8ed748577a08c98297292b9c596af9"},
+    {"audio_id": "audio_03_chat_system", "audio": "audio_03_chat_system.wav", "reference": "audio_03_chat_system.json", "duration_seconds": 365.84, "sha256": "ca0c89b74804d1156c747c18aca353c5f5194e7fa0047ddc7417b893a84522c7"},
+    {"audio_id": "audio_04_news_feed", "audio": "audio_04_news_feed.wav", "reference": "audio_04_news_feed.json", "duration_seconds": 356.09, "sha256": "e8593efe83c6f0ade1d29641675892f5272d25787b4b9be7aaab5f0d8b56227a"},
+    {"audio_id": "audio_05_payment_idempotency", "audio": "audio_05_payment_idempotency.wav", "reference": "audio_05_payment_idempotency.json", "duration_seconds": 379.86, "sha256": "936a5113827d48360e0596dc373f86b4956f31ae4d8d6fad5fe76e67a6adccb9"},
+    {"audio_id": "audio_06_video_streaming", "audio": "audio_06_video_streaming.wav", "reference": "audio_06_video_streaming.json", "duration_seconds": 353.24, "sha256": "d682707039e5c37d50ab1bfb7883ea1c5c5d50ed006e3b112e8727bdde4c5421"}
+  ]
+}

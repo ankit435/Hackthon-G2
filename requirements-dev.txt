@@ -1,0 +1,8 @@
+# Test/evaluation-only dependencies — pinned. Never imported by the served system (Q15).
+-r requirements.txt
+pytest==9.1.1
+pytest-asyncio==1.4.0
+httpx==0.28.1
+jiwer==4.0.0
+# Also pulled in transitively by pyannote.audio; pinned here because DER scoring uses it.
+pyannote.metrics==4.1
