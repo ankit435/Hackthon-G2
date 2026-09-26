@@ -98,18 +98,12 @@ defect analysis are in **`dataset/PROVENANCE.md`**. **Task 2 is nearly done**: a
 schema or tests yet. Git repo initialised and committed. **Golden set = files 01–06** (`dataset/golden_set.json`). The stack questions
 (Q1–Q16) are resolved; do not re-open them. Q17/Q18 are resolved. Q19 is settled in Task 6. **Q20 (generator/voices) is still open with the user.**
 
-**Task 1 status: In Progress.** Verified, provenance recorded, golden set fixed, and
-committed. **What's left needs the venv (Task 2 step 1):**
-- **D1 correction script** (Q18 approved). Write `dataset/reference_corrected/*.json`
-  for files 01–06 using a per-file linear fit `t' = t − (a + b·i)`, fitted against
-  `ffmpeg silencedetect` silences (method in `dataset/PROVENANCE.md`). Verify that
-  the last segment ends ≤ `duration_seconds` and every boundary residual is ≤ 40 ms.
-  Commit the script and its output.
-- **pytest data-integrity test** for the manifest: checksums, durations, segment
-  ordering and alternation, and all quotes resolving uniquely.
-- Q20 (generator/voices) is still open with the user. It does not block anything.
+**Task 1: Done.** Corrected references are in `dataset/reference_corrected/`
+(shift-only D1 fix, 307/307 onsets verified by energy). `python -m pytest` runs 43
+dataset integrity tests. Q20 (generator/voices) is still open with the user and does
+not block anything.
 
-**Never evaluate timestamps against the uncorrected `dataset/audio_*.json`.**
+**Never evaluate timestamps against the uncorrected `dataset/audio_*.json`. Use `dataset/reference_corrected/`.**
 
 
 **Locked stack:** Whisper `large-v3-turbo` via faster-whisper (local) ·
@@ -126,12 +120,11 @@ semantic-split soft minimum and cap. **All ship at defaults** — change any
 of them only with a before/after measurement.
 
 
-**Next task:** Finish Task 1's two venv-dependent items (below), then Task 3. Task 2 closes when the user supplies the HF token and `python scripts/verify_env.py` passes 6/6.
+**Next task:** Task 3 (scaffold, schema, ports, settings). Task 2 closes when the user supplies the HF token and `python scripts/verify_env.py` passes 6/6.
 
 
 **Do this next:**
-1. `source .venv/bin/activate`. Do Task 1's remaining items (D1 correction script,
-   data-integrity pytest), then commit. **Before Task 4:** read `PROGRESS.md` Known
+1. `source .venv/bin/activate`, then `python -m pytest` (expect 43 passed). **Before Task 4:** read `PROGRESS.md` Known
    Issues. The duplicate-FFmpeg warning means ingestion should decode each file once.
    The embedder limit is 256 tokens, not 512.
 2. **Task 2** — set up the environment per `PLAN.md` §4A/§4B: `.venv/`,

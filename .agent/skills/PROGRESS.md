@@ -19,7 +19,7 @@
 
 
 **Last updated:** 2026-09-26
-**Current phase:** Phase 1 — Foundation (Tasks 1–2 in progress; Task 2 waiting on the user's HF token)
+**Current phase:** Phase 1 — Foundation (Task 1 done; Task 2 waiting on the user's HF token; Task 3 next)
 **Repo state:** Design documents plus a verified dataset (`dataset/`, provenance in
 `dataset/PROVENANCE.md`). Python 3.12 venv with pinned requirements, `.env.example`, a `SETUP.md` draft and
 `scripts/verify_env.py`. No application code or schema yet. Git repo initialised 2026-09-26.
@@ -37,7 +37,11 @@ Mirrors `PLAN.md` §13 one-to-one. Task numbers are stable — never renumber th
 
 
 ### ✅ Done
-_(nothing yet)_
+
+
+| # | Task | Completed | Evidence |
+|---|---|---|---|
+| 1 | Dataset: golden set 01–06 (`dataset/golden_set.json`); provenance + defects in `dataset/PROVENANCE.md`; originals unmodified; D1-corrected references in `dataset/reference_corrected/` | 2026-09-26 | `python -m pytest` → 43 passed (checksums, durations, well-formedness, correction provenance/durations, **energy-based onset check 307/307**, QA quotes 30/30 unique). Mutation-tested: uncorrected times and an altered duration both fail. **One sub-item not verifiable from the data: "unique speaker pair per file" (Q20)**, carried as an open question, not claimed |
 
 
 ### 🔄 In Progress
@@ -46,7 +50,6 @@ _(nothing yet)_
 | # | Task | Done so far | Remaining |
 |---|---|---|---|
 | 2 | Environment | `.venv` (Python 3.12.14); `requirements.txt` / `requirements-dev.txt` pinned and resolving exactly to the working env (`pip check` clean); `.env.example` with all five settings + weights + RRF k; `.gitignore`; `SETUP.md` draft; `scripts/verify_env.py` passes 5/6 checks | **HF token** (user must accept conditions on both pyannote repos and create a token), then `verify_env.py` 6/6. `CANDIDATE_DEPTH_MULTIPLIER` value is decided in Task 5 by design. Clean-clone check is Task 13 |
-| 1 | Dataset | All 10 files verified; provenance in `dataset/PROVENANCE.md`; golden set = 01–06 in `dataset/golden_set.json` (checksums verified); originals unmodified; D1/D2 diagnosed; Q17/Q18 resolved; committed | **Needs the venv (Task 2)**: (a) the D1 correction script → `dataset/reference_corrected/` for 01–06, verified with last end ≤ duration and residual ≤ 40 ms; (b) a pytest data-integrity test replacing the Session 1 jq/ffmpeg checks. Q19 (QA derivation) is settled in Task 6. Q20 (generator/voices) is still open with the user |
 
 
 ### ⬜ Not Done
@@ -242,7 +245,7 @@ surface it. Inventing a default and moving on is a defect.
 
 
 | Q17 | The dataset has **10 files of 1.8–7.4 min**; the spec says 5–6 files of 8–10 min. Which files are the golden set? | ✅ **Resolved 2026-09-26 (user)** | **Golden set = files 01–06**, defined in `dataset/golden_set.json` (ids, paths, durations, sha256). That gives 6 files, 5.9–7.4 min each (2 283.6 s total), with 30 QA items and 76 evidence quotes. The D2 index defect does not affect any of them. Files 07–10 stay in `dataset/` unmodified but are **not ingested or evaluated**. Ingestion and evaluation read the manifest, never a directory glob. **Remaining deviation, to disclose in `SOLUTION.md`**: files are 5.9–7.4 min, below the 8–10 min band. _Options that were considered:_ (a) use all 10 and record the deviation (53.7 min total, 50 QA items); (b) use a 5–6 file subset, for example 01–06; (c) regenerate the audio to spec. Files 09/10 are 2 min long, and their QA was written against longer versions (D2). **Recommendation: (a)**, with 09/10 kept. Their QA quotes still resolve uniquely, and more data stabilises recall. Record as a deviation in `SOLUTION.md`. |
-| Q18 | How to correct the reference timestamp drift (defect D1, ~0.082 s per boundary, up to 4.5 s)? | ✅ **Resolved 2026-09-26 (user)** — implementation pending (needs venv) | **Approved as recommended**: leave the originals untouched. Commit a derived `dataset/reference_corrected/*.json` produced by a deterministic script. Use per-file linear correction, `t' = t − (a + b·i)` for segment index i, with (a, b) fitted against ffmpeg-detected silences. The residual is already ≤ 38 ms, so snapping each boundary to its silence is not needed. Evaluation (WER/DER/speaker accuracy/timestamp checks) uses the corrected files. The script and its residual report are committed. The alternative, using the originals as-is, inflates DER and misplaces late-file timestamps by seconds. |
+| Q18 | How to correct the reference timestamp drift (defect D1, ~0.082 s per boundary, up to 4.5 s)? | ✅ **Resolved 2026-09-26 (user); implemented the same day.** The model was refined from the data: shift-only `t' = t − b·i` (see Decisions Log) | **Approved as recommended**: leave the originals untouched. Commit a derived `dataset/reference_corrected/*.json` produced by a deterministic script. Use per-file linear correction, `t' = t − (a + b·i)` for segment index i, with (a, b) fitted against ffmpeg-detected silences. The residual is already ≤ 38 ms, so snapping each boundary to its silence is not needed. Evaluation (WER/DER/speaker accuracy/timestamp checks) uses the corrected files. The script and its residual report are committed. The alternative, using the originals as-is, inflates DER and misplaces late-file timestamps by seconds. |
 | Q19 | How is QA ground truth derived, given defect D2? | 🟡 **Open — needs user** (feeds Task 6) | **Recommendation**: resolve each `supporting_context` quote to its unique reference segment by text, then take times from the (corrected) segment. Ignore `evidence_time_ranges` entirely, and ignore `evidence_segment_indices` for 09/10. `all.json` gives 50 QA items. The ~90-query, 50/50 keyword/semantic set (Q5) still has to be built, with these 50 as seed material. |
 | Q20 | Generator/TTS engine and voices? Is each file's speaker pair unique? | 🟡 **Open — needs user** | Provenance cannot name the generator from the files alone. Unique-voice-pair-per-file cannot be verified from labels (`SPEAKER_00/01` everywhere). Could be checked later with pyannote speaker embeddings if the user cannot answer. |
 | Q10 | ivfflat or HNSW for the vector index? | ✅ **Resolved** | **HNSW.** Better recall-at-speed than ivfflat and no training step, so it works on an empty table and stays correct as rows are added — ivfflat needs representative data present before building, which is awkward in a pipeline that ingests incrementally. `m` and `ef_construction` are recorded in `db/schema.sql`; **query-time `ef_search` is an env-backed setting** so recall and latency can be traded without a reindex. Start at the extension defaults. |
@@ -285,6 +288,8 @@ resolved; if unresolved, put it in Known Issues.
 
 | Date | Decision | Rationale | Affects |
 |---|---|---|---|
+| 2026-09-26 | **D1 correction is shift-only, `t' = t − b·i`**, with b fitted on speech onsets. This deviates from the approved `t' = t − (a + b·i)`: the intercept is dropped, and ends are shifted by the same amount as starts | Measured: start and end slopes are equal (to within 0.0001), so the generator's durations are correct and only gaps drift. Onsets are sharp (sd ~5 ms) while offsets are fades (sd 10–19 ms). The intercepts (−0.01 start / +0.03 end) are silencedetect threshold bias, not generator error. Independently confirmed: 307/307 onsets by raw energy | Tasks 1, 6, 9 |
+| 2026-09-26 | Correction gates: start residual ≤ 40 ms; start/end slope disagreement ≤ 0.001 s/segment; corrected last end ≤ exact WAV duration + 10 ms. The first gate (a combined start+end residual ≤ 40 ms) was **replaced, not loosened** | The combined gate failed on fade-noisy end measurements (max 48–74 ms), which measure the detector, not the timing. The slope-agreement gate is the real test of the model. The 10 ms end tolerance is the generator's own duration resolution, and the observed error is ≤ 3.9 ms. Bounds use the sample-exact WAV duration because `duration_seconds` is rounded to 10 ms | Task 1 |
 | 2026-09-26 | **Python 3.12** for the venv (user approved) | Homebrew had only 3.14 (too new to trust across torch/ctranslate2/pyannote) and system 3.9 (below pyannote's ≥ 3.10) | Task 2, `SETUP.md` |
 | 2026-09-26 | **pyannote.audio 4.0.7** (not 3.x) runs the locked `speaker-diarization-3.1` pipeline. The model is unchanged | 4.x is current and documented to load 3.1 with `token=`. 3.x depends on torchaudio I/O APIs that were removed in recent torchaudio. Audio can be passed in memory (`{"waveform", "sample_rate"}`) | Task 4 |
 | 2026-09-26 | **Embedder token limit is 256, not 512.** Measured `max_seq_length=256`; Q4, Q12 and HANDOFF trap 3 corrected (`PLAN.md` still says 512; this entry supersedes it) | Silent truncation past 256 tokens would drop the end of long chunks from the embedding. The current 45 s cap fits (~175 tokens), but with only ~30% margin | Tasks 4, 8 |
@@ -356,7 +361,7 @@ surprising you could not explain** (Rule 15). Empty is fine; stale is not.
 
 | Item | Severity | Where | Note |
 |---|---|---|---|
-| **D1** Reference timestamps drift late by ~0.0823 s per segment boundary (up to 4.5 s at file end). Fitted residual ≤ 38 ms, so the error is systematic | **High** for DER, speaker accuracy and timestamp scoring | `dataset/audio_*.json` | Method + per-file fit in `dataset/PROVENANCE.md`. Fix pending Q18. **Never evaluate timestamps against the uncorrected originals.** |
+| **D1** Reference timestamps drift late by ~0.0823 s per segment boundary (the generator overstated the gap: 0.300 s vs a real ~0.218 s) | ✅ **Fixed for 01–06** | `dataset/reference_corrected/` | **Use the corrected files for all timestamp-based evaluation. Never use the originals.** Files 07–10 are uncorrected (not in the golden set) |
 | **D2** `all.json` `evidence_time_ranges` match no reference segment (0/134). Offsets 6.8–420 s; they come from a longer render. 09/10 segment indices are wrong in 9/10 items | **High** for Task 6 | `dataset/all.json` | Quotes resolve uniquely (134/134). Derivation plan pending Q19 |
 | Golden files are 5.9–7.4 min, below the 8–10 min spec | Low | `dataset/golden_set.json` | Accepted (Q17). Disclose in `SOLUTION.md` |
 | WAVs are 22.05 kHz mono; pyannote wants 16 kHz | Low | ingestion | pyannote/faster-whisper resample internally. Verify in Task 4 |
@@ -373,4 +378,4 @@ surprising you could not explain** (Rule 15). Empty is fine; stale is not.
 | # | Date | Phase | Tasks touched | Outcome |
 |---|---|---|---|---|
 | 0 | 2026-09-25 | — | — | Plan scoped; stack resolved; §4A environment + §4B install policy; §0 discipline; §0B engineering standard; semantic chunking (Q6); WER/DER/throughput secondary metrics; weighted RRF (Q7); stemming spec (Q8); five-endpoint API (Q9); missing-package policy (Q10) |
-| 1 | 2026-09-26 | 1 | 1, 2 | Dataset verified; `dataset/PROVENANCE.md` written; defects D1 (timestamp drift) and D2 (QA from another render) found and quantified; Q17/Q18 resolved (golden = 01–06); git init. Task 2: Python 3.12 venv, pinned requirements, `.env.example`, `SETUP.md` draft, `verify_env.py` (5/6, HF token pending); found embedder limit = 256 tokens and a duplicate-FFmpeg warning |
+| 1 | 2026-09-26 | 1 | 1 (Done), 2 | Dataset verified; `dataset/PROVENANCE.md` written; defects D1 (timestamp drift) and D2 (QA from another render) found and quantified; Q17/Q18 resolved (golden = 01–06); git init. Task 2: Python 3.12 venv, pinned requirements, `.env.example`, `SETUP.md` draft, `verify_env.py` (5/6, HF token pending); found embedder limit = 256 tokens and a duplicate-FFmpeg warning. Task 1 finished: D1 corrected (shift-only model, 307/307 onsets), 43 integrity tests, mutation-tested |

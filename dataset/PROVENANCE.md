@@ -81,7 +81,36 @@ Interpretation: the generator's recorded segment timings are ~82 ms per segment 
 than the audio it actually concatenated. The error is systematic, not noisy, so the
 ground truth can be corrected. **Text, speaker labels and segment order are
 unaffected.** Uncorrected, this biases DER and any timestamp-based scoring by up to
-4.5 s late at the end of a file. Correction (Q18, approved): a derived `dataset/reference_corrected/` produced by a committed script using the per-file linear fit. Pending the venv.
+4.5 s late at the end of a file. **Root cause (established in Session 1):** the per-segment drift is the same at segment
+starts and at segment ends (fitted slopes 0.0822–0.0825 s/segment, agreeing to within
+0.0001 in every golden file). So the generator's segment **durations are correct** and
+only its **inter-segment gap is overstated**: the audio has a ~0.218 s gap where the
+JSON says 0.300 s.
+
+**Correction (Q18):** `scripts/correct_reference_timestamps.py` writes
+`dataset/reference_corrected/<audio_id>.json` for the golden files (01–06). It applies a
+pure shift per segment, `t' = t − b·i`, fitted on speech onsets, so every duration, text
+and speaker is preserved. Each output carries a `correction` block with its fit, residuals
+and source checksums.
+
+| File | Shift b (s/segment) | Start residual max | End residual max (informational) | Corrected end vs audio end |
+|---|---|---|---|---|
+| 01 | 0.0824 | 11.9 ms | 47.6 ms | +0.5 ms early |
+| 02 | 0.0823 | 16.1 ms | 68.5 ms | 0.7 ms late |
+| 03 | 0.0823 | 15.6 ms | 59.9 ms | +1.8 ms early |
+| 04 | 0.0822 | 23.5 ms | 24.6 ms | 2.5 ms late |
+| 05 | 0.0823 | 13.5 ms | 53.1 ms | 3.9 ms late |
+| 06 | 0.0823 | 16.4 ms | 74.0 ms | 2.3 ms late |
+
+End residuals are larger because sentence-final TTS fades cross −40 dB at variable
+points, so they measure the detector, not the timing. **Independent check** (raw
+signal energy, not silencedetect): energy rises at **307/307** corrected segment starts,
+versus 31/307 for the originals. Corrected gaps are uniform at 0.217–0.218 s. Guarded by
+`tests/data/test_dataset_integrity.py`.
+
+**Use `dataset/reference_corrected/` for all timestamp-based evaluation (WER alignment,
+DER, speaker accuracy, QA ground-truth times).** Files 07–10 are not corrected because
+they are outside the golden set.
 
 ### D2 — `all.json` QA timestamps come from a different render
 
@@ -112,5 +141,5 @@ Question Q19.
 ## How to reproduce these checks
 
 System tools only (`ffprobe`, `ffmpeg`, `jq`, `shasum`). The commands are in
-`AGENT_LOG.md` Session 1. They move into a pytest data-integrity test once the venv
-exists (Task 2).
+`AGENT_LOG.md` Session 1. They are now automated in
+`tests/data/test_dataset_integrity.py` (43 tests, run with `python -m pytest`).

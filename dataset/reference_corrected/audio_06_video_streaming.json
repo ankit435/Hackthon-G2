@@ -1,0 +1,344 @@
+{
+  "dataset": "Synthetic Two-Speaker Golden Audio Dataset",
+  "audio_id": "audio_06_video_streaming",
+  "topic": "Video Streaming and Delivery Pipeline",
+  "duration_seconds": 353.24,
+  "speakers": [
+    "SPEAKER_00",
+    "SPEAKER_01"
+  ],
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 5.403,
+      "speaker": "SPEAKER_00",
+      "text": "Let's design a video platform, covering upload, processing and playback at large scale."
+    },
+    {
+      "start": 5.621,
+      "end": 13.126,
+      "speaker": "SPEAKER_01",
+      "text": "I would split it into three fairly independent systems. Ingestion, the transcoding pipeline, and the delivery path."
+    },
+    {
+      "start": 13.343,
+      "end": 19.324,
+      "speaker": "SPEAKER_00",
+      "text": "Starting with upload, large files over unreliable networks mean we need resumable, chunked uploads."
+    },
+    {
+      "start": 19.542,
+      "end": 27.831,
+      "speaker": "SPEAKER_01",
+      "text": "The client requests an upload session, splits the file into parts, uploads each part independently and retries only the failed parts."
+    },
+    {
+      "start": 28.049,
+      "end": 34.094,
+      "speaker": "SPEAKER_00",
+      "text": "Direct to storage upload with a pre signed URL keeps the file bytes out of our application servers entirely."
+    },
+    {
+      "start": 34.311,
+      "end": 42.043,
+      "speaker": "SPEAKER_01",
+      "text": "That is important. Proxying multi gigabyte files through application nodes wastes bandwidth and ties up connections for a long time."
+    },
+    {
+      "start": 42.261,
+      "end": 47.906,
+      "speaker": "SPEAKER_00",
+      "text": "Once all parts land, storage assembles the object and we emit an event that kicks off processing."
+    },
+    {
+      "start": 48.124,
+      "end": 55.75,
+      "speaker": "SPEAKER_01",
+      "text": "The processing pipeline is where most of the complexity lives. We need multiple renditions at different resolutions and bitrates."
+    },
+    {
+      "start": 55.967,
+      "end": 63.348,
+      "speaker": "SPEAKER_00",
+      "text": "Adaptive bitrate streaming requires a ladder, maybe two hundred forty p up to four K, each encoded at an appropriate bitrate."
+    },
+    {
+      "start": 63.566,
+      "end": 71.65,
+      "speaker": "SPEAKER_01",
+      "text": "And each rendition is segmented into short chunks, typically two to six seconds, with a manifest listing the available variants."
+    },
+    {
+      "start": 71.868,
+      "end": 76.826,
+      "speaker": "SPEAKER_00",
+      "text": "The player then switches between renditions mid stream based on measured throughput and buffer level."
+    },
+    {
+      "start": 77.043,
+      "end": 83.705,
+      "speaker": "SPEAKER_01",
+      "text": "That switching only works if the segments are aligned across renditions, with keyframes at identical timestamps."
+    },
+    {
+      "start": 83.923,
+      "end": 91.988,
+      "speaker": "SPEAKER_00",
+      "text": "Exactly. Misaligned keyframes cause visible glitches or failed switches, so the encoder must be configured with a fixed keyframe interval."
+    },
+    {
+      "start": 92.206,
+      "end": 98.92,
+      "speaker": "SPEAKER_01",
+      "text": "For the transcoding itself, we should parallelize by splitting the source into segments and encoding them independently."
+    },
+    {
+      "start": 99.137,
+      "end": 106.206,
+      "speaker": "SPEAKER_00",
+      "text": "That turns a long serial job into a wide parallel one, so a two hour film can be processed in minutes given enough workers."
+    },
+    {
+      "start": 106.424,
+      "end": 115.366,
+      "speaker": "SPEAKER_01",
+      "text": "We need a job orchestrator with a directed graph of tasks, since thumbnail extraction, audio processing and each rendition can run concurrently."
+    },
+    {
+      "start": 115.584,
+      "end": 122.093,
+      "speaker": "SPEAKER_00",
+      "text": "Retries need to be idempotent at the segment level, so a failed worker just means that one segment is re encoded."
+    },
+    {
+      "start": 122.31,
+      "end": 129.708,
+      "speaker": "SPEAKER_01",
+      "text": "We should also prioritize. A short clip from a popular creator should not sit behind a four hour upload in the same queue."
+    },
+    {
+      "start": 129.926,
+      "end": 136.652,
+      "speaker": "SPEAKER_00",
+      "text": "Multiple queues by expected duration and account tier solves most of that, plus a separate lane for reprocessing jobs."
+    },
+    {
+      "start": 136.87,
+      "end": 143.629,
+      "speaker": "SPEAKER_01",
+      "text": "Cost control matters enormously here, because transcoding is compute heavy and it is usually the largest line item."
+    },
+    {
+      "start": 143.846,
+      "end": 150.42,
+      "speaker": "SPEAKER_00",
+      "text": "So we should encode the full ladder lazily for unpopular content, generating only the most common rendition up front."
+    },
+    {
+      "start": 150.638,
+      "end": 157.952,
+      "speaker": "SPEAKER_01",
+      "text": "Then if a video gains traction we backfill the remaining renditions on demand, which avoids paying for content nobody watches."
+    },
+    {
+      "start": 158.17,
+      "end": 164.674,
+      "speaker": "SPEAKER_00",
+      "text": "Spot or preemptible instances also fit this workload well, since segment level retries make interruption cheap."
+    },
+    {
+      "start": 164.891,
+      "end": 172.173,
+      "speaker": "SPEAKER_01",
+      "text": "Let's move to delivery. The content delivery network does the heavy lifting, serving segments from edge locations near the viewer."
+    },
+    {
+      "start": 172.391,
+      "end": 178.866,
+      "speaker": "SPEAKER_00",
+      "text": "Our origin only sees cache misses, so the origin fleet can be small relative to the total delivered bandwidth."
+    },
+    {
+      "start": 179.084,
+      "end": 186.121,
+      "speaker": "SPEAKER_01",
+      "text": "Cache hit ratio is the metric to obsess over. A few percentage points of miss rate translate into large origin costs."
+    },
+    {
+      "start": 186.339,
+      "end": 192.449,
+      "speaker": "SPEAKER_00",
+      "text": "Segment URLs should be stable and immutable, which makes them perfectly cacheable with a very long time to live."
+    },
+    {
+      "start": 192.666,
+      "end": 199.356,
+      "speaker": "SPEAKER_01",
+      "text": "Manifests are different. For live content the manifest updates constantly and needs a very short cache lifetime."
+    },
+    {
+      "start": 199.574,
+      "end": 205.299,
+      "speaker": "SPEAKER_00",
+      "text": "That split, immutable segments and volatile manifests, is the core caching insight for streaming."
+    },
+    {
+      "start": 205.517,
+      "end": 211.558,
+      "speaker": "SPEAKER_01",
+      "text": "For access control, we use signed URLs with short expiry so a leaked link stops working quickly."
+    },
+    {
+      "start": 211.775,
+      "end": 218.632,
+      "speaker": "SPEAKER_00",
+      "text": "And for premium content, digital rights management with license servers, though that adds significant client complexity."
+    },
+    {
+      "start": 218.85,
+      "end": 225.83,
+      "speaker": "SPEAKER_01",
+      "text": "We should also think about pre positioning. For a highly anticipated release we can push content to edges before launch."
+    },
+    {
+      "start": 226.048,
+      "end": 232.219,
+      "speaker": "SPEAKER_00",
+      "text": "Otherwise the first wave of viewers all miss cache simultaneously and hammer the origin at exactly the worst moment."
+    },
+    {
+      "start": 232.436,
+      "end": 236.491,
+      "speaker": "SPEAKER_01",
+      "text": "Let's talk about live streaming, which changes several assumptions."
+    },
+    {
+      "start": 236.709,
+      "end": 243.314,
+      "speaker": "SPEAKER_00",
+      "text": "The ingest is a continuous stream rather than a file, using a protocol like RTMP or a low latency variant."
+    },
+    {
+      "start": 243.532,
+      "end": 251.711,
+      "speaker": "SPEAKER_01",
+      "text": "Transcoding must happen in real time, so we cannot parallelize by splitting the file. We parallelize across renditions instead."
+    },
+    {
+      "start": 251.928,
+      "end": 258.472,
+      "speaker": "SPEAKER_00",
+      "text": "And latency becomes a first class requirement. Standard segmented streaming adds ten to thirty seconds of delay."
+    },
+    {
+      "start": 258.69,
+      "end": 265.148,
+      "speaker": "SPEAKER_01",
+      "text": "Low latency modes use shorter segments and chunked transfer, pushing partial segments before they are complete."
+    },
+    {
+      "start": 265.366,
+      "end": 270.972,
+      "speaker": "SPEAKER_00",
+      "text": "That cuts latency to a few seconds, at the cost of less efficient caching and more requests per viewer."
+    },
+    {
+      "start": 271.189,
+      "end": 277.565,
+      "speaker": "SPEAKER_01",
+      "text": "We also need a failover path for the ingest, because a dropped encoder connection means dead air for every viewer."
+    },
+    {
+      "start": 277.783,
+      "end": 284.659,
+      "speaker": "SPEAKER_00",
+      "text": "Dual ingest from the broadcaster into two regions, with automatic switchover, is the standard answer for important events."
+    },
+    {
+      "start": 284.877,
+      "end": 291.614,
+      "speaker": "SPEAKER_01",
+      "text": "On the playback side, we need client telemetry to understand real quality, not just server side metrics."
+    },
+    {
+      "start": 291.831,
+      "end": 299.147,
+      "speaker": "SPEAKER_00",
+      "text": "Startup time, rebuffer ratio, average bitrate and playback failures are the four numbers that actually describe the experience."
+    },
+    {
+      "start": 299.365,
+      "end": 305.637,
+      "speaker": "SPEAKER_01",
+      "text": "Rebuffer ratio is the one users feel most. A slightly lower bitrate is almost always better than a stall."
+    },
+    {
+      "start": 305.855,
+      "end": 311.266,
+      "speaker": "SPEAKER_00",
+      "text": "The player's adaptation algorithm should therefore be conservative on the way up and aggressive on the way down."
+    },
+    {
+      "start": 311.483,
+      "end": 319.823,
+      "speaker": "SPEAKER_01",
+      "text": "For storage, we keep the original master for reprocessing, plus all the renditions, which multiplies the footprint significantly."
+    },
+    {
+      "start": 320.041,
+      "end": 327.66,
+      "speaker": "SPEAKER_00",
+      "text": "We should tier that storage. Masters go to cold archival storage, and unpopular renditions can be deleted and regenerated if needed."
+    },
+    {
+      "start": 327.878,
+      "end": 337.667,
+      "speaker": "SPEAKER_01",
+      "text": "To summarize, resumable direct to storage uploads, segment parallel transcoding with lazy ladder generation, and edge delivery with immutable segments."
+    },
+    {
+      "start": 337.884,
+      "end": 345.127,
+      "speaker": "SPEAKER_00",
+      "text": "Plus signed access, pre positioning for launches, a separate real time path for live, and client side quality telemetry."
+    },
+    {
+      "start": 345.345,
+      "end": 353.238,
+      "speaker": "SPEAKER_01",
+      "text": "The economics drive most decisions here. Transcoding compute and egress bandwidth dominate, so the architecture follows the cost."
+    }
+  ],
+  "correction": {
+    "defect": "D1 (dataset/PROVENANCE.md)",
+    "source_reference": "audio_06_video_streaming.json",
+    "source_reference_sha256": "0c19899bccc88c4a7a022e8203de16d2b53efd3af8c6df17714279d91dc43d09",
+    "audio_sha256": "d682707039e5c37d50ab1bfb7883ea1c5c5d50ed006e3b112e8727bdde4c5421",
+    "method": "t' = t - b*i per segment i; b = slope of (reference start - detected speech onset) vs i. Durations preserved; intercepts are detector bias and not applied",
+    "shift_s_per_segment": 0.08233,
+    "silencedetect": {
+      "noise_db": -40,
+      "min_duration_s": 0.1
+    },
+    "start_fit": {
+      "intercept_s": -0.00649,
+      "slope_s_per_segment": 0.08233
+    },
+    "end_fit": {
+      "intercept_s": 0.04049,
+      "slope_s_per_segment": 0.08225
+    },
+    "boundaries_matched": 49,
+    "start_residual_abs_s": {
+      "mean": 0.0034,
+      "max": 0.0164
+    },
+    "end_residual_abs_s_informational": {
+      "mean": 0.0097,
+      "max": 0.074
+    },
+    "audio_duration_exact_s": 353.2357,
+    "last_end_s": 353.238,
+    "tail_s": -0.0023
+  }
+}

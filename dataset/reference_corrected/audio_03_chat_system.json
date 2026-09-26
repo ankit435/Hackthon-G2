@@ -1,0 +1,350 @@
+{
+  "dataset": "Synthetic Two-Speaker Golden Audio Dataset",
+  "audio_id": "audio_03_chat_system",
+  "topic": "Real-Time Chat and Messaging System",
+  "duration_seconds": 365.84,
+  "speakers": [
+    "SPEAKER_00",
+    "SPEAKER_01"
+  ],
+  "segments": [
+    {
+      "start": 0.0,
+      "end": 5.101,
+      "speaker": "SPEAKER_00",
+      "text": "Let's design a real time chat system supporting one to one messages and group conversations."
+    },
+    {
+      "start": 5.319,
+      "end": 11.15,
+      "speaker": "SPEAKER_01",
+      "text": "Before the architecture, what scale are we targeting and what delivery guarantees do we promise the user?"
+    },
+    {
+      "start": 11.367,
+      "end": 17.337,
+      "speaker": "SPEAKER_00",
+      "text": "Say fifty million daily active users, and messages must never be lost once the server acknowledges them."
+    },
+    {
+      "start": 17.555,
+      "end": 25.914,
+      "speaker": "SPEAKER_01",
+      "text": "So durability before acknowledgment. The server writes the message to persistent storage first, then returns an acknowledgment to the sender."
+    },
+    {
+      "start": 26.132,
+      "end": 32.818,
+      "speaker": "SPEAKER_00",
+      "text": "That is the key ordering. If we acknowledge first and write later, a crash loses messages that the user believes were sent."
+    },
+    {
+      "start": 33.035,
+      "end": 40.7,
+      "speaker": "SPEAKER_01",
+      "text": "Let's start with the connection layer. For real time delivery we need a persistent connection, so WebSocket is the natural choice."
+    },
+    {
+      "start": 40.918,
+      "end": 48.98,
+      "speaker": "SPEAKER_00",
+      "text": "Long polling is the fallback for restrictive networks, but WebSocket over TLS on port four four three passes through most corporate proxies."
+    },
+    {
+      "start": 49.198,
+      "end": 56.788,
+      "speaker": "SPEAKER_01",
+      "text": "Each gateway node then holds tens or hundreds of thousands of open connections, which makes connection state the central scaling problem."
+    },
+    {
+      "start": 57.006,
+      "end": 62.128,
+      "speaker": "SPEAKER_00",
+      "text": "We need a session registry that maps each user to the gateway node currently holding their connection."
+    },
+    {
+      "start": 62.345,
+      "end": 69.657,
+      "speaker": "SPEAKER_01",
+      "text": "That registry lives in a fast shared store, keyed by user identifier, with the node address and a heartbeat driven expiry."
+    },
+    {
+      "start": 69.875,
+      "end": 76.378,
+      "speaker": "SPEAKER_00",
+      "text": "When user A sends a message to user B, the receiving gateway writes the message, then looks up where B is connected."
+    },
+    {
+      "start": 76.596,
+      "end": 83.565,
+      "speaker": "SPEAKER_01",
+      "text": "If B is connected, we forward the message to that specific gateway node over an internal channel and it pushes down the socket."
+    },
+    {
+      "start": 83.782,
+      "end": 90.942,
+      "speaker": "SPEAKER_00",
+      "text": "If B is offline, we skip the push and rely on the stored message plus a mobile push notification through the platform services."
+    },
+    {
+      "start": 91.16,
+      "end": 97.629,
+      "speaker": "SPEAKER_01",
+      "text": "We should be careful with the registry consistency. A user may reconnect to a different node during a network flap."
+    },
+    {
+      "start": 97.847,
+      "end": 105.303,
+      "speaker": "SPEAKER_00",
+      "text": "Stale entries cause messages to be forwarded to a node that no longer owns the connection, so that node must drop and let the store handle it."
+    },
+    {
+      "start": 105.52,
+      "end": 113.728,
+      "speaker": "SPEAKER_01",
+      "text": "Since the message is already durable, a lost push is only a latency problem. The client will fetch it on reconnect and nothing is truly lost."
+    },
+    {
+      "start": 113.946,
+      "end": 120.585,
+      "speaker": "SPEAKER_00",
+      "text": "That is the important invariant. Real time delivery is best effort on top of a durable log, not the source of truth."
+    },
+    {
+      "start": 120.803,
+      "end": 126.111,
+      "speaker": "SPEAKER_01",
+      "text": "Let's talk about storage. What does the message table look like and how do we partition it?"
+    },
+    {
+      "start": 126.328,
+      "end": 135.461,
+      "speaker": "SPEAKER_00",
+      "text": "I would model messages by conversation. The partition key is the conversation identifier and the clustering key is a monotonically increasing message sequence."
+    },
+    {
+      "start": 135.679,
+      "end": 142.376,
+      "speaker": "SPEAKER_01",
+      "text": "That gives us efficient range reads for loading history, which is exactly the access pattern when a user opens a thread."
+    },
+    {
+      "start": 142.594,
+      "end": 149.921,
+      "speaker": "SPEAKER_00",
+      "text": "For the inbox view, listing recent conversations, we maintain a separate per user table sorted by last activity time."
+    },
+    {
+      "start": 150.139,
+      "end": 157.672,
+      "speaker": "SPEAKER_01",
+      "text": "That denormalization is necessary because the two access patterns are different and we do not want to scan conversations to build the list."
+    },
+    {
+      "start": 157.889,
+      "end": 165.113,
+      "speaker": "SPEAKER_00",
+      "text": "Sequencing inside a conversation is subtle. Client clocks are unreliable, so we cannot order by the sender's timestamp."
+    },
+    {
+      "start": 165.331,
+      "end": 171.798,
+      "speaker": "SPEAKER_01",
+      "text": "The server assigns the sequence number per conversation, which gives a total order that all participants agree on."
+    },
+    {
+      "start": 172.016,
+      "end": 178.565,
+      "speaker": "SPEAKER_00",
+      "text": "For a one to one chat that is cheap. For a large group we need a single writer or an atomic counter per conversation."
+    },
+    {
+      "start": 178.782,
+      "end": 185.229,
+      "speaker": "SPEAKER_01",
+      "text": "And clients need to handle out of order arrival gracefully, inserting by sequence rather than by arrival time."
+    },
+    {
+      "start": 185.447,
+      "end": 192.408,
+      "speaker": "SPEAKER_00",
+      "text": "Now group messaging. Do we fan out on write into every member's inbox, or fan out on read from the shared conversation?"
+    },
+    {
+      "start": 192.626,
+      "end": 200.513,
+      "speaker": "SPEAKER_01",
+      "text": "For small groups, fan out on write is fine and makes reads trivial. For very large groups it multiplies the write cost enormously."
+    },
+    {
+      "start": 200.73,
+      "end": 208.871,
+      "speaker": "SPEAKER_00",
+      "text": "So a hybrid. Below a member threshold we write per user entries, above it we keep one copy and have clients read the conversation directly."
+    },
+    {
+      "start": 209.089,
+      "end": 215.948,
+      "speaker": "SPEAKER_01",
+      "text": "That mirrors the approach used in social feeds, and the threshold becomes a tuning knob we can adjust from configuration."
+    },
+    {
+      "start": 216.166,
+      "end": 222.509,
+      "speaker": "SPEAKER_00",
+      "text": "Let's cover read receipts and typing indicators, because they generate far more traffic than the messages themselves."
+    },
+    {
+      "start": 222.726,
+      "end": 229.574,
+      "speaker": "SPEAKER_01",
+      "text": "Typing indicators should be ephemeral and never persisted. Send them over the socket with a short expiry and drop them under load."
+    },
+    {
+      "start": 229.792,
+      "end": 236.208,
+      "speaker": "SPEAKER_00",
+      "text": "Read receipts can be batched. Instead of one event per message, the client reports the highest sequence it has read."
+    },
+    {
+      "start": 236.426,
+      "end": 243.204,
+      "speaker": "SPEAKER_01",
+      "text": "That collapses a hundred events into one and is exactly equivalent, since reading is monotonic within a conversation."
+    },
+    {
+      "start": 243.422,
+      "end": 249.945,
+      "speaker": "SPEAKER_00",
+      "text": "Presence is the other expensive feature. Naively broadcasting every status change to every contact is quadratic."
+    },
+    {
+      "start": 250.162,
+      "end": 257.026,
+      "speaker": "SPEAKER_01",
+      "text": "We should only push presence for conversations the user currently has open, and let everything else be fetched on demand."
+    },
+    {
+      "start": 257.244,
+      "end": 264.56,
+      "speaker": "SPEAKER_00",
+      "text": "For offline delivery, the client stores the last sequence it has seen per conversation and requests everything after it on reconnect."
+    },
+    {
+      "start": 264.778,
+      "end": 271.846,
+      "speaker": "SPEAKER_01",
+      "text": "That single mechanism handles both brief disconnections and a phone that was off for a week, which keeps the protocol simple."
+    },
+    {
+      "start": 272.063,
+      "end": 280.018,
+      "speaker": "SPEAKER_00",
+      "text": "We should also think about multiple devices. The same user may have a phone, a tablet and a desktop client connected simultaneously."
+    },
+    {
+      "start": 280.236,
+      "end": 286.645,
+      "speaker": "SPEAKER_01",
+      "text": "Then the session registry maps a user to a set of connections, and delivery fans out to all active devices."
+    },
+    {
+      "start": 286.863,
+      "end": 293.499,
+      "speaker": "SPEAKER_00",
+      "text": "Read state also becomes per user rather than per device, so marking a message read on the phone clears it on the laptop."
+    },
+    {
+      "start": 293.716,
+      "end": 298.42,
+      "speaker": "SPEAKER_01",
+      "text": "What about end to end encryption? That changes the server's role significantly."
+    },
+    {
+      "start": 298.638,
+      "end": 305.548,
+      "speaker": "SPEAKER_00",
+      "text": "With end to end encryption the server stores ciphertext and cannot build server side search or content moderation on the message body."
+    },
+    {
+      "start": 305.766,
+      "end": 313.571,
+      "speaker": "SPEAKER_01",
+      "text": "It also complicates multi device, because each device needs its own key material and the sender must encrypt per recipient device."
+    },
+    {
+      "start": 313.788,
+      "end": 320.741,
+      "speaker": "SPEAKER_00",
+      "text": "That is a substantial design in itself, so let's note it as a major branch and keep our current design at transport encryption."
+    },
+    {
+      "start": 320.959,
+      "end": 327.609,
+      "speaker": "SPEAKER_01",
+      "text": "Fair. Let's close on failure modes. What happens when a gateway node dies with a hundred thousand connections?"
+    },
+    {
+      "start": 327.827,
+      "end": 335.179,
+      "speaker": "SPEAKER_00",
+      "text": "All those clients reconnect at once, so we need randomized reconnect delays or we create a thundering herd against the remaining nodes."
+    },
+    {
+      "start": 335.396,
+      "end": 341.767,
+      "speaker": "SPEAKER_01",
+      "text": "The load balancer should also drain connections gradually during deployments rather than dropping them all simultaneously."
+    },
+    {
+      "start": 341.985,
+      "end": 347.891,
+      "speaker": "SPEAKER_00",
+      "text": "And we should cap the reconnect rate at the gateway, shedding load deliberately instead of collapsing under the surge."
+    },
+    {
+      "start": 348.109,
+      "end": 357.84,
+      "speaker": "SPEAKER_01",
+      "text": "To summarize, durable write before acknowledgment, WebSocket gateways with a session registry, conversation partitioned storage and client driven catch up."
+    },
+    {
+      "start": 358.058,
+      "end": 365.835,
+      "speaker": "SPEAKER_00",
+      "text": "Plus hybrid fan out for groups, batched receipts, scoped presence and careful reconnect behavior. That is a solid foundation."
+    }
+  ],
+  "correction": {
+    "defect": "D1 (dataset/PROVENANCE.md)",
+    "source_reference": "audio_03_chat_system.json",
+    "source_reference_sha256": "0d0c937c1507437d469d2927bb248ab0922603642f1ac60adb19fd690ac09988",
+    "audio_sha256": "ca0c89b74804d1156c747c18aca353c5f5194e7fa0047ddc7417b893a84522c7",
+    "method": "t' = t - b*i per segment i; b = slope of (reference start - detected speech onset) vs i. Durations preserved; intercepts are detector bias and not applied",
+    "shift_s_per_segment": 0.08231,
+    "silencedetect": {
+      "noise_db": -40,
+      "min_duration_s": 0.1
+    },
+    "start_fit": {
+      "intercept_s": -0.01008,
+      "slope_s_per_segment": 0.08231
+    },
+    "end_fit": {
+      "intercept_s": 0.03397,
+      "slope_s_per_segment": 0.08245
+    },
+    "boundaries_matched": 50,
+    "start_residual_abs_s": {
+      "mean": 0.0033,
+      "max": 0.0156
+    },
+    "end_residual_abs_s_informational": {
+      "mean": 0.013,
+      "max": 0.0599
+    },
+    "audio_duration_exact_s": 365.8368,
+    "last_end_s": 365.835,
+    "tail_s": 0.0018
+  }
+}
