@@ -75,23 +75,6 @@ app = FastAPI(
 )
 
 
-@app.post("/answer", response_model=AnswerResponse, tags=["answer"],
-          summary="Optional NVIDIA LLM answer grounded in hybrid-search results")
-async def answer_from_audio(payload: AnswerRequest):
-    """Separate from /search: deterministic retrieval first, NVIDIA synthesis second."""
-    try:
-        result = await app.state.answer_service.answer(payload.query, payload.top_k)
-        return AnswerResponse(
-            answer=result.answer,
-            citations=[AnswerCitation(number=index, file_name=item.file_name, speaker=item.speaker,
-                                       start_time=item.start_time, end_time=item.end_time,
-                                       language=item.language, text=item.text)
-                       for index, item in enumerate(result.sources, start=1)],
-        )
-    except InvalidInputError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
-    except ConfigurationError as exc:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
 
 
 @app.post("/ingest", tags=["ingest"], summary="Ingest audio files into the search index")
@@ -182,7 +165,12 @@ async def search_semantic(query: str = Query(..., description="Search query stri
 async def run_evaluation_get():
     """Runs retrieval evaluation on the query set and returns quality metrics."""
     try:
-        eval_result = await app.state.evaluation_service.run()
+        from infra.dataset import corrected_references, golden_files, query_set
+        queries, meta = query_set("en")
+        files = golden_files()
+        checksums = {f["audio_id"]: f["sha256"] for f in files}
+        file_names = {f["audio"]: f["audio_id"] for f in files}
+        eval_result = await app.state.evaluation_service.run(queries, corrected_references(), checksums, file_names)
         config = {**app.state.search_service.config, "embedding_model": app.state.settings.embedding_model}
         return EvaluationResponse(config=config, summary=eval_result)
     except Exception as e:
@@ -193,8 +181,33 @@ async def run_evaluation_get():
 async def run_evaluation_post():
     """Runs retrieval evaluation on the query set and returns quality metrics."""
     try:
-        eval_result = await app.state.evaluation_service.run()
+        from infra.dataset import corrected_references, golden_files, query_set
+        queries, meta = query_set("en")
+        files = golden_files()
+        checksums = {f["audio_id"]: f["sha256"] for f in files}
+        file_names = {f["audio"]: f["audio_id"] for f in files}
+        eval_result = await app.state.evaluation_service.run(queries, corrected_references(), checksums, file_names)
         config = {**app.state.search_service.config, "embedding_model": app.state.settings.embedding_model}
         return EvaluationResponse(config=config, summary=eval_result)
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)) from e
+
+
+
+@app.post("/answer", response_model=AnswerResponse, tags=["answer"],
+          summary="Optional NVIDIA LLM answer grounded in hybrid-search results. ")
+async def answer_from_audio(payload: AnswerRequest):
+    """Separate from /search: deterministic retrieval first, NVIDIA synthesis second."""
+    try:
+        result = await app.state.answer_service.answer(payload.query, payload.top_k)
+        return AnswerResponse(
+            answer=result.answer,
+            citations=[AnswerCitation(number=index, file_name=item.file_name, speaker=item.speaker,
+                                       start_time=item.start_time, end_time=item.end_time,
+                                       language=item.language, text=item.text)
+                       for index, item in enumerate(result.sources, start=1)],
+        )
+    except InvalidInputError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    except ConfigurationError as exc:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
