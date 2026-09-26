@@ -1,22 +1,18 @@
 """Task 9: Secondary metrics measurement script (PLAN.md §10.3 - §10.4).
 
-Measures:
-1. WER (Word Error Rate) & CER (Character Error Rate) using `jiwer`.
-2. DER (Diarization Error Rate) via `pyannote.metrics.diarization`.
-3. Speaker Attribution Accuracy.
-4. Search Latency Percentiles (p50, p95, p99).
-5. Indexing Throughput per stage.
+Measures actual ingested transcription WER/CER vs ground truth reference.
 """
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 from pathlib import Path
 
 from jiwer import cer, wer
 
-from application.evaluation import speaker_correct, speaker_mapping
-from domain.models import RefSegment
+from api.settings import load_settings
+from infra.postgres import PostgresRepository
 
 log = logging.getLogger(__name__)
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -29,29 +25,59 @@ def compute_wer_cer(reference_text: str, hypothesis_text: str) -> tuple[float, f
     return round(w_error, 4), round(c_error, 4)
 
 
-def main():
-    print("Measuring secondary quality metrics...")
+async def main():
+    print("Measuring secondary quality metrics on live database chunks...")
+    settings = load_settings()
+    repo = PostgresRepository(settings.database_url)
 
-    # 1. Measure WER and CER on dataset 01–06 references
+    manifest_path = REPO_ROOT / "dataset" / "golden_set.json"
+    if not manifest_path.is_file():
+        print("Manifest dataset/golden_set.json not found.")
+        return
+
+    with manifest_path.open("r", encoding="utf-8") as f:
+        manifest = json.load(f)
+
     ref_dir = REPO_ROOT / "dataset" / "reference_corrected"
-    total_ref_words = 0
-    total_ref_chars = 0
+    wers, cers = [], []
 
-    if ref_dir.is_dir():
-        ref_files = sorted(ref_dir.glob("audio_*.json"))
-        print(f"Found {len(ref_files)} reference files in {ref_dir.name}")
-        for ref_file in ref_files:
-            with ref_file.open("r", encoding="utf-8") as f:
-                data = json.load(f)
-                text = " ".join(seg["text"].strip() for seg in data["segments"])
-                # Compute sample WER/CER comparing reference text against normalized text
-                w, c = compute_wer_cer(text, text)
-                print(f"  {ref_file.name}: baseline WER={w:.4f}, CER={c:.4f} (ground truth text verified)")
+    for item in manifest.get("files", []):
+        checksum = item["sha256"]
+        file_name = item["file_name"]
+        audio_file = await repo.find_by_checksum(checksum)
+        if audio_file is None:
+            print(f"Skipping {file_name}: not found in database.")
+            continue
+
+        chunks = await repo.list_by_file(audio_file.id)
+        hypothesis_text = " ".join(c.text.strip() for c in chunks if c.text)
+
+        ref_json_path = ref_dir / f"{item['id']}_{item['file_name'].replace('.wav', '')}.json"
+        if not ref_json_path.is_file():
+            # Try alternate file naming pattern
+            ref_matches = list(ref_dir.glob(f"{item['id']}*.json"))
+            if ref_matches:
+                ref_json_path = ref_matches[0]
+
+        if ref_json_path.is_file():
+            with ref_json_path.open("r", encoding="utf-8") as rf:
+                ref_data = json.load(rf)
+                reference_text = " ".join(seg["text"].strip() for seg in ref_data.get("segments", []))
+
+            w, c = compute_wer_cer(reference_text, hypothesis_text)
+            wers.append(w)
+            cers.append(c)
+            print(f"  {item['id']} ({file_name}): WER={w:.4f}, CER={c:.4f} (chunks={len(chunks)})")
+        else:
+            print(f"  {item['id']} ({file_name}): reference JSON not found.")
+
+    if wers:
+        avg_wer = round(sum(wers) / len(wers), 4)
+        avg_cer = round(sum(cers) / len(cers), 4)
+        print(f"\nOverall Macro-Averaged Transcription Error: WER={avg_wer:.4f}, CER={avg_cer:.4f}")
     else:
-        print(f"Reference directory {ref_dir} not found.")
-
-    print("\n[OK] Secondary metrics calculation runner complete.")
+        print("\nNo ingested files matched reference set.")
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

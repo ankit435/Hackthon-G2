@@ -85,6 +85,15 @@ baseline. The first ingest downloads model weights: Whisper `large-v3-turbo` is
 
 The weights are **configuration only**. `/search` accepts no weight parameters.
 
+### Optional NVIDIA-grounded answers
+
+`POST /answer` is separate from the graded retrieval endpoint. It first calls the existing hybrid
+search, then sends only the numbered retrieved segments to NVIDIA's OpenAI-compatible API. Add
+`NVIDIA_API_KEY` to `.env`; `AUDIO_SEARCH_ANSWER_BASE_URL` and `AUDIO_SEARCH_ANSWER_MODEL` default
+to NVIDIA Integrate and `meta/muse-glimmer-30b`. Never commit this key. The response includes
+server-generated file, speaker, timestamp, language, and transcript citations, so citation metadata
+does not depend on the model's output. `/search` remains deterministic and does not call an LLM.
+
 ## 6. Database
 
 ```bash
@@ -200,4 +209,3 @@ An evaluator or developer can test any custom or arbitrary audio file (`.wav`, `
 
 6. **Trigger Automated Evaluation via `/evaluation`**:
    - `curl "http://localhost:8000/evaluation"` (GET)
-
