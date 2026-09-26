@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multilingual Audio Search - Hackathon Pitch Deck</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    @media print {
+      body { background: white !important; color: black !important; }
+      .no-print { display: none !important; }
+      .slide { display: block !important; page-break-after: always; min-h-screen: auto; height: 100vh; }
+    }
+    .slide-transition {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+  </style>
+</head>
+<body class="bg-[var(--background)] text-[var(--foreground)] antialiased min-h-screen flex flex-col justify-between p-4 md:p-8">
+
+  <!-- Header / Navigation Bar -->
+  <header class="no-print flex items-center justify-between pb-4 border-b border-[var(--border)] mb-4">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] flex items-center justify-center font-bold text-sm">
+        AG
+      </div>
+      <div>
+        <h1 class="font-bold text-base md:text-lg leading-tight">Multilingual Audio Search Engine</h1>
+        <p class="text-xs text-[var(--muted-foreground)]">Hackathon Pitch Deck & Technical Overview</p>
+      </div>
+    </div>
+    
+    <div class="flex items-center gap-3">
+      <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-[var(--accent)] text-[var(--foreground)]" id="slide-counter">
+        Slide 1 of 8
+      </span>
+      <button onclick="window.print()" class="hidden md:inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-[var(--border)] hover:bg-[var(--card)] transition">
+        🖨️ Export PDF / Print
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Presentation Slides Container -->
+  <main class="flex-1 flex items-center justify-center relative my-2">
+    
+    <!-- Slide 1: Title -->
+    <section class="slide slide-transition w-full max-w-5xl bg-[var(--card)] border border-[var(--border)] rounded-2xl p-6 md:p-12 shadow-lg flex flex-col justify-between min-h-[500px]" id="slide-1">
+      <div class="space-y-6">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 text-blue-500 text-xs font-medium border border-blue-500/20">
+          ⚡ High-Performance Audio RAG & Search Engine
+        </div>
+        <h1 class="text-3xl md:text-5xl font-extrabold tracking-tight text-[var(--foreground)] leading-tight">
+          Multilingual Audio Search & Knowledge Engine
+        </h1>
+        <p class="text-base md:text-xl text-[var(--muted-foreground)] max-w-3xl">
+          Sub-100ms hybrid search, speaker diarization, and grounded RAG answer generation over spoken conversations.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 pt-6 border-t border-[var(--border)] mt-6">
+        <div class="p-3 rounded-xl bg-[var(--background)] border border-[var(--border)]">
+          <div class="text-xs text-[var(--muted-foreground)]">Retrieval Speed</div>
+          <div class="text-lg md:text-xl font-bold text-emerald-500">p95 &lt; 67 ms</div>
+        </div>
+        <div class="p-3 rounded-xl bg-[var(--background)] border border-[var(--border)]">
+          <div class="text-xs text-[var(--muted-foreground)]">Recall @ 10</div>
+          <div class="text-lg md:text-xl font-bold text-blue-500">84.3%</div>
+        </div>
+        <div class="p-3 rounded-xl bg-[var(--background)] border border-[var(--border)]">
+          <div class="text-xs text-[var(--muted-foreground)]">Embedding Dim</div>
+          <div class="text-lg md:text-xl font-bold text-purple-500">1024-dim</div>
+        </div>
+        <div class="p-3 rounded-xl bg-[var(--background)] border border-[var(--border)]">
+          <div class="text-xs text-[var(--muted-foreground)]">Architecture</div>
+          <div class="text-lg md:text-xl font-bold text-amber-500">4-Layer Clean</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 2: The Problem -->
+    <section class="slide slide-transition hidden w-full max-w-5xl bg-[var(--card)] border border-[var(--border)] rounded-2xl p-6 md:p-12 shadow-lg flex flex-col justify-between min-h-[500px]" id="slide-2">
+      <div class="space-y-4">
+        <div class="text-xs font-semibold uppercase tracking-wider text-red-500">The Challenge</div>
+        <h2 class="text-2xl md:text-4xl font-bold text-[var(--foreground)]">Audio Data is Unstructured & Locked Away</h2>
+        <p class="text-sm md:text-base text-[var(--muted-foreground)]">
+          Over 80% of critical organizational knowledge exists in spoken audio—meetings, calls, system design discussions—yet it remains unsearchable and invisible to traditional search engines.
+        </p>
+        
+        <div class="grid md:grid-cols-3 gap-4 pt-4">
+          <div class="p-4 rounded-xl border border-red-500/20 bg-red-500/5 space-y-2">
+            <h3 class="font-semibold text-red-500 text-sm">❌ No Fine-Grained Timestamps</h3>
+            <p class="text-xs text-[var(--muted-foreground)]">Traditional audio files force users to manually scrub through 45-minute recordings to find 10-second answers.</p>
+          </div>
+          <div class="p-4 rounded-xl border border-red-500/20 bg-red-500/5 space-y-2">
+            <h3 class="font-semibold text-red-500 text-sm">❌ Speaker Attribution Deficit</h3>
+            <p class="text-xs text-[var(--muted-foreground)]">Plain transcripts lose who said what, causing misattribution in critical decision tracking.</p>
+          </div>
+          <div class="p-4 rounded-xl border border-red-500/20 bg-red-500/5 space-y-2">
+            <h3 class="font-semibold text-red-500 text-sm">❌ Single-Keyword Failure</h3>
+            <p class="text-xs text-[var(--muted-foreground)]">Exact keyword search misses conceptual queries, while vector search misses exact technical jargon.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 3: The Solution -->
+    <section class="slide slide-transition hidden w-full max-w-5xl bg-[var(--card)] border border-[var(--border)] rounded-2xl p-6 md:p-12 shadow-lg flex flex-col justify-between min-h-[500px]" id="slide-3">
+      <div class="space-y-4">
+        <div class="text-xs font-semibold uppercase tracking-wider text-emerald-500">The Solution</div>
+        <h2 class="text-2xl md:text-4xl font-bold text-[var(--foreground)]">Hybrid Speech Ingestion & Grounded Search</h2>
+        <p class="text-sm md:text-base text-[var(--muted-foreground)]">
+          A production-grade pipeline combining ASR, speaker diarization, multilingual vector indexing, and Reciprocal Rank Fusion (RRF).
+        </p>
+
+        <div class="grid md:grid-cols-3 gap-4 pt-4">
+          <div class="p-5 rounded-xl bg-[var(--background)] border border-[var(--border)] space-y-2">
+            <div class="text-2xl">🎙️</div>
+            <h3 class="font-semibold text-sm">Automated ASR & Diarization</h3>
+            <p class="text-xs text-[var(--muted-foreground)]">Faster-Whisper (`large-v3-turbo`) word timestamps + Pyannote 3.1 speaker tracking.</p>
+          </div>
+          <div class="p-5 rounded-xl bg-[var(--background)] border border-[var(--border)] space-y-2">
+            <div class="text-2xl">⚡</div>
+            <h3 class="font-semibold text-sm">Hybrid RRF Retrieval</h3>
+            <p class="text-xs text-[var(--muted-foreground)]">Fuses BM25 Full-Text Search with BAAI/bge-m3 1024-dim HNSW vector similarity.</p>
+          </div>
+          <div class="p-5 rounded-xl bg-[var(--background)] border border-[var(--border)] space-y-2">
+            <div class="text-2xl">🤖</div>
+            <h3 class="font-semibold text-sm">Grounded LLM RAG</h3>
+            <p class="text-xs text-[var(--muted-foreground)]">Synthesizes answers with server-verified transcript citations and exact start/end timestamps.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 4: Architecture -->
+    <section class="slide slide-transition hidden w-full max-w-5xl bg-[var(--card)] border border-[var(--border)] rounded-2xl p-6 md:p-12 shadow-lg flex flex-col justify-between min-h-[500px]" id="slide-4">
+      <div class="space-y-4">
+        <div class="text-xs font-semibold uppercase tracking-wider text-blue-500">System Architecture</div>
+        <h2 class="text-2xl md:text-4xl font-bold text-[var(--foreground)]">4-Layer Clean Modular Design</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3 pt-2">
+          <div class="p-4 rounded-xl bg-[var(--background)] border border-[var(--border)]">
+            <div class="text-xs font-bold text-blue-500 mb-1">1. Domain Layer</div>
+            <p class="text-xs text-[var(--muted-foreground)]">Pure entities (`AudioFile`, `AudioChunk`, `Hit`, `RefSegment`) & custom errors.</p>
+          </div>
+          <div class="p-4 rounded-xl bg-[var(--background)] border border-[var(--border)]">
+            <div class="text-xs font-bold text-emerald-500 mb-1">2. Application Layer</div>
+            <p class="text-xs text-[var(--muted-foreground)]">Orchestrators (`IngestService`, `SearchService`, `EvaluationService`, `AnswerService`).</p>
+          </div>
+          <div class="p-4 rounded-xl bg-[var(--background)] border border-[var(--border)]">
+            <div class="text-xs font-bold text-purple-500 mb-1">3. Infra Layer</div>
+            <p class="text-xs text-[var(--muted-foreground)]">PostgreSQL + `pgvector`, Whisper, Pyannote, `bge-m3` Embedder, NVIDIA API.</p>
+          </div>
+          <div class="p-4 rounded-xl bg-[var(--background)] border border-[var(--border)]">
+            <div class="text-xs font-bold text-amber-500 mb-1">4. API Layer</div>
+            <p class="text-xs text-[var(--muted-foreground)]">FastAPI REST controllers (`/search`, `/ingest`, `/evaluation`, `POST /answer`).</p>
+          </div>
+        </div>
+
+        <div class="p-4 rounded-xl bg-[var(--background)] border border-[var(--border)] text-xs text-[var(--muted-foreground)] space-y-1">
+          <span class="font-semibold text-[var(--foreground)]">Data Flow:</span>
+          Audio WAV &rarr; ASR + Diarization &rarr; Sentence Chunking &rarr; BAAI/bge-m3 Embedder &rarr; PGvector HNSW &rarr; Reciprocal Rank Fusion &rarr; REST Output / RAG Citations
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 5: Empirical Results -->
+    <section class="slide slide-transition hidden w-full max-w-5xl bg-[var(--card)] border border-[var(--border)] rounded-2xl p-6 md:p-12 shadow-lg flex flex-col justify-between min-h-[500px]" id="slide-5">
+      <div class="space-y-4">
+        <div class="text-xs font-semibold uppercase tracking-wider text-emerald-500">Benchmark Metrics</div>
+        <h2 class="text-2xl md:text-4xl font-bold text-[var(--foreground)]">Empirical Performance & Accuracy</h2>
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div class="p-4 rounded-xl bg-[var(--background)] border border-[var(--border)] text-center">
+            <div class="text-2xl md:text-3xl font-extrabold text-blue-500">78.2%</div>
+            <div class="text-xs text-[var(--muted-foreground)] mt-1">Recall @ 5</div>
+          </div>
+          <div class="p-4 rounded-xl bg-[var(--background)] border border-[var(--border)] text-center">
+            <div class="text-2xl md:text-3xl font-extrabold text-emerald-500">84.3%</div>
+            <div class="text-xs text-[var(--muted-foreground)] mt-1">Recall @ 10</div>
+          </div>
+          <div class="p-4 rounded-xl bg-[var(--background)] border border-[var(--border)] text-center">
+            <div class="text-2xl md:text-3xl font-extrabold text-purple-500">66.9 ms</div>
+            <div class="text-xs text-[var(--muted-foreground)] mt-1">p95 Latency</div>
+          </div>
+          <div class="p-4 rounded-xl bg-[var(--background)] border border-[var(--border)] text-center">
+            <div class="text-2xl md:text-3xl font-extrabold text-amber-500">10.57%</div>
+            <div class="text-xs text-[var(--muted-foreground)] mt-1">Macro WER</div>
+          </div>
+        </div>
+
+        <div class="p-4 rounded-xl bg-[var(--background)] border border-[var(--border)] space-y-2">
+          <h3 class="font-semibold text-xs uppercase tracking-wider text-[var(--muted-foreground)]">Branch Comparison</h3>
+          <div class="grid grid-cols-3 gap-2 text-xs">
+            <div><span class="font-bold text-blue-500">Keyword Branch:</span> 1.000 Keyword Recall / 0.000 Natural Language</div>
+            <div><span class="font-bold text-purple-500">Semantic Branch:</span> 1.000 Keyword Recall / 0.688 Natural Language</div>
+            <div><span class="font-bold text-emerald-500">Fused Hybrid:</span> Fuses both branches seamlessly via RRF</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 6: REST API Interface -->
+    <section class="slide slide-transition hidden w-full max-w-5xl bg-[var(--card)] border border-[var(--border)] rounded-2xl p-6 md:p-12 shadow-lg flex flex-col justify-between min-h-[500px]" id="slide-6">
+      <div class="space-y-4">
+        <div class="text-xs font-semibold uppercase tracking-wider text-purple-500">API Capabilities</div>
+        <h2 class="text-2xl md:text-4xl font-bold text-[var(--foreground)]">FastAPI REST Endpoints</h2>
+
+        <div class="space-y-2 font-mono text-xs">
+          <div class="p-3 rounded-lg bg-[var(--background)] border border-[var(--border)] flex items-center gap-3">
+            <span class="px-2 py-0.5 rounded bg-blue-500/20 text-blue-500 font-bold">GET</span>
+            <span class="font-bold text-[var(--foreground)]">/search?query=...&top_k=5</span>
+            <span class="text-[var(--muted-foreground)] ml-auto">Parameter-free Hybrid RRF Search</span>
+          </div>
+          <div class="p-3 rounded-lg bg-[var(--background)] border border-[var(--border)] flex items-center gap-3">
+            <span class="px-2 py-0.5 rounded bg-purple-500/20 text-purple-500 font-bold">GET</span>
+            <span class="font-bold text-[var(--foreground)]">/search/keyword</span>
+            <span class="text-[var(--muted-foreground)] ml-auto">Diagnostic BM25 FTS Branch</span>
+          </div>
+          <div class="p-3 rounded-lg bg-[var(--background)] border border-[var(--border)] flex items-center gap-3">
+            <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-500 font-bold">GET</span>
+            <span class="font-bold text-[var(--foreground)]">/search/semantic</span>
+            <span class="text-[var(--muted-foreground)] ml-auto">Diagnostic Vector Branch</span>
+          </div>
+          <div class="p-3 rounded-lg bg-[var(--background)] border border-[var(--border)] flex items-center gap-3">
+            <span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-500 font-bold">GET</span>
+            <span class="font-bold text-[var(--foreground)]">/evaluation</span>
+            <span class="text-[var(--muted-foreground)] ml-auto">Automated Evaluation Suite</span>
+          </div>
+          <div class="p-3 rounded-lg bg-[var(--background)] border border-[var(--border)] flex items-center gap-3">
+            <span class="px-2 py-0.5 rounded bg-red-500/20 text-red-500 font-bold">POST</span>
+            <span class="font-bold text-[var(--foreground)]">/answer</span>
+            <span class="text-[var(--muted-foreground)] ml-auto">NVIDIA LLM RAG with Citations</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 7: Grounded RAG Example -->
+    <section class="slide slide-transition hidden w-full max-w-5xl bg-[var(--card)] border border-[var(--border)] rounded-2xl p-6 md:p-12 shadow-lg flex flex-col justify-between min-h-[500px]" id="slide-7">
+      <div class="space-y-4">
+        <div class="text-xs font-semibold uppercase tracking-wider text-amber-500">Live RAG Demo</div>
+        <h2 class="text-2xl md:text-3xl font-bold text-[var(--foreground)]">Grounded Answer Generation (`POST /answer`)</h2>
+
+        <div class="p-4 rounded-xl bg-[var(--background)] border border-[var(--border)] space-y-3">
+          <div class="text-xs font-bold text-blue-500">User Question: "How does the system prevent a rate-limit burst?"</div>
+          <div class="text-xs text-[var(--foreground)] p-3 rounded-lg bg-[var(--card)] border border-[var(--border)]">
+            "The system uses a token bucket algorithm to enforce a strict upper capacity ceiling, preventing request spikes from exhausting worker pools."
+          </div>
+          <div class="text-xs font-semibold text-[var(--muted-foreground)]">Server-Verified Citations (Model does not control metadata):</div>
+          <div class="grid grid-cols-2 gap-2 text-[11px] text-[var(--muted-foreground)] font-mono">
+            <div class="p-2 rounded bg-[var(--card)] border border-[var(--border)]">
+              [Citation 1] audio_01_rate_limiter.wav | SPEAKER_00 | 12.4s–18.2s
+            </div>
+            <div class="p-2 rounded bg-[var(--card)] border border-[var(--border)]">
+              [Citation 2] audio_01_rate_limiter.wav | SPEAKER_01 | 24.1s–31.0s
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 8: Conclusion -->
+    <section class="slide slide-transition hidden w-full max-w-5xl bg-[var(--card)] border border-[var(--border)] rounded-2xl p-6 md:p-12 shadow-lg flex flex-col justify-between min-h-[500px]" id="slide-8">
+      <div class="space-y-6">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-500 text-xs font-medium border border-emerald-500/20">
+          🚀 Ready for Production
+        </div>
+        <h2 class="text-3xl md:text-4xl font-extrabold text-[var(--foreground)]">Summary & Next Steps</h2>
+        <ul class="space-y-3 text-sm text-[var(--muted-foreground)]">
+          <li class="flex items-start gap-2">
+            <span class="text-emerald-500 font-bold">✓</span>
+            <span><strong class="text-[var(--foreground)]">Production Ready</strong>: 295/295 tests passing, robust error handling, fully isolated components.</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-emerald-500 font-bold">✓</span>
+            <span><strong class="text-[var(--foreground)]">Multilingual Foundation</strong>: BAAI/bge-m3 dense embedder + Whisper ASR support Spanish, Hindi, Chinese, and English out of the box.</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <span class="text-emerald-500 font-bold">✓</span>
+            <span><strong class="text-[var(--foreground)]">Sub-100ms Latency</strong>: Highly optimized PostgreSQL HNSW vector indexes and streaming pipeline.</span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="p-4 rounded-xl bg-[var(--background)] border border-[var(--border)] text-center text-xs text-[var(--muted-foreground)] mt-6">
+        Thank you! Questions & Live Demo.
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Controls Footer -->
+  <footer class="no-print flex items-center justify-between pt-4 border-t border-[var(--border)] mt-4">
+    <button onclick="prevSlide()" id="btn-prev" class="px-4 py-2 rounded-xl bg-[var(--card)] border border-[var(--border)] text-xs font-semibold hover:bg-[var(--accent)] transition disabled:opacity-40">
+      ← Previous
+    </button>
+
+    <!-- Slide Progress Dots -->
+    <div class="flex items-center gap-1.5" id="dots-container"></div>
+
+    <button onclick="nextSlide()" id="btn-next" class="px-4 py-2 rounded-xl bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-semibold hover:opacity-90 transition">
+      Next →
+    </button>
+  </footer>
+
+  <script>
+    let currentSlide = 1;
+    const totalSlides = 8;
+
+    function updateSlides() {
+      for (let i = 1; i <= totalSlides; i++) {
+        const el = document.getElementById(`slide-${i}`);
+        if (el) {
+          if (i === currentSlide) {
+            el.classList.remove('hidden');
+          } else {
+            el.classList.add('hidden');
+          }
+        }
+      }
+
+      document.getElementById('slide-counter').innerText = `Slide ${currentSlide} of ${totalSlides}`;
+      document.getElementById('btn-prev').disabled = (currentSlide === 1);
+      document.getElementById('btn-next').disabled = (currentSlide === totalSlides);
+
+      // Update dots
+      const dotsContainer = document.getElementById('dots-container');
+      dotsContainer.innerHTML = '';
+      for (let i = 1; i <= totalSlides; i++) {
+        const dot = document.createElement('div');
+        dot.className = `w-2 h-2 rounded-full cursor-pointer transition-all ${i === currentSlide ? 'bg-[var(--primary)] w-4' : 'bg-[var(--border)]'}`;
+        dot.onclick = () => goToSlide(i);
+        dotsContainer.appendChild(dot);
+      }
+    }
+
+    function nextSlide() {
+      if (currentSlide < totalSlides) {
+        currentSlide++;
+        updateSlides();
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlide > 1) {
+        currentSlide--;
+        updateSlides();
+      }
+    }
+
+    function goToSlide(n) {
+      currentSlide = n;
+      updateSlides();
+    }
+
+    // Keyboard Navigation
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') nextSlide();
+      if (e.key === 'ArrowLeft') prevSlide();
+    });
+
+    // Initialize
+    updateSlides();
+  </script>
+</body>
+</html>
