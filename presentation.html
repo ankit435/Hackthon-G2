@@ -272,24 +272,33 @@
       </div>
     </section>
 
-    <!-- Slide 7: Grounded RAG Example -->
+    <!-- Slide 7: Live Multilingual API Execution & Screenshot -->
     <section class="slide slide-transition hidden w-full max-w-5xl bg-[var(--card)] border border-[var(--border)] rounded-2xl p-6 md:p-12 shadow-lg flex flex-col justify-between min-h-[500px]" id="slide-7">
       <div class="space-y-4">
-        <div class="text-xs font-semibold uppercase tracking-wider text-amber-500">Live RAG Demo</div>
-        <h2 class="text-2xl md:text-3xl font-bold text-[var(--foreground)]">Grounded Answer Generation (`POST /answer`)</h2>
+        <div class="text-xs font-semibold uppercase tracking-wider text-amber-500">Live API Execution</div>
+        <h2 class="text-2xl md:text-3xl font-bold text-[var(--foreground)]">Multilingual Cross-Lingual Live Search (`GET /search`)</h2>
 
-        <div class="p-4 rounded-xl bg-[var(--background)] border border-[var(--border)] space-y-3">
-          <div class="text-xs font-bold text-blue-500">User Question: "How does the system prevent a rate-limit burst?"</div>
-          <div class="text-xs text-[var(--foreground)] p-3 rounded-lg bg-[var(--card)] border border-[var(--border)]">
-            "The system uses a token bucket algorithm to enforce a strict upper capacity ceiling, preventing request spikes from exhausting worker pools."
+        <div class="grid md:grid-cols-2 gap-4 items-center">
+          <!-- Screenshot Image Container -->
+          <div class="rounded-xl border border-[var(--border)] overflow-hidden bg-black/80 shadow-md">
+            <img src="presentation_screenshot.png" alt="Live API Multilingual Search Response" class="w-full h-auto max-h-[300px] object-contain" />
           </div>
-          <div class="text-xs font-semibold text-[var(--muted-foreground)]">Server-Verified Citations (Model does not control metadata):</div>
-          <div class="grid grid-cols-2 gap-2 text-[11px] text-[var(--muted-foreground)] font-mono">
-            <div class="p-2 rounded bg-[var(--card)] border border-[var(--border)]">
-              [Citation 1] audio_01_rate_limiter.wav | SPEAKER_00 | 12.4s–18.2s
+
+          <!-- Feature Highlights of Live Run -->
+          <div class="space-y-3 text-xs">
+            <div class="p-3 rounded-lg bg-[var(--background)] border border-[var(--border)] space-y-1">
+              <span class="font-bold text-emerald-400 font-mono">STATUS 200 OK | Latency: 194 ms</span>
+              <p class="text-[var(--muted-foreground)]">Live query sent to <code class="text-blue-400">http://127.0.0.1:8000/search</code> with Hindi prompt query.</p>
             </div>
-            <div class="p-2 rounded bg-[var(--card)] border border-[var(--border)]">
-              [Citation 2] audio_01_rate_limiter.wav | SPEAKER_01 | 24.1s–31.0s
+            
+            <div class="p-3 rounded-lg bg-[var(--background)] border border-[var(--border)] space-y-1">
+              <span class="font-bold text-purple-400">🌐 Cross-Lingual & Multilingual Retrieval</span>
+              <p class="text-[var(--muted-foreground)]">Matches both Hindi transcript (<code class="text-emerald-400">audio_02_url_shortener_hi.wav</code>) and English reference audio (<code class="text-blue-400">audio_01_rate_limiter.wav</code>) seamlessly.</p>
+            </div>
+
+            <div class="p-3 rounded-lg bg-[var(--background)] border border-[var(--border)] space-y-1">
+              <span class="font-bold text-amber-400">🎯 Fine-Grained Speaker & Timestamp Metadata</span>
+              <p class="text-[var(--muted-foreground)]">Surfaces speaker ID (<code class="text-amber-400">SPEAKER_01</code>), exact start/end time (<code class="text-emerald-400">53.78s - 59.58s</code>), language code, and RRF score.</p>
             </div>
           </div>
         </div>
