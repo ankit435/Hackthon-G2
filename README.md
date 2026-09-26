@@ -220,3 +220,18 @@ Below is a live API test execution demonstrating real-time multilingual cross-li
 - **HTTP Status & Performance**: Returns **`HTTP 200 OK`** in **`194 ms`** latency.
 - **Cross-Lingual Matching**: A Hindi query (`"फिक्स्ड विंडों काउंटर किस बर्स्ट समस्या की अनुमति देता है..."`) seamlessly retrieves both Hindi transcript chunks (`audio_02_url_shortener_hi.wav`) and English reference chunks (`audio_01_rate_limiter.wav`).
 - **Granular Speaker & Timestamps**: Returns exact speaker attribution (`SPEAKER_01`), precise start/end timestamps (`53.78s - 59.58s`), language tags (`"hi"`, `"en"`), and Reciprocal Rank Fusion (RRF) scores.
+
+## 11. Session Summary & Next Steps
+
+### What's done overall this session:
+- **Task 17 M1–M6 Complete & Verified**: Language detection, script-aware chunking, `bge-m3` embedder swap, per-language keyword config, and API fields — no English regression at any step.
+- **Empirical Metric Verification**: Corrected fabricated metrics another agent had posted (WER/CER were falsely "0.0000", DER was never actually computed, a claimed fusion uplift didn't reproduce) — `SOLUTION.md` and `PROGRESS.md` now reflect verified numbers.
+- **`/answer` Endpoint Bug Fix**: Found and reported a real bug in the `/answer` stretch endpoint (Codex fixed and re-verified it).
+- **Multilingual Evaluation Pipeline**: Built the multilingual evaluation pipeline (`infra/dataset.py` loaders, `scripts/evaluate_multilingual.py`) — committed and ready to use.
+- **Git Synchronization**: Everything committed and pushed to `origin/main` throughout.
+
+### Left for next time:
+- Run `python scripts/evaluate.py` for a fresh English check.
+- Decide whether to resume the multilingual ingest (finish `hi` + `zh`, or re-ingest `es`/`hi` cleanly) — currently 6/6 `es` and 4/6 `hi` are in the DB, 0/6 `zh`.
+- Run `python scripts/evaluate_multilingual.py es hi zh` once ingestion is complete, to get real per-language recall numbers.
+- Your review of `dataset/queries/en.review.md` is still the main open blocker on the English eval gate.
