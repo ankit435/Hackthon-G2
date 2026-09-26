@@ -1,0 +1,50 @@
+Diseñemos una plataforma de vídeo que cubra la subida, el procesamiento y la reproducción a gran escala.
+Yo la dividiría en tres sistemas bastante independientes. La ingesta, el pipeline de transcodificación y la ruta de entrega.
+Empezando por la subida, los archivos grandes sobre redes poco fiables implican que necesitamos subidas reanudables y por partes.
+El cliente solicita una sesión de subida, divide el archivo en partes, sube cada parte de forma independiente y reintenta solo las partes que fallan.
+La subida directa al almacenamiento con una URL prefirmada mantiene los bytes del archivo completamente fuera de nuestros servidores de aplicación.
+Eso es importante. Hacer pasar archivos de varios gigabytes por los nodos de aplicación desperdicia ancho de banda y ocupa conexiones durante mucho tiempo.
+Cuando llegan todas las partes, el almacenamiento ensambla el objeto y emitimos un evento que pone en marcha el procesamiento.
+El pipeline de procesamiento es donde está la mayor parte de la complejidad. Necesitamos varias versiones con distintas resoluciones y tasas de bits.
+El streaming de tasa de bits adaptativa requiere una escalera, quizá de doscientos cuarenta p hasta cuatro K, cada una codificada con una tasa de bits adecuada.
+Y cada versión se divide en fragmentos cortos, normalmente de dos a seis segundos, con un manifiesto que enumera las variantes disponibles.
+El reproductor cambia entonces de versión en mitad de la reproducción según el rendimiento medido y el nivel del búfer.
+Ese cambio solo funciona si los segmentos están alineados entre versiones, con fotogramas clave en marcas de tiempo idénticas.
+Exacto. Los fotogramas clave desalineados provocan fallos visibles o cambios fallidos, así que el codificador debe configurarse con un intervalo fijo de fotogramas clave.
+Para la transcodificación en sí, deberíamos paralelizar dividiendo el original en segmentos y codificándolos de forma independiente.
+Eso convierte un trabajo largo y secuencial en uno amplio y paralelo, así que una película de dos horas puede procesarse en minutos con suficientes workers.
+Necesitamos un orquestador de trabajos con un grafo dirigido de tareas, ya que la extracción de miniaturas, el procesamiento del audio y cada versión pueden ejecutarse a la vez.
+Los reintentos deben ser idempotentes a nivel de segmento, así que un worker que falla solo implica volver a codificar ese segmento.
+También deberíamos priorizar. Un clip corto de un creador popular no debería esperar detrás de una subida de cuatro horas en la misma cola.
+Tener varias colas según la duración prevista y el nivel de la cuenta resuelve casi todo eso, además de un carril aparte para los trabajos de reprocesamiento.
+El control de costes importa muchísimo aquí, porque la transcodificación consume mucho cómputo y suele ser la partida más grande.
+Así que deberíamos codificar la escalera completa de forma perezosa para el contenido poco popular, generando por adelantado solo la versión más común.
+Luego, si un vídeo gana tracción, completamos las demás versiones bajo demanda, lo que evita pagar por contenido que nadie ve.
+Las instancias spot o interrumpibles también encajan bien con esta carga de trabajo, porque los reintentos a nivel de segmento hacen que una interrupción sea barata.
+Pasemos a la entrega. La red de distribución de contenidos hace el trabajo pesado, sirviendo los segmentos desde ubicaciones en el borde cercanas al espectador.
+Nuestro origen solo ve los fallos de caché, así que la flota de origen puede ser pequeña en relación con el ancho de banda total entregado.
+La tasa de aciertos de la caché es la métrica que hay que vigilar obsesivamente. Unos pocos puntos porcentuales de fallos se traducen en grandes costes de origen.
+Las URL de los segmentos deberían ser estables e inmutables, lo que las hace perfectamente cacheables con un tiempo de vida muy largo.
+Los manifiestos son distintos. En el contenido en directo el manifiesto se actualiza constantemente y necesita una vida en caché muy corta.
+Esa separación, segmentos inmutables y manifiestos volátiles, es la idea central de la caché para el streaming.
+Para el control de acceso usamos URL firmadas con caducidad corta, de modo que un enlace filtrado deja de funcionar rápidamente.
+Y para el contenido premium, gestión de derechos digitales con servidores de licencias, aunque eso añade una complejidad considerable en el cliente.
+También deberíamos pensar en el preposicionamiento. Para un estreno muy esperado podemos enviar el contenido a los bordes antes del lanzamiento.
+Si no, la primera ola de espectadores falla en la caché al mismo tiempo y machaca el origen justo en el peor momento.
+Hablemos del streaming en directo, que cambia varias suposiciones.
+La ingesta es un flujo continuo en lugar de un archivo, usando un protocolo como RTMP o una variante de baja latencia.
+La transcodificación tiene que ocurrir en tiempo real, así que no podemos paralelizar dividiendo el archivo. En su lugar paralelizamos entre versiones.
+Y la latencia pasa a ser un requisito de primera clase. El streaming segmentado estándar añade de diez a treinta segundos de retraso.
+Los modos de baja latencia usan segmentos más cortos y transferencia por fragmentos, enviando segmentos parciales antes de que estén completos.
+Eso reduce la latencia a unos pocos segundos, a costa de una caché menos eficiente y más solicitudes por espectador.
+También necesitamos una ruta de conmutación por error para la ingesta, porque una conexión del codificador que se cae significa silencio para todos los espectadores.
+La doble ingesta desde el emisor hacia dos regiones, con conmutación automática, es la respuesta estándar para los eventos importantes.
+En el lado de la reproducción necesitamos telemetría del cliente para entender la calidad real, no solo métricas del lado del servidor.
+El tiempo de arranque, la proporción de rebuffering, la tasa de bits media y los fallos de reproducción son los cuatro números que realmente describen la experiencia.
+La proporción de rebuffering es la que más notan los usuarios. Una tasa de bits un poco más baja casi siempre es mejor que un parón.
+Por eso el algoritmo de adaptación del reproductor debería ser conservador al subir y agresivo al bajar.
+Para el almacenamiento, guardamos el máster original para reprocesar, además de todas las versiones, lo que multiplica bastante el espacio ocupado.
+Deberíamos escalonar ese almacenamiento. Los másteres van a almacenamiento de archivo en frío, y las versiones poco populares pueden borrarse y regenerarse si hace falta.
+En resumen, subidas reanudables directas al almacenamiento, transcodificación paralela por segmentos con generación perezosa de la escalera y entrega en el borde con segmentos inmutables.
+Además de acceso firmado, preposicionamiento para los lanzamientos, una ruta aparte en tiempo real para el directo y telemetría de calidad en el cliente.
+La economía determina la mayoría de las decisiones aquí. El cómputo de transcodificación y el ancho de banda de salida dominan, así que la arquitectura sigue al coste.

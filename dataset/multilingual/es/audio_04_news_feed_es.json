@@ -1,0 +1,373 @@
+{
+  "dataset": "Synthetic Two-Speaker Golden Audio Dataset — multilingual translations",
+  "audio_id": "audio_04_news_feed_es",
+  "source_audio_id": "audio_04_news_feed",
+  "language": "es",
+  "topic": "Ranking y fan out de un feed social de noticias",
+  "source_topic": "Social News Feed Ranking and Fanout",
+  "duration_seconds": null,
+  "speakers": [
+    "SPEAKER_00",
+    "SPEAKER_01"
+  ],
+  "segments": [
+    {
+      "index": 0,
+      "speaker": "SPEAKER_00",
+      "text": "Trabajemos en un feed de noticias social, del tipo en que un usuario abre la aplicación y ve publicaciones de las personas a las que sigue.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 1,
+      "speaker": "SPEAKER_01",
+      "text": "La tensión central de este problema siempre es el fan out en escritura frente al fan out en lectura.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 2,
+      "speaker": "SPEAKER_00",
+      "text": "Definámoslos con claridad. Fan out en escritura significa que, cuando alguien publica, insertamos de inmediato una referencia en el feed de cada seguidor.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 3,
+      "speaker": "SPEAKER_01",
+      "text": "Y fan out en lectura significa que guardamos la publicación una sola vez y armamos el feed en el momento de la solicitud consultando a todos los que sigue quien la ve.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 4,
+      "speaker": "SPEAKER_00",
+      "text": "El fan out en escritura hace que las lecturas sean extremadamente rápidas, lo que importa porque en este producto las lecturas dominan por un factor enorme.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 5,
+      "speaker": "SPEAKER_01",
+      "text": "Pero la amplificación de escrituras es brutal para las cuentas con millones de seguidores. Una publicación se convierte en millones de inserciones.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 6,
+      "speaker": "SPEAKER_00",
+      "text": "Y la mayoría de esas inserciones se desperdician, porque solo una pequeña fracción de los seguidores abrirá la aplicación antes de que la publicación quede vieja.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 7,
+      "speaker": "SPEAKER_01",
+      "text": "Así que la respuesta estándar es un híbrido. Las cuentas normales hacen fan out en escritura, y las cuentas con muchos seguidores se mezclan en el momento de la lectura.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 8,
+      "speaker": "SPEAKER_00",
+      "text": "Fijamos un umbral, quizá cien mil seguidores, por encima del cual una cuenta se marca como celebridad y se excluye del envío.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 9,
+      "speaker": "SPEAKER_01",
+      "text": "En la lectura tomamos el feed precalculado, traemos las publicaciones recientes de las celebridades que sigue el usuario y combinamos las dos listas.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 10,
+      "speaker": "SPEAKER_00",
+      "text": "La combinación es barata porque el conjunto de celebridades por usuario es pequeño, normalmente un puñado de cuentas.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 11,
+      "speaker": "SPEAKER_01",
+      "text": "Deberíamos cachear de forma agresiva las líneas de tiempo de las celebridades, ya que millones de usuarios piden las mismas pocas líneas de tiempo de autores.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 12,
+      "speaker": "SPEAKER_00",
+      "text": "Definamos el modelo de datos. Un registro de publicación contiene el autor, la referencia al contenido, la fecha de creación y la configuración de visibilidad.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 13,
+      "speaker": "SPEAKER_01",
+      "text": "Y el feed en sí es una lista por usuario de identificadores de publicaciones con una puntuación de ranking, recortada a una longitud máxima.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 14,
+      "speaker": "SPEAKER_00",
+      "text": "No guardamos el contenido de la publicación en el feed, solo referencias, así que una edición o un borrado surten efecto en todas partes de inmediato.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 15,
+      "speaker": "SPEAKER_01",
+      "text": "La hidratación ocurre en el momento de la lectura, obteniendo en lote los objetos reales de las publicaciones desde el almacén de publicaciones o la caché.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 16,
+      "speaker": "SPEAKER_00",
+      "text": "Eso también nos permite filtrar en la lectura. Los autores bloqueados, las publicaciones eliminadas y los cambios de privacidad se aplican durante la hidratación.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 17,
+      "speaker": "SPEAKER_01",
+      "text": "Sin eso, una publicación eliminada permanecería en millones de feeds precalculados y tendríamos que perseguirla con borrados.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 18,
+      "speaker": "SPEAKER_00",
+      "text": "Ahora el ranking. El feed más sencillo es el cronológico inverso, que es predecible y no necesita aprendizaje automático.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 19,
+      "speaker": "SPEAKER_01",
+      "text": "Pero los feeds optimizados para la interacción puntúan cada candidato según la interacción prevista y luego ordenan por esa puntuación en lugar de por tiempo.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 20,
+      "speaker": "SPEAKER_00",
+      "text": "El pipeline típico tiene tres etapas. Generación de candidatos, luego una pasada de ranking ligera y luego un modelo más pesado sobre los supervivientes.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 21,
+      "speaker": "SPEAKER_01",
+      "text": "La generación de candidatos puede producir unos pocos miles de publicaciones, el ranking ligero las reduce a unos pocos cientos y el ranking pesado ordena la página final.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 22,
+      "speaker": "SPEAKER_00",
+      "text": "Ese embudo por etapas es lo que mantiene la latencia aceptable, porque el modelo costoso solo ve un conjunto pequeño de candidatos.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 23,
+      "speaker": "SPEAKER_01",
+      "text": "Las características incluirían la interacción pasada del usuario con el autor, la recencia, el tipo de contenido y las primeras señales de interacción con la publicación.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 24,
+      "speaker": "SPEAKER_00",
+      "text": "También deberíamos aplicar reglas de diversidad después del ranking, para que el feed no muestre diez publicaciones seguidas del mismo autor.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 25,
+      "speaker": "SPEAKER_01",
+      "text": "Y filtros de integridad, que eliminen el contenido que infringe las políticas o que el usuario ha silenciado explícitamente.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 26,
+      "speaker": "SPEAKER_00",
+      "text": "Hablemos de la latencia de la ruta de servicio. Una solicitud de feed debería completarse en un par de cientos de milisegundos en el percentil noventa y nueve.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 27,
+      "speaker": "SPEAKER_01",
+      "text": "Eso significa que la consulta del feed precalculado debe ser una sola lectura de caché, y la hidratación debe ser un único multi get en lote.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 28,
+      "speaker": "SPEAKER_00",
+      "text": "La paginación necesita un cursor estable, porque si paginamos por desplazamiento la lista se mueve bajo el usuario a medida que llegan publicaciones nuevas.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 29,
+      "speaker": "SPEAKER_01",
+      "text": "Un cursor que codifique la última posición vista y la instantánea del ranking evita duplicados y huecos al desplazarse.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 30,
+      "speaker": "SPEAKER_00",
+      "text": "En la ruta de escritura, publicar debería ser rápido para el autor. Persistimos la publicación, confirmamos y luego hacemos el fan out de forma asíncrona.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 31,
+      "speaker": "SPEAKER_01",
+      "text": "El worker de fan out lee la lista de seguidores y escribe en los almacenes de feeds por lotes, con contrapresión para que un pico no sature el clúster.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 32,
+      "speaker": "SPEAKER_00",
+      "text": "Deberíamos dar prioridad primero a los seguidores activos, para que las personas que probablemente abran pronto la aplicación reciban la publicación antes que las cuentas inactivas.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 33,
+      "speaker": "SPEAKER_01",
+      "text": "Es una buena optimización. Reduce drásticamente la latencia de fan out percibida aunque el fan out completo tarde minutos.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 34,
+      "speaker": "SPEAKER_00",
+      "text": "De hecho, para los usuarios inactivos podríamos omitir el envío por completo y reconstruir su feed en la lectura cuando por fin vuelvan.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 35,
+      "speaker": "SPEAKER_01",
+      "text": "Eso ahorra una cantidad enorme de volumen de escritura, ya que una gran fracción de las cuentas registradas está inactiva en un día cualquiera.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 36,
+      "speaker": "SPEAKER_00",
+      "text": "En cuanto al almacenamiento, los feeds son pura caché. Siempre podemos reconstruirlos a partir de las publicaciones y del grafo de seguimiento si los perdemos.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 37,
+      "speaker": "SPEAKER_01",
+      "text": "Así que podemos mantenerlos en memoria con una longitud acotada, digamos las pocas cientos de entradas más recientes, y reconstruirlos cuando falten.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 38,
+      "speaker": "SPEAKER_00",
+      "text": "El grafo de seguimiento en sí debe poder recorrerse rápido, porque tanto el fan out como el armado en la lectura dependen de él.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 39,
+      "speaker": "SPEAKER_01",
+      "text": "Guardamos seguidores y seguidos como listas de adyacencia separadas, porque las dos direcciones se consultan en rutas de código distintas.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 40,
+      "speaker": "SPEAKER_00",
+      "text": "Para listas de seguidores muy grandes paginamos el recorrido, y el trabajo de fan out las procesa por bloques en lugar de cargarlas todas.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 41,
+      "speaker": "SPEAKER_01",
+      "text": "Veamos el caso de arranque en frío. Un usuario completamente nuevo no sigue a nadie, así que su feed está vacío.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 42,
+      "speaker": "SPEAKER_00",
+      "text": "Lo llenamos con contenido popular y temático según los intereses declarados, y pasamos poco a poco a contenido basado en el grafo a medida que sigue cuentas.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 43,
+      "speaker": "SPEAKER_01",
+      "text": "Para la observabilidad, deberíamos medir la latencia del feed, la tasa de aciertos de la caché, el retraso del fan out y la fracción del feed que viene de la combinación en la lectura.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 44,
+      "speaker": "SPEAKER_00",
+      "text": "El retraso del fan out es la métrica de salud clave. Si crece, los usuarios ven feeds desactualizados aunque técnicamente no haya nada roto.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 45,
+      "speaker": "SPEAKER_01",
+      "text": "Deberíamos alertar por ese retraso y no por la profundidad de la cola de los workers, porque el retraso se corresponde directamente con la experiencia del usuario.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 46,
+      "speaker": "SPEAKER_00",
+      "text": "En resumen, fan out híbrido con un umbral de celebridades, almacenamiento del feed solo con referencias, con hidratación y filtrado en la lectura.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 47,
+      "speaker": "SPEAKER_01",
+      "text": "Además de un embudo de ranking por etapas, paginación basada en cursores, fan out priorizado por actividad y feeds tratados como caché reconstruible.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 48,
+      "speaker": "SPEAKER_00",
+      "text": "Lo elegante es que el feed es desechable. Todo se puede reconstruir, lo que simplifica mucho la parte operativa.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 49,
+      "speaker": "SPEAKER_01",
+      "text": "De acuerdo. Tratar los datos derivados como caché y no como fuente de verdad elimina toda una clase de problemas de consistencia.",
+      "start": null,
+      "end": null
+    }
+  ],
+  "translation": {
+    "method": "LLM-drafted by the coding agent (session 2), segment-aligned; PENDING human verification (PLAN.md §7B). Proper nouns (Redis, Lua, WebSocket, RTMP, Feistel, Saga, API, URL) are kept in Latin script in every language.",
+    "source_reference": "reference_corrected/audio_04_news_feed.json",
+    "source_reference_sha256": "07e1f8281436b9c2ee2555a2924498b964405ff6ad52d479b5551ac35fa83b35",
+    "translation_file": "multilingual/translations/es/audio_04_news_feed.txt",
+    "translation_sha256": "b51a58f9e0bf84512fc19fa23e366eef6a6ab8f9cf365cc307f51e1bb5e5657d"
+  },
+  "synthesis": null
+}

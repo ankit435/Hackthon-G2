@@ -1,0 +1,51 @@
+Diseñemos un sistema de chat en tiempo real que admita mensajes uno a uno y conversaciones de grupo.
+Antes de la arquitectura, ¿a qué escala apuntamos y qué garantías de entrega le prometemos al usuario?
+Digamos cincuenta millones de usuarios activos diarios, y los mensajes nunca deben perderse una vez que el servidor los confirma.
+Entonces, durabilidad antes de la confirmación. El servidor escribe primero el mensaje en almacenamiento persistente y luego devuelve una confirmación al remitente.
+Ese es el orden clave. Si confirmamos primero y escribimos después, una caída pierde mensajes que el usuario cree que se enviaron.
+Empecemos por la capa de conexión. Para la entrega en tiempo real necesitamos una conexión persistente, así que WebSocket es la elección natural.
+El long polling es la alternativa para redes restrictivas, pero WebSocket sobre TLS en el puerto cuatro cuatro tres atraviesa la mayoría de los proxies corporativos.
+Cada nodo de pasarela mantiene entonces decenas o cientos de miles de conexiones abiertas, lo que convierte el estado de las conexiones en el problema central de escalado.
+Necesitamos un registro de sesiones que asocie a cada usuario con el nodo de pasarela que tiene su conexión en ese momento.
+Ese registro vive en un almacén compartido rápido, con el identificador de usuario como clave, la dirección del nodo y una caducidad basada en latidos.
+Cuando el usuario A envía un mensaje al usuario B, la pasarela receptora escribe el mensaje y después busca dónde está conectado B.
+Si B está conectado, reenviamos el mensaje a ese nodo de pasarela concreto por un canal interno y este lo envía por el socket.
+Si B está desconectado, omitimos el envío y nos apoyamos en el mensaje almacenado más una notificación push móvil a través de los servicios de la plataforma.
+Deberíamos tener cuidado con la consistencia del registro. Un usuario puede reconectarse a otro nodo durante una intermitencia de la red.
+Las entradas obsoletas hacen que los mensajes se reenvíen a un nodo que ya no tiene la conexión, así que ese nodo debe descartarlos y dejar que el almacén se encargue.
+Como el mensaje ya es duradero, un envío perdido es solo un problema de latencia. El cliente lo recuperará al reconectarse y nada se pierde de verdad.
+Ese es el invariante importante. La entrega en tiempo real es de mejor esfuerzo sobre un registro duradero, no la fuente de verdad.
+Hablemos del almacenamiento. ¿Cómo es la tabla de mensajes y cómo la particionamos?
+Yo modelaría los mensajes por conversación. La clave de partición es el identificador de la conversación y la clave de agrupación es una secuencia de mensajes monótonamente creciente.
+Eso nos da lecturas por rango eficientes para cargar el historial, que es exactamente el patrón de acceso cuando un usuario abre un hilo.
+Para la vista de bandeja de entrada, que lista las conversaciones recientes, mantenemos una tabla aparte por usuario ordenada por la hora de la última actividad.
+Esa desnormalización es necesaria porque los dos patrones de acceso son distintos y no queremos recorrer las conversaciones para construir la lista.
+La secuenciación dentro de una conversación es sutil. Los relojes de los clientes no son fiables, así que no podemos ordenar por la marca de tiempo del remitente.
+El servidor asigna el número de secuencia por conversación, lo que da un orden total en el que todos los participantes coinciden.
+Para un chat uno a uno eso es barato. Para un grupo grande necesitamos un único escritor o un contador atómico por conversación.
+Y los clientes tienen que manejar bien la llegada fuera de orden, insertando por secuencia y no por hora de llegada.
+Ahora la mensajería de grupo. ¿Hacemos fan out en escritura hacia la bandeja de cada miembro, o fan out en lectura desde la conversación compartida?
+Para grupos pequeños el fan out en escritura está bien y hace que las lecturas sean triviales. Para grupos muy grandes multiplica enormemente el coste de escritura.
+Así que un híbrido. Por debajo de un umbral de miembros escribimos entradas por usuario, y por encima guardamos una sola copia y los clientes leen la conversación directamente.
+Eso refleja el enfoque que se usa en los feeds sociales, y el umbral se convierte en un parámetro de ajuste que podemos cambiar desde la configuración.
+Veamos las confirmaciones de lectura y los indicadores de escritura, porque generan mucho más tráfico que los propios mensajes.
+Los indicadores de escritura deberían ser efímeros y no persistirse nunca. Se envían por el socket con una caducidad corta y se descartan bajo carga.
+Las confirmaciones de lectura se pueden agrupar. En lugar de un evento por mensaje, el cliente informa de la secuencia más alta que ha leído.
+Eso reduce cien eventos a uno y es exactamente equivalente, ya que la lectura es monótona dentro de una conversación.
+La presencia es la otra funcionalidad costosa. Difundir ingenuamente cada cambio de estado a cada contacto es cuadrático.
+Solo deberíamos enviar la presencia de las conversaciones que el usuario tiene abiertas en ese momento, y dejar que todo lo demás se consulte bajo demanda.
+Para la entrega sin conexión, el cliente guarda la última secuencia que ha visto en cada conversación y, al reconectarse, pide todo lo posterior.
+Ese único mecanismo cubre tanto las desconexiones breves como un teléfono que estuvo apagado una semana, lo que mantiene simple el protocolo.
+También deberíamos pensar en varios dispositivos. El mismo usuario puede tener conectados a la vez un teléfono, una tableta y un cliente de escritorio.
+Entonces el registro de sesiones asocia a un usuario con un conjunto de conexiones, y la entrega se reparte a todos los dispositivos activos.
+El estado de lectura también pasa a ser por usuario en lugar de por dispositivo, así que marcar un mensaje como leído en el teléfono lo marca también en el portátil.
+¿Y el cifrado de extremo a extremo? Eso cambia bastante el papel del servidor.
+Con cifrado de extremo a extremo el servidor guarda texto cifrado y no puede ofrecer búsqueda en el servidor ni moderación de contenido sobre el cuerpo del mensaje.
+También complica los varios dispositivos, porque cada dispositivo necesita su propio material de claves y el remitente debe cifrar para cada dispositivo destinatario.
+Eso es un diseño considerable por sí mismo, así que anotémoslo como una rama importante y mantengamos nuestro diseño actual con cifrado en el transporte.
+De acuerdo. Cerremos con los modos de fallo. ¿Qué pasa cuando un nodo de pasarela muere con cien mil conexiones?
+Todos esos clientes se reconectan a la vez, así que necesitamos retrasos de reconexión aleatorios o crearemos una estampida contra los nodos restantes.
+El balanceador de carga también debería drenar las conexiones poco a poco durante los despliegues, en lugar de cortarlas todas a la vez.
+Y deberíamos limitar la tasa de reconexión en la pasarela, descartando carga de forma deliberada en lugar de colapsar bajo la avalancha.
+En resumen, escritura duradera antes de la confirmación, pasarelas WebSocket con un registro de sesiones, almacenamiento particionado por conversación y puesta al día dirigida por el cliente.
+Además de fan out híbrido para los grupos, confirmaciones agrupadas, presencia acotada y un comportamiento de reconexión cuidadoso. Es una base sólida.
