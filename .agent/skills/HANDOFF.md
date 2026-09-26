@@ -120,7 +120,7 @@ semantic-split soft minimum and cap. **All ship at defaults** — change any
 of them only with a before/after measurement.
 
 
-**Next task:** **Phase 2, Task 4: the ingestion pipeline** (high-risk: alignment + chunking; read `PLAN.md` §6, §8, §9 and plan the edge cases before coding). Tasks 1–3 are Done: 78 tests pass, the DB is initialised, and the ports and settings exist in `src/`. Build order per §14: deterministic chunker → full pipeline end to end → semantic splitter → baseline. **Do not use the `AUDIO_SEARCH_ANSWER_*` / NVIDIA / OpenAI vars in the user's `.env`**: they are stretch item #1 and the gate is closed.
+**Next task:** merge Task 5 (branch `worktree-agent-a2ba30b823a3d3356`), then Task 7 (recall@k tests) and Task 6 (query set). Task 4 is Done: the DB holds run 3 (313 chunks, word-level alignment). Re-ingest with `python scripts/ingest.py` (≈ 25 min, CPU-heavy). Old runs are snapshotted in `logs/chunks-run{1,2}-*.json` (gitignored). **Do not use the `AUDIO_SEARCH_ANSWER_*` / NVIDIA / OpenAI vars in the user's `.env`**: they are stretch item #1 and the gate is closed.
 
 
 **Do this next:**

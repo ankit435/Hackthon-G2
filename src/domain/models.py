@@ -32,16 +32,33 @@ class DecodedAudio:
 
 
 @dataclass(frozen=True)
+class Word:
+    start: float
+    end: float
+    text: str  # as emitted by the transcriber, including its leading space
+
+
+@dataclass(frozen=True)
 class TranscriptSegment:
     start: float
     end: float
     text: str
+    words: tuple[Word, ...] = ()  # empty when the transcriber gave no word timings
 
 
 @dataclass(frozen=True)
 class SpeakerTurn:
     start: float
     end: float
+    speaker: str
+
+
+@dataclass(frozen=True)
+class AlignedSegment:
+    """A transcript segment with its speaker. `speaker` is never empty (PLAN.md §6.4)."""
+    start: float
+    end: float
+    text: str
     speaker: str
 
 
