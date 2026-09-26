@@ -4,6 +4,11 @@
 > **Read this first.** This document is the single source of truth for what to build.
 > It contains **no code**. Do not copy snippets from anywhere into implementation
 > without deriving them from the requirements below.
+>
+> **⚠️ Amended 2026-09-26: multilingual support is COMPULSORY** (project owner decision).
+> The system must ingest and search conversations in languages other than English.
+> Spec: **§7B**. Task: **17**. Where an older line in this document says "English only",
+> `english` config, `language="en"` or `all-MiniLM-L6-v2`, **§7B overrides it**.
 
 
 ---
@@ -294,6 +299,7 @@ small labeled query set.
 | Transcription | Local **or** hosted — either is acceptable |
 | Coding agent | Permitted, but usage **must be disclosed** with how it was prompted |
 | Delivery | Git repo containing code + golden dataset + tests, plus a Markdown/PDF design doc |
+| **Spoken language** (added 2026-09-26, project owner) | **Multilingual — compulsory.** Ingest and search non-English conversations; a query in one language may retrieve a chunk in another. Spec in §7B |
 
 
 ---
@@ -328,6 +334,7 @@ quality was lost when a primary metric misses (§0B.3).
 | **Indexing throughput** (audio-minutes per wall-clock minute, per stage) | Production-readiness signal, from existing `ingest.*` log events (§9) |
 | **MRR** | Catches relevant results at rank 9–10 that recall@10 still passes |
 | **Per-branch recall** (keyword-only, semantic-only, pre-fusion) | The evidence base for any fusion weight change (§7) |
+| **Per-language results** (§7B M8): recall@k, speaker accuracy, WER/CER per language + a cross-lingual slice | Shows whether multilingual support works, and that English did not regress. Whether primary thresholds apply per language is Q24 |
 
 
 Report WER and DER against the dataset's reference transcripts and speaker
@@ -352,6 +359,11 @@ thresholds precisely so there is nothing to game.
 4. **Golden dataset + labeled query set.**
 5. **Automated evaluation suite** — recall@k, speaker accuracy, latency,
    WER/DER, indexing throughput, chunking sanity checks.
+6. **Multilingual support — compulsory (§7B, Task 17).** Language detected
+   per file, stored per chunk, language-correct keyword stemming, a
+   multilingual embedding model, script-aware sentence splitting, and
+   evaluation reported per language. **This is core scope, not a §11 stretch
+   goal** — the §11 gate does not apply to it.
 
 
 ---
@@ -365,10 +377,10 @@ thresholds precisely so there is nothing to game.
 | Language | Python | |
 | API | FastAPI | OpenAPI/Swagger with no extra dependency |
 | Database | Postgres + pgvector | Single instance. No Redis, no Elasticsearch, no separate vector DB |
-| Keyword search | Postgres FTS, `english` configuration | Generated, GIN-indexed tsvector column (§7) |
-| Transcription | Whisper `large-v3-turbo` via faster-whisper, local | See §17 |
-| Diarization | `pyannote/speaker-diarization-3.1` | Gated model — §17 and `SETUP.md` |
-| Embeddings | `all-MiniLM-L6-v2`, 384-dim, local | Mandatory: local generation and indexing. Also drives the semantic splitter (§6) |
+| Keyword search | Postgres FTS, **per-chunk text search configuration** (`english` for English) | Generated, GIN-indexed tsvector column (§7). **Amended by §7B**: the config follows each chunk's language |
+| Transcription | Whisper `large-v3-turbo` via faster-whisper, local | See §17. **Amended by §7B**: language auto-detected, not forced to `en` |
+| Diarization | `pyannote/speaker-diarization-3.1` | Gated model — §17 and `SETUP.md`. Language-independent; unchanged by §7B |
+| Embeddings | **A multilingual model** (was `all-MiniLM-L6-v2`, English-only), local | Mandatory: local generation and indexing. Also drives the semantic splitter (§6). **Amended by §7B**; final model is Q22 |
 | Tests | pytest + pytest-asyncio | |
 | Metrics | `jiwer` (WER/CER), `pyannote.metrics` (DER) | **Dev dependencies only** — the served system never imports them (Q15) |
 | Vector index | **HNSW** on the embedding column | Configurable `m` / `ef_construction` / `ef_search` (Q10) | Postgres/pgvector 
@@ -831,7 +843,7 @@ endpoint delegates to a service.
 |---|---|---|---|
 | `/ingest` | POST | Accepts a **list of files**; runs the pipeline per file | Idempotent per checksum |
 | `/search` | GET | **The graded path.** Both branches → weighted RRF → top-K | Deterministic. Recall@k tests call this and only this |
-| `/search/keyword` | GET | Keyword branch alone (tsvector + `english` stemming) | **Diagnostic only** |
+| `/search/keyword` | GET | Keyword branch alone (tsvector + per-language stemming, §7B) | **Diagnostic only** |
 | `/search/semantic` | GET | Semantic branch alone (pgvector cosine) | **Diagnostic only** |
 | `/evaluation` | GET/POST | Runs the labeled query set; returns recall@5/@10, MRR, per-branch recall, speaker accuracy, latency percentiles | Long-running |
 
@@ -897,6 +909,179 @@ not misled about which endpoint is the deliverable.
 ---
 
 
+## 7B. Multilingual Support — COMPULSORY (Task 17)
+
+
+**Status: required core scope, decided by the project owner on 2026-09-26.**
+Not a stretch goal; the §11 gate does not apply. It amends Q2, Q4 and Q8
+(§17). Where any other section, `HANDOFF.md` or `skiil.md` still says
+English-only, **this section wins**.
+
+
+**Requirement.** The system ingests two-speaker conversations in languages
+other than English and searches them with the same guarantees as English:
+every hit returns file, timestamp and speaker, `/search` stays
+deterministic, and embeddings stay local. A query in one language should be
+able to retrieve a chunk in another (cross-lingual semantic retrieval).
+**English quality must not regress**: the English golden set (01–06) is the
+regression baseline for every change in this section.
+
+
+### What is language-dependent, and what is not
+
+| Stage | Language-dependent? | Where today | Change |
+|---|---|---|---|
+| Decode | No | `infra/audio.py` | none |
+| Transcribe | **Yes** | `infra/whisper.py` forces `language="en"` | M1 |
+| Diarize | No — speaker identity is acoustic | `infra/diarizer.py` | none |
+| Align | No | `application/alignment.py` | none |
+| Chunk: sentence split | **Yes** | `application/chunking.py` `_SENTENCE_END` (Latin `.!?` + space only) | M3 |
+| Embed + semantic split | **Yes** | `all-MiniLM-L6-v2` is English-only | M4 |
+| Keyword branch | **Yes** | `db/schema.sql` + `infra/postgres.py` fix `english` | M5 |
+| Fusion (RRF) | No — rank-based, language-free | — | none |
+| Evaluation | **Yes** | English-only dataset; WER assumes spaces between words | M8 |
+
+
+### M1 — Transcription: detect, don't force
+- Remove the hard-coded `language="en"`. A new env-backed setting,
+  `AUDIO_SEARCH_TRANSCRIPTION_LANGUAGE`, forces a language when set (ISO
+  639-1, e.g. `en`, `hi`, `de`); **blank means auto-detect**. Validate it at
+  the boundary (unknown code → `ConfigurationError`).
+- Return the detected language **and its probability** from the
+  `Transcriber` port (extend the port; do not read Whisper internals
+  elsewhere). Log both at the `ingest.transcribe.end` event.
+- Low detection confidence is **logged at WARNING and recorded**, never
+  silently accepted. The threshold is a named constant, recorded in
+  `PROGRESS.md` when chosen (Rule 2: do not invent it silently).
+- Keep `temperature=0.0`, `beam_size=5` and `condition_on_previous_text=False`
+  — determinism rules are unchanged.
+- **Granularity: one language per file** (Whisper detects from the first
+  30 s). Per-segment detection for code-switched speech is **only** added if
+  the Q21 target data contains code-switching — then measure it, record it.
+- `large-v3-turbo` is already multilingual; **no model change**. Turbo is
+  weaker at *translation*, which this system does not use.
+
+### M2 — Diarization and alignment: unchanged
+Speaker turns are acoustic and alignment is pure time arithmetic. **Do not
+touch them for this feature.** If speaker accuracy drops on non-English
+audio, debug in pipeline order (§0B.3) before suspecting them.
+
+### M3 — Chunking: script-aware sentence splitting
+- `_SENTENCE_END` must also split on `。！？` (CJK, **no following space**),
+  `।` `॥` (Devanagari), `؟` `۔` (Arabic/Urdu), in addition to `.!?` + space.
+  A turn that never splits falls back to one oversized sentence — the exact
+  failure §6 exists to prevent.
+- Character-length time apportionment (§6 Step 2b) stays, and becomes a
+  **documented approximation per script** in `SOLUTION.md` (characters carry
+  different amounts of speech in Latin, CJK and Devanagari text).
+- The split cap vs token window check (§17 consequences) is now **per
+  language**: non-English text tokenizes into more tokens per second. Task 8
+  asserts the max chunk token count < the model's window **for each
+  language in the corpus**.
+
+### M4 — Embeddings: a multilingual local model
+- The English-only `all-MiniLM-L6-v2` is **replaced** by a local
+  multilingual model. The same model drives the semantic splitter.
+- **Final choice is Q22** and is made by measurement, not from memory.
+  Candidates (figures NOT yet verified — **measure dimension and
+  `max_seq_length` on the loaded model before touching the schema**, Rule 13):
+
+  | Candidate | Expected dim | Expected window | Note |
+  |---|---|---|---|
+  | `intfloat/multilingual-e5-small` | 384 | 512 | **Recommended start.** Keeps `vector(384)`. Needs `query: ` / `passage: ` prefixes |
+  | `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` | 384 | 128 | Window too small for a 45 s chunk. Avoid unless caps change |
+  | `BAAI/bge-m3` | 1024 | 8192 | Strongest, heavier on CPU; schema → `vector(1024)` |
+
+- **Asymmetric models need a port change**: the `Embedder` port must
+  distinguish *query* embedding from *passage* embedding (prefixes live in
+  the infra adapter only — never in application code). Ingest and the
+  splitter use the passage side; the semantic search branch uses the query
+  side. A missing or swapped prefix silently degrades recall — test it.
+- A model change means: update `db/schema.sql` dimension if it differs,
+  update the settings default, **drop and re-ingest everything**, record the
+  before/after English recall.
+
+### M5 — Keyword branch: per-chunk text search configuration
+The rule "same configuration at index time and query time" (Q8, trap 1)
+**still holds — per row** instead of globally.
+- Add `chunk.language regconfig NOT NULL`. The generated column becomes
+  `to_tsvector(language, text)`, so every row is stemmed by its own
+  language's rules, by construction.
+- One mapping, in **infra only**, from ISO code → Postgres configuration
+  (`en→english`, `de→german`, `fr→french`, `es→spanish`, `hi→hindi`, …).
+  **Verify each target exists** with `SELECT cfgname FROM pg_ts_config` on
+  the real server — the list differs by Postgres version. An unmapped
+  language falls back to `simple` (no stemming) **with a WARNING**; never
+  silently to `english`.
+- **Query side**: the query's language is unknown, so parse the query once
+  per configuration present in the corpus, each pass filtered on
+  `language = <that config>`, and merge the passes into one ranked list.
+  This keeps index and query config equal on every row, and the GIN index
+  still serves each pass. Ranks remain 1-based over the merged branch list
+  (fusion rules §7 unchanged).
+- **CJK (Chinese/Japanese/Korean) has no built-in Postgres config**, and
+  `simple` cannot segment text written without spaces. How to handle it is
+  **Q23**. Adding an extension (zhparser, pg_bigm, PGroonga) is a stack
+  change and needs justification recorded first (§4B).
+- The live-DB test that asserts `'english'::regconfig` in the generated
+  column changes to assert the column uses `language`, and that each mapped
+  config exists.
+
+### M6 — Data model, settings, API
+- `audio_file.language`, `audio_file.language_probability`, `chunk.language`
+  (§8). Domain models `AudioFile`, `Chunk`, `SearchResultItem` gain
+  `language`; **every search hit returns its language** alongside file,
+  timestamp and speaker.
+- Settings: `AUDIO_SEARCH_TRANSCRIPTION_LANGUAGE` (blank = auto) and the new
+  `AUDIO_SEARCH_EMBEDDING_MODEL` default. The ISO → regconfig map is code in
+  infra, not an env var. Update `.env.example` and `SETUP.md` (the
+  `english`/`english` check becomes a per-language check).
+- `/search` gets **no language parameter** in this task (keeps the graded
+  path uncomplicated; retrieval across all languages). A filter is a later
+  decision, recorded if added.
+
+### M7 — Documentation
+`SETUP.md` (new env var, per-language text-search check, model download
+size), `SOLUTION.md` (languages supported, per-script apportionment
+approximation, CJK handling, per-language results, English before/after),
+`.env.example`.
+
+### M8 — Evaluation per language
+- The current dataset is **English only**, so multilingual behaviour cannot
+  be measured yet. **Q21** decides the target languages and where the
+  non-English audio + reference transcripts + labelled queries come from.
+- Report every metric **split by language** (and still by keyword vs
+  semantic query type). Add cross-lingual queries (query language ≠ chunk
+  language) as their own slice.
+- **CER is the primary transcription metric for languages written without
+  spaces** (WER is meaningless there). Use Whisper's basic
+  (non-English) normalizer for non-English WER/CER, not the English one.
+- Whether the §2 primary thresholds apply **per language** is **Q24**
+  (recommendation: yes). Until answered, report per-language numbers and do
+  not claim a pass for a language that has none.
+
+### Build order inside Task 17
+1. M1 transcription + language stored (no retrieval change) — English
+   re-ingest must produce the same text as before.
+2. M3 sentence splitter (pure, unit-tested per script).
+3. M4 embedder swap after Q22 measurement → re-ingest → English recall
+   before/after recorded.
+4. M5 per-chunk keyword config — **must land before or together with the
+   Task 5 keyword branch**, so the branch is written language-aware once.
+5. M8 evaluation once Q21 data exists.
+
+### High-risk points in this section
+- **Config mismatch, now per row** — the quietest failure gets more places
+  to hide. Test a non-English stemmed match through the real column.
+- **Embedding prefix asymmetry** (M4) — silent recall loss.
+- **Fallback to `simple`** — must be visible (WARNING + count), never silent.
+- **English regression** — measure English recall before and after every
+  M-step; a drop is a defect, not a trade-off.
+
+
+---
+
+
 ## 8. Data Model
 
 
@@ -908,16 +1093,19 @@ not misled about which endpoint is the deliverable.
 | `speaker_id` | Which diarized speaker uttered this |
 | `text` | Transcribed chunk text |
 | `start_time` / `end_time` | Seconds into the file — satisfies the timestamp requirement |
-| `embedding` | pgvector column, **`vector(384)`** |
+| `embedding` | pgvector column, **`vector(384)`** — **the dimension must equal the multilingual model chosen under §7B / Q22**; re-verify and change it with that model |
+| `language` | **§7B.** Postgres text search configuration (`regconfig`) for this chunk, derived from the file's detected language. Drives the generated tsvector |
 | `prev_chunk_id` / `next_chunk_id` | Context stitching at display time |
 | `token_count` / `char_count` | Chunking QA |
 | `created_at` | Auditing / idempotency |
-| `tsvector` | Generated column over `text` using the **`english`** configuration, GIN-indexed |
+| `tsvector` | Generated column over `text` using **the chunk's own `language` configuration** (§7B; was fixed `english`), GIN-indexed |
 
 
 ### `audio_file`
 `file_name`, `file_path`, checksum, duration, `created_at`. Joined on
 `audio_file_id` to satisfy the "return the containing file" requirement.
+**§7B adds** `language` (ISO 639-1 code from the transcriber) and
+`language_probability` (detection confidence).
 
 
 ### Indexes
@@ -1114,7 +1302,7 @@ return a single result per call.
 | `SETUP.md` | Clean-machine setup incl. fusion weight configuration (§4A) |
 | `requirements.txt` / `requirements-dev.txt` | Pinned runtime and dev dependencies |
 | `.env.example` / `.gitignore` | Env vars with placeholders, **including weights and RRF k** |
-| `db/schema.sql` | Tables, `english` tsvector generated column, GIN + **HNSW** indexes, `vector(384)` |
+| `db/schema.sql` | Tables, per-chunk-language tsvector generated column (§7B; `english` for English), GIN + **HNSW** indexes, `vector(<dim of the chosen multilingual model>)` |
 | Postgres + pgvector |
 | Golden dataset | 5–6 audio files, 8–10 min, unique speaker pair each, with provenance and reference transcripts/speaker turns |
 | Labeled query set | Committed as a data file, not embedded in test code |
@@ -1162,6 +1350,11 @@ as diagnostic** so a grader knows `/search` is the deliverable.
 14. Write `SOLUTION.md`
 15. Write `AGENT_LOG.md`
 16. Maintain `PROGRESS.md` and `HANDOFF.md` throughout
+17. **Multilingual support — compulsory (§7B)**: language detection + storage
+    (M1), script-aware sentence splitting (M3), multilingual embedder (M4,
+    Q22), per-chunk keyword configuration (M5), data model/settings/API (M6),
+    docs (M7), per-language evaluation (M8, Q21/Q24). M5 lands **before or
+    with** Task 5's keyword branch
 
 
 ---
@@ -1173,8 +1366,8 @@ as diagnostic** so a grader knows `/search` is the deliverable.
 | Phase | Outcome | Tasks |
 |---|---|---|
 | **1 — Foundation** | Dataset in repo, environment reproducible, repo scaffolded, schema and containers up, ports and settings defined | 1, 2, 3 |
-| **2 — Core Pipeline** | End-to-end ingest and weighted-RRF hybrid search working; first-pass recall@k | 4, 5, 7 |
-| **3 — Evaluation & Hardening** | Real labeled query set, all QA checks, WER/DER/speaker/latency/throughput, per-branch recall, failure analysis, the five endpoints, logging | 6, 8, 9, 10, 11, 12 |
+| **2 — Core Pipeline** | End-to-end ingest and weighted-RRF hybrid search working, **multilingual (§7B)**; first-pass recall@k | 4, 17 (M1–M6), 5, 7 |
+| **3 — Evaluation & Hardening** | Real labeled query set, all QA checks, WER/DER/speaker/latency/throughput, per-branch recall, **per-language results**, failure analysis, the five endpoints, logging | 6, 8, 9, 10, 11, 12, 17 (M8) |
 | **4 — Write-up** | Setup verified on a clean clone, design doc, agent disclosure, final progress state | 13, 14, 15, 16 |
 
 
@@ -1296,12 +1489,15 @@ decisions log with its reason — never change one silently.
 |---|---|---|
 | Q1 | **Dataset**: user-provided synthetic two-speaker audio | Copyright-safe to commit. Reference transcripts and speaker turns exist → exact ground truth for WER, DER, speaker accuracy |
 | Q2 | **Transcription**: Whisper `large-v3-turbo` via faster-whisper, local | MIT-licensed, ~5× faster than large-v3 at near-identical accuracy. Fallback `small` if hardware struggles. Requires `ffmpeg` |
+| Q2a | **Amended 2026-09-26 (§7B M1)**: language is **auto-detected** (setting `AUDIO_SEARCH_TRANSCRIPTION_LANGUAGE`, blank = auto), no longer forced to `en` | Detected language + probability stored per file; determinism settings unchanged |
 | Q3 | **Diarization**: `pyannote/speaker-diarization-3.1` | MIT, commercial use permitted. **Gated** — accept conditions on both `speaker-diarization-3.1` *and* `segmentation-3.0`, supply an HF token. Mono 16 kHz. Pass `num_speakers=2` |
 | Q4 | **Embeddings**: `all-MiniLM-L6-v2`, **384-dim**, local | Schema column is `vector(384)`. 512-token limit must stay above the chunk caps in §6. Also drives the semantic splitter |
+| Q4a | **Superseded 2026-09-26 (§7B M4)**: the embedder must be **multilingual**; `all-MiniLM-L6-v2` is English-only. Final model = Q22, chosen by measurement | Schema dimension follows the chosen model; asymmetric models need query/passage embedding in the port; full re-ingest |
 | Q5 | **Query set**: ~90 queries (15 × 6 files), 50/50 keyword/semantic | LLM-drafted, **every label human-verified**. Disclose in `AGENT_LOG.md` |
 | Q6 | **Chunking**: semantic-boundary splitting for long turns, deterministic fallback | Long turns drift across topics; a fixed-offset cut lands mid-topic and makes content unfindable. See §6 |
 | Q7 | **Fusion**: weighted RRF, per-branch weights from config, defaulting to 1.0 / 1.0 | Config read once at the composition root — never a query parameter. Equal weights are the permanent measured baseline. See §7 |
 | Q8 | **Keyword branch**: Postgres FTS with the `english` configuration, stemming via the generated tsvector column | The **same configuration at index time and query time**. Never stem in application code. See §7 |
+| Q8a | **Amended 2026-09-26 (§7B M5)**: configuration is **per chunk** (`chunk.language regconfig`), generated column `to_tsvector(language, text)`; the query is parsed once per configuration present, filtered to matching rows | "Same config at index and query time" still holds, per row. Unmapped language → `simple` + WARNING. CJK = Q23 |
 | Q9 | **API surface**: five endpoints — `/ingest` (list), `/search` (graded), `/search/keyword` and `/search/semantic` (diagnostic), `/evaluation` | Branch endpoints reuse the same repository methods and are never the graded path. See §7A |
 
 
@@ -1309,7 +1505,7 @@ decisions log with its reason — never change one silently.
 - **Schema**: embedding dimension `384` must match the model. A mismatch
   fails at insert time, not query time.
 - **Text search configuration must match** on the generated column and the
-  query parser. A mismatch loses matches silently, with no error.
+  query parser — **per row** since §7B (each chunk's `language`). A mismatch loses matches silently, with no error.
 - **Chunk caps vs token limit**: the ~45s split cap must keep chunks inside
   the 512-token window. If a cap is raised, re-verify.
 - **Semantic splitting must never break ingestion** — deterministic fallback

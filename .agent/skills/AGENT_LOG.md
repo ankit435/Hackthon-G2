@@ -44,3 +44,17 @@ Continuation (same session), Task 3 (user: "see .env and start"):
 - `db/schema.sql` + `scripts/init_db.py`: created DB `audio_search` and applied the schema twice (idempotent).
 - Tests: 78 passed (43 data + 13 settings + 6 architecture + 16 live-DB schema). One schema test first failed because of **my test bug** (the helper generated a new id, so the link dangled). The deferred FK correctly rejected it. Fixed the helper and added an explicit dangling-link test. Architecture tests were mutation-checked with planted violations (all 3 caught).
 Open items: Task 4 next. Q20 is still open. The user should rotate the exposed NVIDIA key.
+
+## Session 2 — 2026-09-26 — Phase 1→2 (spec only)
+Model/agent: Claude Code (cloud session, branch `claude/upbeat-bell-4zoza6`)
+Prompt summary: "Read `.agent/skills`, find what changes are needed for multi-language support (no edits)", then "update the skill files with this as a compulsory feature so other running agents understand it properly."
+Key decisions:
+- **Multilingual support is compulsory core scope** (owner decision), not a §11 stretch goal. Spec: `PLAN.md` §7B (M1–M8), Task 17, amendments Q2a/Q4a/Q8a in §17.
+- Diarization, alignment and fusion are language-independent and stay unchanged.
+- Keyword rule "same config at index and query time" is kept, **per row** (`chunk.language regconfig`).
+- English golden set remains the regression baseline for every multilingual change.
+Deviations from PLAN: the plan itself was amended (§1 constraint row, §2 secondary metric, §3 item 6, §4 stack rows, new §7B, §7A keyword row, §8 fields, §13 Task 17, §14 phasing, §17 rows + consequence). No task renumbered.
+Packages installed: none.
+Files touched: `.agent/skills/PLAN.md`, `.agent/skills/skiil.md`, `.agent/skills/HANDOFF.md` (header notice, §1, §4 session-2 update, §5 map, §9, §13, §14 trap 5), `.agent/skills/PROGRESS.md` (Task 17, Q21–Q24, Decisions Log, Known Issues, Session History, gate row), this file. **No code, schema, test or dataset file changed.**
+Verified how: grep over `src/`, `db/`, `tests/`, `SETUP.md` for every English-specific assumption (`language="en"`, `english`, `all-MiniLM-L6-v2`, `_SENTENCE_END`, the `'english'::regconfig` test); the findings are the M-items in §7B. Candidate embedding-model dimensions/windows could **not** be verified (Hugging Face blocked from this container) — marked unverified in §7B/Q22. Markdown tables re-checked for broken rows after editing.
+Open items left: Q21 (target languages + non-English eval data), Q22 (embedder, by measurement), Q23 (CJK keyword), Q24 (per-language thresholds), Q19 (QA ground truth). Task 4 code exists but its session was never logged and no real-data run is recorded — verify it first. Then Task 17 M1/M3 → M4 → M5 with Task 5.

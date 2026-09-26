@@ -3,7 +3,7 @@
 skiil.md
 ---
 name: audio-hybrid-search
-description: "Use this skill for any work on the Audio Hybrid Search project — hybrid keyword + semantic retrieval over two-speaker audio conversations using Whisper transcription, pyannote diarization, semantic chunking, local SentenceTransformer embeddings, weighted RRF fusion, and Postgres + pgvector with tsvector/stemming, evaluated by automated recall@k tests. Trigger whenever the user mentions this project, its files (PLAN.md, PROGRESS.md, HANDOFF.md, AGENT_LOG.md, SOLUTION.md, SETUP.md), or asks to resume, continue, or pick up the build; also trigger for tasks involving the ingestion pipeline (transcribe, diarize, align, chunk, embed, index), semantic or merge-and-split chunking, the hybrid search service, keyword/tsvector/stemming or full-text ranking, RRF or weighted fusion and branch weights, the FastAPI endpoints (/ingest, /search, /search/keyword, /search/semantic, /evaluation), the golden audio dataset, the labeled query set, environment/venv/dependency setup for it, or recall@k / WER / DER / speaker-accuracy / latency evaluation. Do NOT use for unrelated audio, transcription, or search work outside this project."
+description: "Use this skill for any work on the Audio Hybrid Search project — hybrid keyword + semantic retrieval over two-speaker audio conversations using Whisper transcription, pyannote diarization, semantic chunking, local SentenceTransformer embeddings, weighted RRF fusion, and Postgres + pgvector with tsvector/stemming, evaluated by automated recall@k tests. Trigger whenever the user mentions this project, its files (PLAN.md, PROGRESS.md, HANDOFF.md, AGENT_LOG.md, SOLUTION.md, SETUP.md), or asks to resume, continue, or pick up the build; also trigger for tasks involving the ingestion pipeline (transcribe, diarize, align, chunk, embed, index), semantic or merge-and-split chunking, the hybrid search service, keyword/tsvector/stemming or full-text ranking, RRF or weighted fusion and branch weights, the FastAPI endpoints (/ingest, /search, /search/keyword, /search/semantic, /evaluation), the golden audio dataset, the labeled query set, environment/venv/dependency setup for it, or recall@k / WER / DER / speaker-accuracy / latency evaluation; also trigger for multilingual / non-English / language detection / per-language stemming / multilingual embedding work (compulsory, PLAN.md §7B). Do NOT use for unrelated audio, transcription, or search work outside this project."
 ---
 
 
@@ -15,6 +15,31 @@ conversations, 8–10 minutes each**. Every hit must return the **containing
 file**, the **timestamp**, and the **speaker**. Branches are combined with
 **weighted RRF** and sliced to top-K. Graded on automated recall@k against a
 labeled query set.
+
+
+## ⚠️ Compulsory feature: multilingual support (added 2026-09-26)
+
+
+**The system must ingest and search non-English conversations.** Decided by
+the project owner; **core scope, not a stretch goal** (`PLAN.md` §7B,
+Task 17). Anything below that says English-only, `english` config,
+`language="en"` or `all-MiniLM-L6-v2` is **amended by §7B**:
+
+
+| Stage | Old (English-only) | Now required |
+|---|---|---|
+| Transcription | `language="en"` forced | Auto-detect (setting `AUDIO_SEARCH_TRANSCRIPTION_LANGUAGE`, blank = auto); store language + probability per file |
+| Diarization / alignment | — | **Unchanged** (language-independent) |
+| Sentence split | `.!?` + space | Also `。！？` (no space), `।` `॥`, `؟` `۔` |
+| Embeddings | `all-MiniLM-L6-v2` (English-only) | A **multilingual** local model, chosen by measurement (Q22; `multilingual-e5-small` recommended — verify dim/window first). Query vs passage embedding in the port if the model is asymmetric |
+| Keyword branch | `english` for every row | **Per-chunk** `language regconfig`; tsvector = `to_tsvector(language, text)`; query parsed once per config present. Unmapped → `simple` + WARNING. CJK = Q23 |
+| Results | file, timestamp, speaker | + **language** |
+| Evaluation | English only | **Per language** + cross-lingual slice; CER primary for no-space scripts; target languages/data = Q21; per-language thresholds = Q24 |
+
+
+**English must not regress** — the English golden set is the before/after
+baseline for every multilingual change. **M5 (per-chunk keyword config) must
+land before or with Task 5's keyword branch.**
 
 
 ## Start here, every session
@@ -130,6 +155,10 @@ as diagnostic in their route descriptions.
 
 
 Full spec: `PLAN.md` §7.
+
+
+> **§7B amendment:** the configuration is now **per chunk** (`chunk.language`),
+> `english` for English rows. Everything below still applies, **per row**.
 
 
 **Stemming is handled by Postgres, not application code.** Use the
@@ -390,10 +419,10 @@ interpreter. Never run a script outside the venv. Detail: `PLAN.md` §4A/§4B.
 
 | Concern | Choice | Constraint it imposes |
 |---|---|---|
-| Transcription | Whisper `large-v3-turbo`, faster-whisper, local | Needs `ffmpeg`. Fallback `small` if hardware struggles |
+| Transcription | Whisper `large-v3-turbo`, faster-whisper, local | Needs `ffmpeg`. Fallback `small` if hardware struggles. **Language auto-detected (§7B M1)** |
 | Diarization | `pyannote/speaker-diarization-3.1` | **Gated**: accept conditions on `speaker-diarization-3.1` *and* `segmentation-3.0`, supply HF token. Mono 16 kHz. `num_speakers=2` |
-| Embeddings | `all-MiniLM-L6-v2`, local | **384 dims** → `vector(384)`. 512-token limit must exceed chunk caps. Also drives the semantic splitter |
-| Keyword search | Postgres FTS, **`english` config**, generated GIN-indexed tsvector | Same config at index and query time — **no exceptions**. Never stem in application code |
+| Embeddings | **Multilingual local model (§7B M4, Q22)** — was `all-MiniLM-L6-v2` (English-only, 384 dims, 256 tokens) | Schema dimension = the chosen model's, measured. Token window must exceed chunk caps **per language**. Also drives the semantic splitter |
+| Keyword search | Postgres FTS, **per-chunk config** (`english` for English; §7B M5), generated GIN-indexed tsvector | Same config at index and query time **per row** — **no exceptions**. Never stem in application code |
 | Vector index | **HNSW** on the embedding column | No training step, so it works on an empty table. `m`/`ef_construction` recorded in the schema; `ef_search` configurable |
 | Metrics | `jiwer` (WER + CER) · `pyannote.metrics` (DER) | **Dev dependencies only** — never imported by the served system |
 | Chunking | Merge + semantic split + link | Deterministic fallback mandatory |
@@ -437,6 +466,8 @@ stretch goal, not a threshold change, not reflexive weight-fiddling.
 ## Non-negotiables
 
 
+- **Multilingual support is compulsory** (`PLAN.md` §3 item 6, §7B, Task 17)
+  — core scope, not gated by §11. English must not regress.
 - **Build only what `PLAN.md` §3 scopes.** §11 items are gated: all core
   tasks Done, all primary criteria met, time remaining, **and explicit user
   approval** — one at a time.
@@ -456,7 +487,7 @@ stretch goal, not a threshold change, not reflexive weight-fiddling.
   resume point, and committing.
 
 
-## Four known traps
+## Five known traps
 
 
 1. **Text search configuration mismatch.** If the tsvector column and the
@@ -467,5 +498,10 @@ stretch goal, not a threshold change, not reflexive weight-fiddling.
    diarization scores near zero.
 3. **The 256-token embedder limit** (measured `max_seq_length`; 512 was wrong) must stay above the chunk size caps.
 4. **Slicing branches to K before fusion** silently discards the
-   cross-branch agreements fusion exists to find.
+   cross-branch agreements fusion exists to find.
+5. **English-only leftovers (§7B).** An English-only embedder or a forced
+   `english`/`en` anywhere makes non-English content silently unfindable —
+   nothing errors. Unmapped languages must fall back to `simple` **with a
+   WARNING**, never to `english`. An asymmetric embedder with a missing or
+   swapped `query:`/`passage:` prefix loses recall silently.
 
