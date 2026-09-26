@@ -47,6 +47,14 @@ class TranscriptSegment:
 
 
 @dataclass(frozen=True)
+class Transcript:
+    """One file's transcript. Whisper detects ONE language per file from its first 30 s."""
+    segments: list[TranscriptSegment]
+    language: str  # ISO 639-1 code as reported by the transcriber, e.g. "en", "es", "zh"
+    language_probability: float  # detection confidence in [0, 1]; 1.0 when the language was forced
+
+
+@dataclass(frozen=True)
 class SpeakerTurn:
     start: float
     end: float
@@ -68,6 +76,8 @@ class AudioFile:
     file_path: str
     checksum: str
     duration_seconds: float
+    language: str
+    language_probability: float
     id: UUID = field(default_factory=uuid4)
     created_at: datetime | None = None
 
@@ -82,6 +92,7 @@ class Chunk:
     end_time: float
     token_count: int
     char_count: int
+    language: str
     id: UUID = field(default_factory=uuid4)
     prev_chunk_id: UUID | None = None
     next_chunk_id: UUID | None = None
@@ -113,6 +124,7 @@ class SearchResultItem:
     start_time: float
     end_time: float
     text: str
+    language: str
     score: float
 
 

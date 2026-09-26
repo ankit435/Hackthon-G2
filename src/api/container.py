@@ -41,7 +41,7 @@ def build_ingest_service(settings: Settings) -> IngestService:
     embedder = SentenceTransformerEmbedder(settings.embedding_model)
     return IngestService(
         decoder=TorchcodecDecoder(),
-        transcriber=FasterWhisperTranscriber(settings.whisper_model),
+        transcriber=FasterWhisperTranscriber(settings.whisper_model, language=settings.transcription_language),
         diarizer=PyannoteDiarizer(settings.diarization_model, settings.hf_token),
         embedder=embedder,
         files=PostgresRepository(settings.database_url),

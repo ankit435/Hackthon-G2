@@ -79,3 +79,18 @@ def test_split_window_must_be_ordered():
 def test_unknown_log_level_is_rejected():
     with pytest.raises(ConfigurationError, match="log_level"):
         load_settings(database_url=DB, log_level="LOUD")
+
+
+@pytest.mark.parametrize("value,expected", [("", None), ("  ", None), ("es", "es"), ("ZH", "zh")])
+def test_transcription_language_blank_means_autodetect(monkeypatch, value, expected):
+    monkeypatch.setenv("AUDIO_SEARCH_TRANSCRIPTION_LANGUAGE", value)
+    assert load_settings(database_url=DB).transcription_language == expected
+
+
+def test_unknown_transcription_language_is_rejected():
+    with pytest.raises(ConfigurationError, match="transcription_language"):
+        load_settings(database_url=DB, transcription_language="klingon")
+
+
+def test_transcription_language_defaults_to_autodetect():
+    assert load_settings(database_url=DB).transcription_language is None

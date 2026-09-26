@@ -19,6 +19,9 @@ from domain.ports import AudioDecoder, AudioFileRepository, Diarizer, Embedder, 
 log = logging.getLogger(__name__)
 
 NUM_SPEAKERS = 2  # every file is a known two-speaker conversation (Q3); removes a whole error class
+# Below this detection confidence the language (and so stemming config and search slice) may be wrong:
+# ingest proceeds, but it is logged and recorded on the outcome rather than trusted silently.
+LANGUAGE_CONFIDENCE_WARN = 0.5
 
 
 class IngestStatus(str, Enum):
@@ -34,6 +37,8 @@ class IngestOutcome:
     audio_file_id: str | None = None
     chunk_count: int = 0
     duration_seconds: float | None = None
+    language: str | None = None
+    language_probability: float | None = None
     stage: str | None = None
     error_type: str | None = None
     error: str | None = None
@@ -114,7 +119,19 @@ class IngestService:
             audio = await asyncio.to_thread(self._decoder.decode, path)
             outcome.duration_seconds = round(audio.duration_seconds, 3)
         with _Stage(outcome, "transcribe"):
-            segments = await asyncio.to_thread(self._transcriber.transcribe, audio)
+            transcript = await asyncio.to_thread(self._transcriber.transcribe, audio)
+            segments = transcript.segments
+            outcome.language = transcript.language
+            outcome.language_probability = round(transcript.language_probability, 4)
+            log.info("ingest.language", extra={"event": "ingest.language", "file": str(path),
+                                               "language": transcript.language,
+                                               "language_probability": outcome.language_probability})
+            if transcript.language_probability < LANGUAGE_CONFIDENCE_WARN:
+                log.warning("language detection has low confidence",
+                            extra={"event": "ingest.language.low_confidence", "file": str(path),
+                                   "language": transcript.language,
+                                   "language_probability": outcome.language_probability,
+                                   "threshold": LANGUAGE_CONFIDENCE_WARN})
         with _Stage(outcome, "diarize"):
             turns = await asyncio.to_thread(self._diarizer.diarize, audio, NUM_SPEAKERS)
         with _Stage(outcome, "align"):
@@ -130,7 +147,8 @@ class IngestService:
             vectors = await self._embedder.embed([p.text for p in pieces])
 
         audio_file = AudioFile(file_name=path.name, file_path=str(path.resolve()), checksum=checksum,
-                               duration_seconds=audio.duration_seconds)
+                               duration_seconds=audio.duration_seconds, language=transcript.language,
+                               language_probability=transcript.language_probability)
         chunks = []
         for i, (piece, vector, (cid, prev_id, next_id)) in enumerate(zip(pieces, vectors, link(len(pieces)))):
             tokens = self._embedder.count_tokens(piece.text)
@@ -140,7 +158,8 @@ class IngestService:
                                    "tokens": tokens, "max_tokens": self._embedder.max_tokens})
             chunks.append(Chunk(id=cid, audio_file_id=audio_file.id, chunk_index=i, speaker=piece.speaker,
                                 text=piece.text, start_time=piece.start, end_time=piece.end, token_count=tokens,
-                                char_count=len(piece.text), prev_chunk_id=prev_id, next_chunk_id=next_id,
+                                char_count=len(piece.text), language=transcript.language,
+                                prev_chunk_id=prev_id, next_chunk_id=next_id,
                                 embedding=tuple(vector)))
         with _Stage(outcome, "persist"):
             await self._files.add_with_chunks(audio_file, chunks)

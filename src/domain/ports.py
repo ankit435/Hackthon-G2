@@ -16,7 +16,7 @@ from domain.models import (
     DecodedAudio,
     SearchResultItem,
     SpeakerTurn,
-    TranscriptSegment,
+    Transcript,
 )
 
 
@@ -27,8 +27,8 @@ class AudioDecoder(Protocol):
 
 
 class Transcriber(Protocol):
-    def transcribe(self, audio: DecodedAudio) -> list[TranscriptSegment]:
-        """Timestamped text segments, no speakers. Raises TranscriptionError."""
+    def transcribe(self, audio: DecodedAudio) -> Transcript:
+        """Timestamped segments (no speakers) plus the detected language. Raises TranscriptionError."""
         ...
 
 
