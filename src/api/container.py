@@ -8,6 +8,7 @@ import sys
 from api.settings import Settings
 from application.chunking import ChunkingConfig
 from application.ingest import IngestService
+from application.search import SearchService
 from infra.audio import TorchcodecDecoder
 from infra.diarizer import PyannoteDiarizer
 from infra.embedder import SentenceTransformerEmbedder
@@ -44,4 +45,15 @@ def build_ingest_service(settings: Settings) -> IngestService:
         embedder=embedder,
         files=PostgresRepository(settings.database_url),
         chunking=ChunkingConfig(settings.split_soft_min_seconds, settings.split_cap_seconds),
+    )
+
+
+def build_search_service(settings: Settings, embedder: SentenceTransformerEmbedder | None = None) -> SearchService:
+    """Search loads the embedder only: no Whisper, no pyannote. Pass a loaded embedder to share it with ingest."""
+    return SearchService(
+        PostgresRepository(settings.database_url, hnsw_ef_search=settings.hnsw_ef_search),
+        embedder or SentenceTransformerEmbedder(settings.embedding_model),
+        weights=settings.fusion_weights,
+        rrf_k=settings.rrf_k,
+        candidate_depth_multiplier=settings.candidate_depth_multiplier,
     )
