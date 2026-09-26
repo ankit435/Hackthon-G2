@@ -18,6 +18,7 @@ def client():
         app.state.settings = MagicMock()
         app.state.ingest_service = AsyncMock()
         app.state.search_service = AsyncMock()
+        app.state.answer_service = AsyncMock()
         app.state.evaluation_service = AsyncMock()
         app.state.search_service.config = {
             "weights": {"keyword": 1.0, "semantic": 1.0},
@@ -70,6 +71,20 @@ def test_search_endpoint_invalid_input(client):
     response = client.get("/search?query=")
     assert response.status_code == 400
     assert "query must not be empty" in response.json()["detail"]
+
+
+def test_answer_endpoint_returns_llm_text_with_retrieval_citations(client):
+    hit = _sample_hit()
+    app.state.answer_service.answer.return_value = MagicMock(answer="Use a token bucket [1].", sources=(hit,))
+
+    response = client.post("/answer", json={"query": "How should I rate limit?", "top_k": 3})
+
+    assert response.status_code == 200
+    assert response.json()["answer"] == "Use a token bucket [1]."
+    assert response.json()["citations"] == [{"number": 1, "file_name": "audio_01.wav",
+                                                "speaker": "SPEAKER_00", "start_time": 1.0, "end_time": 5.0,
+                                                "language": "en", "text": "Rate limiting algorithm test."}]
+    app.state.answer_service.answer.assert_awaited_once_with("How should I rate limit?", 3)
 
 
 def test_keyword_endpoint_success(client):

@@ -39,7 +39,12 @@ def test_unprefixed_app_vars_and_unrelated_keys_are_ignored(monkeypatch):
     monkeypatch.setenv("RRF_K", "5")
     monkeypatch.setenv("AUDIO_SEARCH_ANSWER_MODEL", "some-llm")
     s = load_settings(database_url=DB)
-    assert s.rrf_k == 60 and not hasattr(s, "answer_model")
+    assert s.rrf_k == 60 and s.answer_model == "some-llm"
+
+
+def test_nvidia_key_uses_only_nvidia_env_names(monkeypatch):
+    monkeypatch.setenv("NVIDIA_API_KEY", "nvapi_test")
+    assert load_settings(database_url=DB).nvidia_api_key == "nvapi_test"
 
 
 def test_missing_database_url_is_a_configuration_error():

@@ -362,18 +362,18 @@ resolved; if unresolved, put it in Known Issues.
 
 | Gate condition | Status |
 |---|---|
-| All core tasks (1–16) Done | ❌ No — none started |
-| All **primary** §2 criteria met and recorded | ❌ No — none measured |
+| All core tasks (1–16) Done | 🟡 Most done; Task 6 unverified, Task 17 M7/M8 pending |
+| All **primary** §2 criteria met and recorded | 🟡 Partial — speaker/latency/keyword-recall pass, semantic recall@5 misses (0.563 < 0.80) |
 | Time remains before submission | — |
-| User approved a specific item | ❌ Not asked |
+| User approved a specific item | ✅ **User approved item #1 (LLM answer generation) on 2026-09-26**, ahead of the other conditions being fully met — an explicit exception, not a reinterpretation of the rule |
 
 
-**Gate: CLOSED.** Do not start any stretch item.
+**Gate: OPEN for item #1 only** (user override, 2026-09-26). All other items stay CLOSED.
 
 
 | Priority | Item | Status | Approved by / date |
 |---|---|---|---|
-| 1 | LLM answer generation endpoint | Not started — gated | — |
+| 1 | LLM answer generation endpoint (`POST /answer`, NVIDIA-backed, deterministic `/search` untouched) | In progress | User, 2026-09-26 |
 | 2 | Streaming / SSE search endpoint | Not started — gated | — |
 | 3 | Background ingestion job queue | Not started — gated | — |
 | 4 | Relevance feedback loop (would populate fusion weights from click data) | Not started — gated | — |
