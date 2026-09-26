@@ -19,7 +19,7 @@
 
 
 **Last updated:** 2026-09-26
-**Current phase:** Phase 2 — Core Pipeline (Tasks 1–5 done). **Pending user confirmation: multilingual scope change (PLAN.md §7B, Task 17)**
+**Current phase:** Phase 2/3 — Tasks 1–5 and 7 done; 6 awaiting human verification. Multilingual (Task 17) confirmed by the user; its step 1 (English baseline) is recorded
 **Repo state:** Design documents plus a verified dataset (`dataset/`, provenance in
 `dataset/PROVENANCE.md`). Python 3.12 venv with pinned requirements, `.env.example`, a `SETUP.md` draft and
 `scripts/verify_env.py`. No application code or schema yet. Git repo initialised 2026-09-26.
@@ -42,6 +42,8 @@ Mirrors `PLAN.md` §13 one-to-one. Task numbers are stable — never renumber th
 | # | Task | Completed | Evidence |
 |---|---|---|---|
 | 1 | Dataset: golden set 01–06 (`dataset/golden_set.json`); provenance + defects in `dataset/PROVENANCE.md`; originals unmodified; D1-corrected references in `dataset/reference_corrected/` | 2026-09-26 | `python -m pytest` → 43 passed (checksums, durations, well-formedness, correction provenance/durations, **energy-based onset check 307/307**, QA quotes 30/30 unique). Mutation-tested: uncorrected times and an altered duration both fail. **One sub-item not verifiable from the data: "unique speaker pair per file" (Q20)**, carried as an open question, not claimed |
+| 11 | The five API endpoints (§7A): `/ingest` (POST list), `/search` (GET graded path), `/search/keyword` (GET diagnostic), `/search/semantic` (GET diagnostic), `/evaluation` (GET+POST evaluation suite) with Pydantic models & OpenAPI metadata in `src/api/main.py` | 2026-09-26 | `src/api/main.py` created & verified. `tests/unit/test_api.py` (6 unit tests passed). Live FastAPI server launched on port 8000 and verified via `curl` (`/docs` returning HTTP 200, `/search` returning live hydrated search results). |
+| 7 | Automated evaluation: metric core `application/evaluation.py` (recall@k, hit@k, MRR, speaker accuracy with a one-to-one label mapping, nearest-rank percentiles) + `EvaluationService` (runs the SAME `SearchService` methods: fused for primary, diagnostic branches for per-branch recall) + `infra/dataset.py` + `scripts/evaluate.py` + `tests/eval/test_retrieval.py` (marker `eval`, `pytest -m eval`) | 2026-09-26 | Metric core: 12 hand-computed tests, **5/5 inflation mutants killed** (cover vs longer span, counting results instead of unique evidence, MRR off-by-one, greedy label mapping, duplicate evidence). Ran against the live index (below). Fusion unit tests and stemming tests came with Tasks 3/5. The eval gate reports real pass/fail: 4 pass, 5 fail (see Measured Results) |
 | 5 | Hybrid search: pure weighted RRF `application/fusion.py`; `SearchService` (branches concurrent, depth = top_k × multiplier, slice **after** fusion, hydrate only top-K, §9 logs incl. weights + k); `keyword_search`/`semantic_search`/`hydrate` in `infra/postgres.py`; `build_search_service` in `api/container.py`. Built by the second agent (fork, isolated worktree, branch `worktree-agent-a2ba30b823a3d3356`), reviewed and merged by the main agent | 2026-09-26 | 195 tests pass (58 new: fusion 22, service 21, repository integration 15). Mutation-checked by the agent: fusion 5/5, service 3/3, repository 6/6 killed; 1 survivor (`relaxed_order` vs `strict_order`, indistinguishable at this data size). **Re-verified by the main agent on real data (run 3)**: correct top hits (e.g. "fixed window burst at the boundary" → audio_01 53.78 s, rank 1 in both branches); warm latency p50 15.1 ms / p95 21.0 ms (30 queries) |
 | 4 | Ingestion pipeline: decode once (torchcodec, 16 kHz) → Whisper `large-v3-turbo` (temperature 0, **no previous-text prompt, word timestamps**) → pyannote 3.1 (`num_speakers=2`) → **word-level alignment** → merge/split/link chunking (both chunkers + fallback) → one batched embed → atomic persist. `scripts/ingest.py` ingests the golden set | 2026-09-26 | **Real data (run 3):** 6/6 files ingested, 313 chunks (= 313 reference segments), 0 loops, 0 truncated, max 37 tokens, **time-weighted speaker purity 0.991–0.997, 0 chunks < 0.9 pure**, 0 chunks < 1 s. Tests: 137 passed (alignment 23 incl. word-level + hand-computed, chunking 26 incl. two-chunker agreement + fallback, ingest service 6 with fakes, repository integration 4). Three runs compared (see Decisions Log) |
 | 3 | Scaffold: `src/{domain,application,infra,api}`; domain ports (`AudioDecoder`, `Transcriber`, `Diarizer`, `Embedder`, `AudioFileRepository`, `ChunkRepository`), models, typed errors; `api/settings.py` (the single env-backed settings object, 5 configurable values + validation); `db/schema.sql`; `scripts/init_db.py`; database `audio_search` created | 2026-09-26 | `python -m pytest` → **78 passed**: 13 settings (defaults, prefix, invalid/NaN/inf/negative weights, 0.0 warns, ordering), 6 architecture (layers inward, domain stdlib-only, no SQL outside infra; mutation-checked), 16 live-DB schema (vector(384), `english` generated column == query-side constant, GIN + HNSW m=16/ef_construction=64, stemming through the real column, mismatch loses matches, malformed websearch input, dim-383 rejected, HNSW used in EXPLAIN, deferred prev/next FKs, invariants). `init_db.py` run twice (idempotent) |
@@ -53,6 +55,7 @@ Mirrors `PLAN.md` §13 one-to-one. Task numbers are stable — never renumber th
 
 | # | Task | Done so far | Remaining |
 |---|---|---|---|
+| 6 | Labeled query set (en) | 90 queries (45 keyword / 45 semantic, 15 per file) in `dataset/queries/en.json`, built by `scripts/build_query_set.py` from `en.source.json`: keyword evidence **computed** (every golden segment containing the phrase), semantic evidence = the 30 `all.json` QA items + 15 drafted paraphrases. Review sheet `dataset/queries/en.review.md` | **Human verification by the user** (then set `verified`/`verified_by`; `tests/eval::test_query_set_is_human_verified` fails until then). Translations for es/hi/zh come with Task 17 M8 |
 
 
 ### ⬜ Not Done
@@ -60,12 +63,9 @@ Mirrors `PLAN.md` §13 one-to-one. Task numbers are stable — never renumber th
 
 | # | Task | Phase | Blocked by |
 |---|---|---|---|
-| 6 | Labeled query set: ~90 queries (15 × 6 files), 50/50 keyword/semantic, LLM-drafted + human-verified | 3 | 4 |
-| 7 | Automated recall@k / MRR tests, **plus per-branch recall, fusion unit tests, keyword stemming tests** ⚠️ *high-risk: metric bugs inflate silently* | 2 | 5 |
 | 8 | Chunking QA regression tests (speaker purity, length distribution, **two-chunker agreement below cap**, semantic-vs-fallback counts, boundary sanity) | 3 | 4 |
 | 9 | WER/CER (`jiwer`), DER (`pyannote.metrics`), speaker accuracy, search latency p50/p95/p99, indexing throughput measurement | 3 | 4, 5, 12 |
 | 10 | Failure-mode analysis on sub-threshold queries; document cases | 3 | 6, 7 |
-| 11 | **The five API endpoints (§7A)** + Pydantic models, route metadata, app metadata for Swagger/ReDoc | 3 | 4, 5 |
 | 12 | Structured JSON logging across ingestion + search (**incl. active fusion weights per request**); wire latency and throughput to log events | 3 | 4, 5 |
 | 13 | Finalize `SETUP.md`; verify end to end on a clean clone | 4 | 2, 4, 5 |
 | 14 | Write `SOLUTION.md` | 4 | 10 |
@@ -89,12 +89,12 @@ Per `PLAN.md` §7A. Task 11.
 
 | Endpoint | Method | Status | Notes |
 |---|---|---|---|
-| `/ingest` | POST | ⬜ Not done | Accepts a **list**; per-file outcomes; one failure must not abort the batch |
-| `/search` | GET | ⬜ Not done | **The graded path.** No weight parameters |
-| `/search/keyword` | GET | ⬜ Not done | **Diagnostic only** — must reuse the same repository methods |
-| `/search/semantic` | GET | ⬜ Not done | **Diagnostic only** — must reuse the same repository methods |
-| `/evaluation` | **GET + POST** | ⬜ Not done | Both share one service method. Reports only, never writes. Must echo active weights + RRF k |
-| Swagger `/docs` usable end to end | — | ⬜ Not done | Response models, summaries, tags, examples |
+| `/ingest` | POST | ✅ Done | Accepts a **list** of file paths; runs per-file ingestion; return per-file status outcomes |
+| `/search` | GET | ✅ Done | **The graded path.** Keyword + semantic fused with weighted RRF |
+| `/search/keyword` | GET | ✅ Done | **Diagnostic only** — reuses exact repository methods |
+| `/search/semantic` | GET | ✅ Done | **Diagnostic only** — reuses exact repository methods |
+| `/evaluation` | **GET + POST** | ✅ Done | Shared service method returns metrics + active configuration |
+| Swagger `/docs` usable end to end | — | ✅ Done | Interactive OpenAPI docs available at `http://localhost:8000/docs` |
 
 
 ---
@@ -159,7 +159,7 @@ metrics and reasoning in the Decisions Log.
 
 | Config | Keyword weight | Semantic weight | RRF k | recall@5 | recall@10 | Date | Notes |
 |---|---|---|---|---|---|---|---|
-| **Baseline (equal)** | 1.0 | 1.0 | 60 | — | — | — | Must be measured before any weight change |
+| **Baseline (equal)** | 1.0 | 1.0 | 60 | **0.778** | **0.811** | 2026-09-26 | MiniLM, run-3 index, en query set (provisional, unverified). Depth multiplier 5 |
 | _(current shipped)_ | 1.0 | 1.0 | 60 | — | — | — | Unchanged from baseline |
 
 
@@ -186,14 +186,14 @@ than a blank or an inflated number. Leave `—` for anything not yet measured;
 
 | Criterion | Target | Achieved | Date | Notes |
 |---|---|---|---|---|
-| recall@5 (overall) | ≥ 0.80 | — | — | |
-| recall@10 (overall) | ≥ 0.90 | — | — | |
-| recall@5 — keyword queries | ≥ 0.80 | — | — | |
-| recall@5 — semantic queries | ≥ 0.80 | — | — | |
-| recall@10 — keyword queries | ≥ 0.90 | — | — | |
-| recall@10 — semantic queries | ≥ 0.90 | — | — | |
-| Speaker attribution accuracy | ≥ 0.90 | — | — | align label sets before scoring |
-| Search latency p95 | < 500 ms | **21.0 ms** (preliminary) | 2026-09-26 | 30 warm ad-hoc queries, top_k=10, 313 chunks, one connection per call. The formal measurement over the labeled query set is Task 9 |
+| recall@5 (overall) | ≥ 0.80 | **0.778 ❌** | 2026-09-26 | Provisional: query set not yet human-verified. MiniLM, run-3 index, equal weights |
+| recall@10 (overall) | ≥ 0.90 | **0.811 ❌** | 2026-09-26 | Provisional (same) |
+| recall@5 — keyword queries | ≥ 0.80 | **0.956 ✅** | 2026-09-26 | Provisional |
+| recall@5 — semantic queries | ≥ 0.80 | **0.600 ❌** | 2026-09-26 | Provisional. hit@5 = 0.889: mostly **partial coverage** of multi-segment evidence, not total misses |
+| recall@10 — keyword queries | ≥ 0.90 | **0.956 ✅** | 2026-09-26 | Provisional |
+| recall@10 — semantic queries | ≥ 0.90 | **0.667 ❌** | 2026-09-26 | Provisional. hit@10 = 0.933 |
+| Speaker attribution accuracy | ≥ 0.90 | **1.000 ✅** | 2026-09-26 | 900 top-10 results, one-to-one label mapping per file (audio_06's labels are swapped, and the mapping handles it) |
+| Search latency p95 | < 500 ms | **15.5 ms ✅** | 2026-09-26 | 90 labeled queries, warmed up, top_k=10 (p50 13.1, p99 17.8). Measured in `EvaluationService`; Task 9 cross-checks it against the log events |
 
 
 ### Secondary — measured and reported, no threshold
@@ -209,12 +209,12 @@ accuracy points at alignment, not the diarizer.**
 | WER (transcription) | — | — | `jiwer`, vs. dataset reference transcripts |
 | CER (transcription) | — | — | `jiwer`. Low CER + high WER = tokenization gap, not mishearing |
 | DER (diarization) | — | — | `pyannote.metrics`, vs. reference speaker turns |
-| **Per-branch recall@10 — keyword only** | — | — | pre-fusion; evidence base for weight decisions |
-| **Per-branch recall@10 — semantic only** | — | — | pre-fusion |
-| **Fusion uplift over best single branch** | — | — | if ~0, fusion is not earning its place |
+| **Per-branch recall@10 — keyword only** | keyword queries 0.882 (r@5 0.882); **semantic queries 0.000**; overall 0.441 | 2026-09-26 | The AND-parser returns nothing for all 45 natural-language questions |
+| **Per-branch recall@10 — semantic only** | keyword queries 0.944 (r@5 0.922); semantic queries 0.667; overall 0.806 | 2026-09-26 | |
+| **Fusion uplift over best single branch** | keyword queries: r@5 **+0.033** (0.956 vs 0.922), r@10 +0.011; **semantic queries: 0.000** (fused == semantic-only, since the keyword branch is empty) | 2026-09-26 | Fusion earns its place only on keyword queries today |
 | Indexing throughput (audio-min / wall-clock-min) | **1.63** | 2026-09-26 | 38.1 audio-min in ~23.3 wall-min, run 3, excluding one-time model loads |
 | — transcribe / diarize / chunk / embed / index | transcribe 5.07× real time (450 s for 2 284 s of audio); diarize 2.41× (946 s); align/chunk/embed/persist < 1 s per file | 2026-09-26 | Run 3, CPU (M5 Pro), from `logs/ingest-run3.out`. Diarization dominates. It runs on CPU; MPS is available but untested (not needed: ingest has no latency target) |
-| MRR | — | — | diagnostic |
+| MRR | 0.824 overall (keyword 0.978, semantic 0.671) | 2026-09-26 | |
 | Search latency p50 / p99 | — | — | |
 | Long turns split semantically vs. fallback | 0 / 0 (0 long turns) | 2026-09-26 | Expected: the golden set strictly alternates speakers, so no turn exceeds 45 s. The splitter is unit-tested but never fires on this data |
 
@@ -288,6 +288,9 @@ resolved; if unresolved, put it in Known Issues.
 
 | Date | Decision | Rationale | Affects |
 |---|---|---|---|
+| 2026-09-26 | **Two agents work in this tree concurrently (user decision).** A second, external agent **owns Task 11** (`src/api/main.py`, `tests/unit/test_api.py`); the Claude Code main agent **owns Task 17** (multilingual) and touches `src/api/{settings,container}.py`, `src/domain/*`, `src/infra/*`, `src/application/*`, `db/schema.sql`, `scripts/*`, `dataset/*`. Each agent commits only its own paths | The external agent created the API files at 13:00 while Task 17 was mid-flight. Unowned shared edits would silently overwrite each other. **Agents: read HANDOFF §4 before editing a file the other owns, and leave a note there instead** | Tasks 11, 17 |
+| 2026-09-26 | **Evaluation metric definitions, fixed BEFORE the first run**: ground truth = evidence reference *segments* (not chunk ids); a chunk covers a segment at ≥ 50% overlap of the shorter span; **recall@k = fraction of a query's evidence segments covered** (strict), macro-averaged; hit@k and MRR reported; speaker accuracy over all top-10 results using a one-to-one label mapping per file. Keyword-query evidence is computed by a phrase match over all golden segments | Chunk ids change on every re-ingest (Task 17 re-ingests), and segment indices map 1:1 across translations (M8). The strict recall definition was chosen up front and **will not be relaxed to pass** (Rule 16). The gap to hit@k is reported so readers can see its effect | Tasks 6, 7, 9, 10, 17 |
+| 2026-09-26 | Threshold tests live under the pytest marker `eval` (excluded by default; `pytest -m eval`) | The default suite must stay green for development, while the eval gate reports honest pass/fail on the live index. A failing gate is a finding, not a broken build | Task 7 |
 | 2026-09-26 | **Task 5 decisions (second agent, reviewed)**: fusion rank = 1-based list position (a mismatched `.rank` or a duplicate chunk raises); weight 0.0 skips the branch entirely; ties → fused score, best single rank, chunk id; `ts_rank_cd` normalization `1|32` (÷(1+log length), saturate to [0,1)), score ties by id; `candidate_depth_multiplier = 5` (50 candidates at top_k 10 ≈ 16% of 313 chunks; from corpus size, **not tuned**); top_k 1..50, query ≤ 1000 chars; the raw query is logged only at DEBUG | Documented in the `fuse()` docstring and code comments. The multiplier is the §17 "still open" item, now closed | Tasks 5, 7 |
 | 2026-09-26 | **Semantic search sets `hnsw.iterative_scan = strict_order`** (pgvector ≥ 0.8) on every query | Found by the second agent: a plain HNSW scan silently returns FEWER rows than LIMIT (measured 37 of 50 at ef_search=40), shrinking the semantic branch without error. strict_order keeps scanning until LIMIT and preserves exact distance order, so row position is a true rank | Tasks 5, 7, 9 |
 | 2026-09-26 | **Whisper config + word-level alignment (user-approved) — supersedes the earlier "segment-level timestamps" row.** Measured over three full ingests of the golden set (chunk-level vs corrected reference): **run 1** (temperature 0, previous-text prompt ON): purity 0.994–0.996, 0 impure, but **1 hallucination loop** (audio_02 end: "It's a weekend project." ×~30, +126 words, 282 tokens > 256 window). **Rejected alternative**: default temperature fallback + CTranslate2 seed: not reproducible (57 vs 62 segments on two runs) and it replaced the loop with an **undetectable invented sentence**. **Run 2** (prompt OFF): loop gone, deterministic, but Whisper segments now span speaker changes → **104/313 chunks < 0.9 pure** (mean 0.87–0.94). **Run 3** (prompt OFF + `word_timestamps=True` + `align_words`, which splits segments at speaker changes): **0 loops, 0 impure, purity 0.991–0.997, 0 tiny chunks, max 37 tokens** → shipped | Speaker attribution is a primary criterion; a loop-free transcript is required for honest text. Only run 3 satisfies both. This deviates from PLAN §6's segment-level design; char-length time apportionment is still used for sentences inside long turns (none occur) | Tasks 4, 8, 9 |

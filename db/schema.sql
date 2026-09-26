@@ -9,6 +9,10 @@ CREATE TABLE IF NOT EXISTS audio_file (
     file_path        text NOT NULL,
     checksum         text NOT NULL UNIQUE,          -- sha256; idempotency key for ingest
     duration_seconds double precision NOT NULL CHECK (duration_seconds > 0),
+    -- Whisper detects one language per file (PLAN.md §7B); the probability is kept so
+    -- low-confidence detections stay visible after ingest.
+    language         text NOT NULL CHECK (btrim(language) <> ''),
+    language_probability double precision NOT NULL CHECK (language_probability BETWEEN 0 AND 1),
     created_at       timestamptz NOT NULL DEFAULT now()
 );
 
@@ -27,6 +31,7 @@ CREATE TABLE IF NOT EXISTS chunk (
     next_chunk_id  uuid REFERENCES chunk(id) DEFERRABLE INITIALLY DEFERRED,
     token_count    integer NOT NULL CHECK (token_count > 0),
     char_count     integer NOT NULL CHECK (char_count > 0),
+    language       text NOT NULL CHECK (btrim(language) <> ''),  -- the file's detected language
     created_at     timestamptz NOT NULL DEFAULT now(),
     -- The query side MUST parse with this same 'english' configuration (infra, TEXT_SEARCH_CONFIG).
     -- A mismatch produces lexemes by different rules and matches vanish with no error.

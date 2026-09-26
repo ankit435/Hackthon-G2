@@ -7,7 +7,9 @@ import sys
 
 from api.settings import Settings
 from application.chunking import ChunkingConfig
+from application.evaluation import EvaluationService
 from application.ingest import IngestService
+from application.search import SearchService
 from infra.audio import TorchcodecDecoder
 from infra.diarizer import PyannoteDiarizer
 from infra.embedder import SentenceTransformerEmbedder
@@ -39,9 +41,26 @@ def build_ingest_service(settings: Settings) -> IngestService:
     embedder = SentenceTransformerEmbedder(settings.embedding_model)
     return IngestService(
         decoder=TorchcodecDecoder(),
-        transcriber=FasterWhisperTranscriber(settings.whisper_model),
+        transcriber=FasterWhisperTranscriber(settings.whisper_model, language=settings.transcription_language),
         diarizer=PyannoteDiarizer(settings.diarization_model, settings.hf_token),
         embedder=embedder,
         files=PostgresRepository(settings.database_url),
         chunking=ChunkingConfig(settings.split_soft_min_seconds, settings.split_cap_seconds),
     )
+
+
+def build_search_service(settings: Settings, embedder: SentenceTransformerEmbedder | None = None) -> SearchService:
+    """Search loads the embedder only: no Whisper, no pyannote. Pass a loaded embedder to share it with ingest."""
+    return SearchService(
+        PostgresRepository(settings.database_url, hnsw_ef_search=settings.hnsw_ef_search),
+        embedder or SentenceTransformerEmbedder(settings.embedding_model),
+        weights=settings.fusion_weights,
+        rrf_k=settings.rrf_k,
+        candidate_depth_multiplier=settings.candidate_depth_multiplier,
+    )
+
+
+def build_evaluation_service(settings: Settings) -> EvaluationService:
+    search = build_search_service(settings)
+    repo = PostgresRepository(settings.database_url, hnsw_ef_search=settings.hnsw_ef_search)
+    return EvaluationService(search, files=repo, chunks=repo)

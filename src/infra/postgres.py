@@ -30,11 +30,12 @@ KEYWORD_SQL = ("SELECT id, ts_rank_cd(text_search, q, %s) AS score "
 # ORDER BY the raw <=> operator (not the alias) so the planner can use the HNSW index.
 SEMANTIC_SQL = ("SELECT id, 1 - (embedding <=> %s) AS similarity FROM chunk "
                 "WHERE embedding IS NOT NULL ORDER BY embedding <=> %s LIMIT %s")
-HYDRATE_SQL = ("SELECT c.id, c.audio_file_id, a.file_name, a.file_path, c.speaker_id, c.start_time, c.end_time, c.text "
+HYDRATE_SQL = ("SELECT c.id, c.audio_file_id, a.file_name, a.file_path, c.speaker_id, c.start_time, c.end_time, c.text, "
+               "c.language "
                "FROM chunk c JOIN audio_file a ON a.id = c.audio_file_id WHERE c.id = ANY(%s)")
 
 _CHUNK_COLUMNS = ("id, audio_file_id, chunk_index, speaker_id, text, start_time, end_time, embedding, "
-                  "prev_chunk_id, next_chunk_id, token_count, char_count")
+                  "prev_chunk_id, next_chunk_id, token_count, char_count, language")
 
 
 class PostgresRepository:
@@ -53,26 +54,29 @@ class PostgresRepository:
         try:
             async with await self._connect() as conn:
                 row = await (await conn.execute(
-                    "SELECT id, file_name, file_path, checksum, duration_seconds, created_at FROM audio_file WHERE checksum = %s",
+                    "SELECT id, file_name, file_path, checksum, duration_seconds, created_at, language, language_probability "
+                    "FROM audio_file WHERE checksum = %s",
                     (checksum,))).fetchone()
         except psycopg.Error as e:
             raise RepositoryError("lookup by checksum failed", stage="persist", error=type(e).__name__) from e
         return AudioFile(id=row[0], file_name=row[1], file_path=row[2], checksum=row[3],
-                         duration_seconds=row[4], created_at=row[5]) if row else None
+                         duration_seconds=row[4], created_at=row[5], language=row[6],
+                         language_probability=row[7]) if row else None
 
     async def add_with_chunks(self, audio_file: AudioFile, chunks: Sequence[Chunk]) -> None:
         try:
             async with await self._connect() as conn, conn.transaction():
                 await conn.execute(
-                    "INSERT INTO audio_file (id, file_name, file_path, checksum, duration_seconds) VALUES (%s,%s,%s,%s,%s)",
+                    "INSERT INTO audio_file (id, file_name, file_path, checksum, duration_seconds, language, "
+                    "language_probability) VALUES (%s,%s,%s,%s,%s,%s,%s)",
                     (audio_file.id, audio_file.file_name, audio_file.file_path, audio_file.checksum,
-                     audio_file.duration_seconds))
+                     audio_file.duration_seconds, audio_file.language, audio_file.language_probability))
                 async with conn.cursor() as cur:
                     await cur.executemany(
-                        f"INSERT INTO chunk ({_CHUNK_COLUMNS}) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                        f"INSERT INTO chunk ({_CHUNK_COLUMNS}) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
                         [(c.id, c.audio_file_id, c.chunk_index, c.speaker, c.text, c.start_time, c.end_time,
                           None if c.embedding is None else np.asarray(c.embedding, dtype=np.float32),
-                          c.prev_chunk_id, c.next_chunk_id, c.token_count, c.char_count) for c in chunks])
+                          c.prev_chunk_id, c.next_chunk_id, c.token_count, c.char_count, c.language) for c in chunks])
         except psycopg.Error as e:
             raise RepositoryError("persisting file and chunks failed; nothing was written", stage="persist",
                                   file=audio_file.file_name, error=type(e).__name__, detail=str(e).splitlines()[0]) from e
@@ -84,7 +88,8 @@ class PostgresRepository:
                 (audio_file_id,))).fetchall()
         return [Chunk(id=r[0], audio_file_id=r[1], chunk_index=r[2], speaker=r[3], text=r[4], start_time=r[5],
                       end_time=r[6], embedding=None if r[7] is None else tuple(r[7].to_list()),
-                      prev_chunk_id=r[8], next_chunk_id=r[9], token_count=r[10], char_count=r[11]) for r in rows]
+                      prev_chunk_id=r[8], next_chunk_id=r[9], token_count=r[10], char_count=r[11], language=r[12])
+                for r in rows]
 
     async def keyword_search(self, query: str, limit: int) -> list[BranchHit]:
         try:
@@ -119,4 +124,4 @@ class PostgresRepository:
         except psycopg.Error as e:
             raise RepositoryError("hydrating results failed", stage="search.hydrate", error=type(e).__name__) from e
         return [SearchResultItem(chunk_id=r[0], audio_file_id=r[1], file_name=r[2], file_path=r[3], speaker=r[4],
-                                 start_time=r[5], end_time=r[6], text=r[7], score=0.0) for r in rows]
+                                 start_time=r[5], end_time=r[6], text=r[7], language=r[8], score=0.0) for r in rows]

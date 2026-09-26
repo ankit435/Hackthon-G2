@@ -36,7 +36,7 @@ def _linked_ids(n):
 def seeded():
     """Three chunks with nonsense vocabulary and near-one-hot embeddings in a fresh audio_file."""
     f = AudioFile(file_name="search-test.wav", file_path="/tmp/search-test.wav",
-                  checksum=f"test-{uuid.uuid4().hex}", duration_seconds=30.0)
+                  checksum=f"test-{uuid.uuid4().hex}", duration_seconds=30.0, language="en", language_probability=1.0)
     texts = ["We zorbified the qwibble ledgers yesterday.",
              "Nobody zorbifies a qwibble twice; qwibble qwibble.",
              "Flarnish the blorptastic crumbulator."]
@@ -44,7 +44,7 @@ def seeded():
     # MiniLM vectors align with exactly, so the exact-match row must rank first.
     vectors = [tuple(v + 1e-3 for v in one_hot(383 - i)) for i in range(3)]
     chunks = [Chunk(id=cid, audio_file_id=f.id, chunk_index=i, speaker=f"SPEAKER_0{i % 2}", text=texts[i],
-                    start_time=10.0 * i, end_time=10.0 * i + 8.0, token_count=12, char_count=len(texts[i]),
+                    start_time=10.0 * i, end_time=10.0 * i + 8.0, token_count=12, char_count=len(texts[i]), language="en",
                     prev_chunk_id=prev, next_chunk_id=nxt, embedding=vectors[i])
               for i, (cid, prev, nxt) in enumerate(_linked_ids(3))]
     asyncio.run(PostgresRepository(URL).add_with_chunks(f, chunks))

@@ -97,6 +97,29 @@ def test_last_sentence_ends_exactly_at_segment_end():
     assert all(a.end == b.start for a, b in zip(parts, parts[1:]))
 
 
+@pytest.mark.parametrize("text,expected", [
+    ("你好。我们开始吧！", ["你好。", "我们开始吧！"]),                      # CJK: no space after 。
+    ("限流器很重要。 我们需要令牌桶？好的", ["限流器很重要。", "我们需要令牌桶？", "好的"]),  # optional space
+    ("यह पहला है। यह दूसरा है।", ["यह पहला है।", "यह दूसरा है।"]),          # Devanagari danda
+    ("पहला॥ दूसरा", ["पहला॥", "दूसरा"]),                                  # double danda
+    ("هل هذا صحيح؟ نعم", ["هل هذا صحيح؟", "نعم"]),                        # Arabic question mark
+    ("First one. Second one! Third?", ["First one.", "Second one!", "Third?"]),
+    ("version 2.5 is out", ["version 2.5 is out"]),                        # no split without a following space
+])
+def test_sentence_split_is_script_aware(text, expected):
+    assert [p.text for p in sentences([P(0, 10, text)])] == expected
+
+
+@pytest.mark.parametrize("text", ["你好。我们开始吧！", "यह पहला है। यह दूसरा है।", "Aaaa. Bbbbbbbbbbbbbb."])
+def test_apportioned_times_tile_the_segment_exactly(text):
+    parts = sentences([P(3.0, 9.0, text)])
+    assert parts[0].start == 3.0 and parts[-1].end == 9.0
+    assert all(a.end == b.start for a, b in zip(parts, parts[1:]))
+    total = sum(len(p.text) for p in parts)
+    for p in parts[:-1]:
+        assert p.duration == pytest.approx(6.0 * len(p.text) / total)
+
+
 def test_text_without_terminal_punctuation_is_one_sentence():
     assert [s.text for s in sentences([P(0, 5, "no punctuation here")])] == ["no punctuation here"]
 

@@ -27,7 +27,8 @@ def tx(conn):
 
 def insert_file(c) -> uuid.UUID:
     fid = uuid.uuid4()
-    c.execute("INSERT INTO audio_file (id, file_name, file_path, checksum, duration_seconds) VALUES (%s,'t.wav','/t.wav',%s,10)",
+    c.execute("INSERT INTO audio_file (id, file_name, file_path, checksum, duration_seconds, language, language_probability) "
+              "VALUES (%s,'t.wav','/t.wav',%s,10,'en',1.0)",
               (fid, uuid.uuid4().hex))
     return fid
 
@@ -35,8 +36,8 @@ def insert_file(c) -> uuid.UUID:
 def insert_chunk(c, fid, idx, text, embedding=None, prev=None, next_=None, cid=None) -> uuid.UUID:
     cid = cid or uuid.uuid4()
     c.execute("""INSERT INTO chunk (id, audio_file_id, chunk_index, speaker_id, text, start_time, end_time,
-                                    embedding, prev_chunk_id, next_chunk_id, token_count, char_count)
-                 VALUES (%s,%s,%s,'SPEAKER_00',%s,%s,%s,%s::vector,%s,%s,5,%s)""",
+                                    embedding, prev_chunk_id, next_chunk_id, token_count, char_count, language)
+                 VALUES (%s,%s,%s,'SPEAKER_00',%s,%s,%s,%s::vector,%s,%s,5,%s,'en')""",
               (cid, fid, idx, text, idx, idx + 1, embedding, prev, next_, len(text)))
     return cid
 
@@ -124,5 +125,5 @@ def test_invariants_are_enforced(tx, column, value):
     row = {"speaker_id": "SPEAKER_00", "text": "ok", "end_time": 1}
     row[column] = value
     with pytest.raises(psycopg.errors.IntegrityError):
-        tx.execute("INSERT INTO chunk (id, audio_file_id, chunk_index, speaker_id, text, start_time, end_time, token_count, char_count) "
-                   "VALUES (%s,%s,0,%s,%s,0,%s,1,2)", (uuid.uuid4(), fid, row["speaker_id"], row["text"], row["end_time"]))
+        tx.execute("INSERT INTO chunk (id, audio_file_id, chunk_index, speaker_id, text, start_time, end_time, token_count, "
+                   "char_count, language) VALUES (%s,%s,0,%s,%s,0,%s,1,2,'en')", (uuid.uuid4(), fid, row["speaker_id"], row["text"], row["end_time"]))
