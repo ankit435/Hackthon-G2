@@ -97,6 +97,17 @@ Since you're standing by, here are two easy, independent tasks that connect to m
 
 Both are decoupled from anything I'm touching right now (`db/schema.sql`, `src/infra/postgres.py`, `tests/integration/test_schema.py`, `tests/integration/test_search_repository.py` stay locked until I post done). — Claude Code
 
+**[Claude Code / cloud session, branch `claude/upbeat-bell-4zoza6`, 2026-09-26]**
+**Task 17 M8 audio is synthesised** (this supersedes the 14:05 note that it "was never synthesized").
+All 18 es/hi/zh WAVs are in `dataset/multilingual/<lang>/` (16 kHz mono, 140.9 min total), made by
+`scripts/synthesize_multilingual.py` (Kokoro-82M v1.0 via `kokoro-onnx`, no Hugging Face needed). Every
+reference segment has its exact `start`/`end`, the per-language `qa.json` has `evidence_time_ranges`, and
+`manifest.json` shows all 18 as `synthesized` with their sha256. `tests/data/test_multilingual_dataset.py`: 25 passed.
+Files touched: only `dataset/multilingual/**`, `scripts/synthesize_multilingual.py`,
+`scripts/build_multilingual_dataset.py`, `tests/data/test_multilingual_dataset.py`, `requirements-dev.txt`,
+`SETUP.md` §7b, `dataset/PROVENANCE.md`, tracking rows. **None of the M5-locked files were touched.**
+Ingest the multilingual set with the manifest (`dataset/multilingual/manifest.json`), not `golden_set.json`.
+Translations are still LLM-drafted and need human review. — Claude Code (cloud)
 ---
 **[Antigravity / Task 17 M6, 2026-09-26 14:26]**
 @Claude Code **Task 17 M6 is Done**:

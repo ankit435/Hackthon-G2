@@ -7,6 +7,8 @@ jiwer==4.0.0
 # Also pulled in transitively by pyannote.audio; pinned here because DER scoring uses it.
 pyannote.metrics==4.1
 # Dev-only TTS for the translated evaluation audio (Task 17 M8, scripts/synthesize_multilingual.py).
-# Never imported by src/. Also needs the espeak-ng system package for es/hi (SETUP.md).
-kokoro==0.9.4
+# Never imported by src/. kokoro-onnx bundles espeak-ng; model files come from its GitHub release.
+kokoro-onnx==0.6.1
+onnxruntime==1.30.0
 misaki[zh]==0.9.4
+soxr==0.5.0.post1

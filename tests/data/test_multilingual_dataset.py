@@ -71,6 +71,9 @@ def test_qa_evidence_maps_to_the_same_segments_as_english(lang):
         assert item["evidence_speakers"] == sorted(src["evidence_speakers"])
         ref = load(ML / lang / f"{item['audio_id']}.json")
         assert item["supporting_context"] == [ref["segments"][i]["text"] for i in item["evidence_segment_indices"]]
+        timed = ref["synthesis"] is not None
+        expected = [[ref["segments"][i]["start"], ref["segments"][i]["end"]] for i in item["evidence_segment_indices"]]
+        assert item["evidence_time_ranges"] == (expected if timed else None)
         assert item["question"].strip() and item["question"] != src["question"]
         assert item["ground_truth_answer"].strip() and item["ground_truth_answer"] != src["ground_truth_answer"]
 
