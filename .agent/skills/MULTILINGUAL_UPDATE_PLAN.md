@@ -44,7 +44,7 @@
 2. ☑ **M1** language detection + storage (§3.1–3.3). 2026-09-26: run 4 detected `en` at 0.9996–0.9998 on all 6 files; transcripts byte-identical to run 3 (313/313); English eval unchanged (r@5 0.778 / r@10 0.811, p95 18.4 ms). Schema `language` columns were added in M1, not M5 (storage needs them)
 3. ☑ **M3** sentence splitter (§3.4). 2026-09-26: 36 chunking tests incl. zh/hi/ar; English unchanged (no long turns in the golden set)
 4. ☑ **M4** embedder → bge-m3, `vector(1024)`, re-ingest (§3.5). 2026-09-26: DB recreated, golden set re-ingested (run 5, 313/313 chunks byte-identical to run 4 except embeddings). English before/after is a **mixed** result: r@10 and hit-rate improved, semantic r@5 regressed 0.600→0.563, p95 latency rose 15.5→67.0 ms (still ≪500ms). Recorded honestly in PROGRESS.md, carried into Task 10 rather than hidden.
-5. ☐ **M5** per-row keyword config + bigrams, **together with Task 5's keyword branch** (§3.6)
+5. ☑ **M5** per-row keyword config + bigrams (§3.6). 2026-09-26: schema search_config/search_text + generated tsvector per row; postgres.py keyword_search runs one UNION ALL pass per distinct config; 288 tests incl. Spanish stemming, CJK bigram, unmapped-fallback. Re-ingested (run 6, 313/313 identical to run 5); English eval unchanged (single 'english' config, as expected).
 6. ☐ **M6** API, settings, docs (§3.7–3.8)
 7. ☐ **M8** translated dataset + per-language evaluation (§4)
 
