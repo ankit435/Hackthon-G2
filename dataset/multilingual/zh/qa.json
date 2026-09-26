@@ -17,6 +17,7 @@
       "SPEAKER_00",
       "SPEAKER_01"
     ],
+    "evidence_time_ranges": null,
     "supporting_context": [
       "固定窗口成本低，也容易理解，但它会在窗口边界允许两倍于限额的突发流量。",
       "没错。一个客户端可以在一分钟的最后一秒发一百个请求，再在下一分钟的第一秒发一百个。"
@@ -41,6 +42,7 @@
       "SPEAKER_00",
       "SPEAKER_01"
     ],
+    "evidence_time_ranges": null,
     "supporting_context": [
       "滑动窗口日志可以精确地解决这个问题。我们为每个请求保存一个时间戳，然后统计最近六十秒内的记录。",
       "所以实际可行的折中方案是滑动窗口计数器，用加权平均把上一个窗口和当前窗口结合起来。",
@@ -63,6 +65,7 @@
     "evidence_speakers": [
       "SPEAKER_01"
     ],
+    "evidence_time_ranges": null,
     "supporting_context": [
       "我们应该给桶设上限，这样闲置的客户端就不能积累无限的突发量。容量一百、每秒补充一点六七个令牌，正好符合我们的策略。"
     ]
@@ -86,6 +89,7 @@
       "SPEAKER_00",
       "SPEAKER_01"
     ],
+    "evidence_time_ranges": null,
     "supporting_context": [
       "我们应该把整个检查和扣减放在同一个 Lua 脚本里，这样读取、比较和写入在 Redis 这边都是原子的。",
       "这就避免了经典的竞态条件，也就是两个网关节点都读到九十九，然后都决定放行这个请求。",
@@ -111,6 +115,7 @@
       "SPEAKER_00",
       "SPEAKER_01"
     ],
+    "evidence_time_ranges": null,
     "supporting_context": [
       "对公开 API，我会让普通接口失败放行，而对创建账号、批量导出这类昂贵或敏感的接口失败拒绝。",
       "当共享存储不可用时，我们还应该降级到本地内存限流器，这样至少还有一个上限，而不是完全没有。",
@@ -135,6 +140,7 @@
       "SPEAKER_00",
       "SPEAKER_01"
     ],
+    "evidence_time_ranges": null,
     "supporting_context": [
       "六十二进制，用数字和大小写字母。七个字符大约有三点五万亿种组合，远远超出我们的需要。",
       "七是个不错的默认值，不过我们也可以从六开始再逐步增加。六个字符就已经有五百六十亿种可能。"
@@ -158,6 +164,7 @@
       "SPEAKER_00",
       "SPEAKER_01"
     ],
+    "evidence_time_ranges": null,
     "supporting_context": [
       "三零二，因为永久跳转会被浏览器缓存，我们就再也看不到之后的点击了。",
       "对，而且回访用户的数据分析会完全丢失。为了保留这些数据，多一点负载是值得的。"
@@ -182,6 +189,7 @@
       "SPEAKER_00",
       "SPEAKER_01"
     ],
+    "evidence_time_ranges": null,
     "supporting_context": [
       "但顺序递增的整数会泄露信息。任何人都能枚举短码，把整个链接数据库遍历一遍，这是个隐私问题。",
       "我们可以在编码前用一个可逆的置换把计数器打乱，这样短码看起来是随机的，但仍然唯一。",
@@ -205,6 +213,7 @@
     "evidence_speakers": [
       "SPEAKER_00"
     ],
+    "evidence_time_ranges": null,
     "supporting_context": [
       "对于唯一计数器，我们可以用号段分配器。每个应用节点领取一段一百万个标识符，在本地发放。",
       "代价是节点重启时序列里会出现空洞，但对我们的场景来说，这些空洞完全没有影响。"
@@ -228,6 +237,7 @@
       "SPEAKER_00",
       "SPEAKER_01"
     ],
+    "evidence_time_ranges": null,
     "supporting_context": [
       "被删除的链接很重要。如果有人下架了一个恶意链接，缓存里的旧条目还会继续提供它，所以失效必须及时。",
       "我们可以把失效事件发布到消息总线上，让每个缓存节点都订阅，而不是只依赖过期。"
@@ -251,6 +261,7 @@
       "SPEAKER_00",
       "SPEAKER_01"
     ],
+    "evidence_time_ranges": null,
     "supporting_context": [
       "所以要先持久化再确认。服务器先把消息写入持久化存储，然后再向发送方返回确认。",
       "这就是关键的顺序。如果先确认后写入，一旦崩溃，用户以为已经发出的消息就会丢失。"
@@ -275,6 +286,7 @@
       "SPEAKER_00",
       "SPEAKER_01"
     ],
+    "evidence_time_ranges": null,
     "supporting_context": [
       "过期的条目会导致消息被转发到一个已经不再持有该连接的节点，所以那个节点必须丢弃消息，交给存储来处理。",
       "由于消息已经持久化了，一次推送丢失只是延迟问题。客户端重连时会把它拉下来，什么都不会真正丢失。",
@@ -299,6 +311,7 @@
       "SPEAKER_00",
       "SPEAKER_01"
     ],
+    "evidence_time_ranges": null,
     "supporting_context": [
       "所以采用混合方案。成员数低于某个阈值时，我们为每个用户写一条记录；超过阈值时只保存一份，让客户端直接读取会话。",
       "这和社交信息流里用的方法类似，而那个阈值就成了一个可以通过配置调整的参数。"
@@ -323,6 +336,7 @@
       "SPEAKER_00",
       "SPEAKER_01"
     ],
+    "evidence_time_ranges": null,
     "supporting_context": [
       "正在输入提示应该是临时的，永远不要持久化。通过套接字发送，设一个很短的过期时间，负载高时直接丢弃。",
       "已读回执可以批量处理。客户端不必为每条消息发一个事件，而是报告它已读到的最大序号。",
@@ -348,6 +362,7 @@
       "SPEAKER_00",
       "SPEAKER_01"
     ],
+    "evidence_time_ranges": null,
     "supporting_context": [
       "会话内部的排序很微妙。客户端的时钟不可靠，所以我们不能按发送方的时间戳排序。",
       "服务器为每个会话分配序号，这样就得到了一个所有参与者都认同的全序。",
@@ -373,6 +388,7 @@
       "SPEAKER_00",
       "SPEAKER_01"
     ],
+    "evidence_time_ranges": null,
     "supporting_context": [
       "我们设一个阈值，比如十万粉丝，超过这个数的账号就被标记为大V，不参与推送。",
       "读取时，我们拿到预先计算好的信息流，再拉取浏览者关注的大V的最新帖子，把两个列表合并起来。",
@@ -398,6 +414,7 @@
       "SPEAKER_00",
       "SPEAKER_01"
     ],
+    "evidence_time_ranges": null,
     "supporting_context": [
       "信息流里不存帖子内容，只存引用，所以编辑或删除会立刻在所有地方生效。",
       "内容填充在读取时进行，从帖子存储或缓存中批量获取真正的帖子对象。",
@@ -422,6 +439,7 @@
     "evidence_speakers": [
       "SPEAKER_00"
     ],
+    "evidence_time_ranges": null,
     "supporting_context": [
       "典型的流水线有三个阶段。候选生成，然后是一轮轻量排序，再用一个更重的模型处理剩下的候选。",
       "正是这种分阶段的漏斗让延迟保持在可接受范围内，因为昂贵的模型只会看到很小的候选集合。",
@@ -445,6 +463,7 @@
     "evidence_speakers": [
       "SPEAKER_00"
     ],
+    "evidence_time_ranges": null,
     "supporting_context": [
       "我们应该优先处理活跃粉丝，让很可能马上打开应用的人比不活跃的账号更早收到帖子。",
       "实际上，对于不活跃的用户，我们可以完全跳过推送，等他们最终回来时再在读取时重建信息流。"
@@ -468,6 +487,7 @@
       "SPEAKER_00",
       "SPEAKER_01"
     ],
+    "evidence_time_ranges": null,
     "supporting_context": [
       "在存储上，信息流纯粹是缓存。就算丢了，我们也总能根据帖子和关注关系图重新构建出来。",
       "我们应该针对这个延迟告警，而不是针对任务队列的深度，因为延迟直接对应用户体验。"
@@ -491,6 +511,7 @@
       "SPEAKER_00",
       "SPEAKER_01"
     ],
+    "evidence_time_ranges": null,
     "supporting_context": [
       "我们必须把键的作用域限定在账户内，否则一个客户可能猜到另一个客户的键，读取他的支付结果。",
       "我们还应该对请求体做哈希并进行比较，这样同一个键带着不同参数过来时，就会被当作冲突拒绝。"
@@ -515,6 +536,7 @@
       "SPEAKER_00",
       "SPEAKER_01"
     ],
+    "evidence_time_ranges": null,
     "supporting_context": [
       "所以顺序是：先持久化意图，再调用处理方，然后持久化结果。恢复程序会找出只有意图没有结果的记录，去做对账。",
       "对账时用我们自己的参考标识去查询处理方，而这个标识正是为了这个目的，我们必须在对外调用时传过去。",
@@ -539,6 +561,7 @@
       "SPEAKER_00",
       "SPEAKER_01"
     ],
+    "evidence_time_ranges": null,
     "supporting_context": [
       "所以键的记录需要一个状态机。我们用唯一约束把它插入为处理中状态，竞争失败的一方要么等待，要么返回冲突。",
       "我会返回四零九并附带重试提示，而不是阻塞等待，因为让请求一直挂着会占用资源。"
@@ -563,6 +586,7 @@
       "SPEAKER_00",
       "SPEAKER_01"
     ],
+    "evidence_time_ranges": null,
     "supporting_context": [
       "在服务边界之间做两阶段提交在这里并不现实，所以我们使用带补偿操作的 Saga。",
       "请款的补偿是退款，库存预留的补偿是释放。它们都不是真正的回滚。",
@@ -588,6 +612,7 @@
       "SPEAKER_00",
       "SPEAKER_01"
     ],
+    "evidence_time_ranges": null,
     "supporting_context": [
       "也就是说，状态变更和要发出的事件写在同一个本地事务里，再由一个中继程序从发件箱发布出去。",
       "这就消除了那种扣款已经提交、却在发布事件之前崩溃的故障模式。",
@@ -612,6 +637,7 @@
       "SPEAKER_00",
       "SPEAKER_01"
     ],
+    "evidence_time_ranges": null,
     "supporting_context": [
       "使用预签名网址直接上传到存储，文件的字节就完全不会经过我们的应用服务器。",
       "这很重要。让好几 GB 的文件经过应用节点转发，既浪费带宽，又会长时间占用连接。"
@@ -636,6 +662,7 @@
       "SPEAKER_00",
       "SPEAKER_01"
     ],
+    "evidence_time_ranges": null,
     "supporting_context": [
       "每个版本再切成很短的分段，通常是两到六秒，并配上一个列出所有可用版本的清单文件。",
       "这种切换只有在各个版本的分段对齐、关键帧位于完全相同的时间戳时才能生效。",
@@ -661,6 +688,7 @@
       "SPEAKER_00",
       "SPEAKER_01"
     ],
+    "evidence_time_ranges": null,
     "supporting_context": [
       "所以对不热门的内容，我们应该延迟生成完整的码率阶梯，一开始只生成最常用的那个版本。",
       "之后如果某个视频火了，再按需补齐其余版本，这样就不用为没人看的内容付费。",
@@ -686,6 +714,7 @@
       "SPEAKER_00",
       "SPEAKER_01"
     ],
+    "evidence_time_ranges": null,
     "supporting_context": [
       "分段的网址应该稳定且不可变，这样就能以很长的过期时间被完美缓存。",
       "清单文件就不一样了。对于直播内容，清单会不断更新，需要很短的缓存时间。",
@@ -709,6 +738,7 @@
     "evidence_speakers": [
       "SPEAKER_00"
     ],
+    "evidence_time_ranges": null,
     "supporting_context": [
       "起播时间、卡顿率、平均码率和播放失败，这四个数字才真正描述了用户体验。",
       "因此播放器的自适应算法应该在往上切时保守，往下切时果断。"

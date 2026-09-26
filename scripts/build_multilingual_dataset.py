@@ -142,6 +142,9 @@ def main() -> int:
                            "question_type": item["question_type"], "difficulty": item["difficulty"],
                            "evidence_segment_indices": idx,
                            "evidence_speakers": sorted({segments[i]["speaker"] for i in idx}),
+                           # Same shape as all.json; null until the audio is synthesised (times come from it).
+                           "evidence_time_ranges": [[segments[i]["start"], segments[i]["end"]] for i in idx]
+                           if all(segments[i]["start"] is not None for i in idx) else None,
                            "supporting_context": [segments[i]["text"] for i in idx]})
         (out_dir / "qa.json").write_text(json.dumps(qa_out, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
