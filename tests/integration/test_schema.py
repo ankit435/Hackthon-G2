@@ -66,18 +66,22 @@ def test_indexes_exist_with_recorded_parameters(conn):
 
 
 def test_stemming_matches_inflections_through_the_generated_column(tx):
-    cid = insert_chunk(tx, insert_file(tx), 0, "We archived the logs before rotating them.")
+    fid = insert_file(tx)
+    cid = insert_chunk(tx, fid, 0, "We archived the logs before rotating them.")
     for query in ("archiving", "archives", "rotate log"):
+        # scoped to this test's file: the shared DB also holds real ingested chunks
         hit = tx.execute("SELECT id, ts_rank_cd(text_search, q, 32) FROM chunk, websearch_to_tsquery(%s::regconfig, %s) q "
-                         "WHERE text_search @@ q", (TEXT_SEARCH_CONFIG, query)).fetchall()
+                         "WHERE text_search @@ q AND audio_file_id = %s", (TEXT_SEARCH_CONFIG, query, fid)).fetchall()
         assert [h[0] for h in hit] == [cid], query
         assert 0 < hit[0][1] < 1  # normalization flag 32 saturates the score into (0, 1)
 
 
 def test_config_mismatch_loses_the_match_silently(tx):
     """The trap the shared constant exists to prevent: 'simple' does not stem, so nothing matches and nothing errors."""
-    insert_chunk(tx, insert_file(tx), 0, "We archived the logs.")
-    assert not tx.execute("SELECT 1 FROM chunk WHERE text_search @@ websearch_to_tsquery('simple', 'archiving')").fetchall()
+    fid = insert_file(tx)
+    insert_chunk(tx, fid, 0, "We archived the logs.")
+    assert not tx.execute("SELECT 1 FROM chunk WHERE text_search @@ websearch_to_tsquery('simple', 'archiving') "
+                          "AND audio_file_id = %s", (fid,)).fetchall()
 
 
 def test_websearch_parser_degrades_gracefully_on_malformed_input(tx):

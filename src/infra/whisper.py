@@ -1,5 +1,5 @@
 from domain.errors import TranscriptionError
-from domain.models import DecodedAudio, TranscriptSegment
+from domain.models import DecodedAudio, TranscriptSegment, Word
 from infra.audio import TARGET_SAMPLE_RATE
 
 
@@ -12,6 +12,8 @@ class FasterWhisperTranscriber:
     - condition_on_previous_text=False: each 30 s window is decoded without the previous
       window's text as a prompt. That feedback is what let a repetition loop run for 126
       words at the end of audio_02 (PROGRESS.md Decisions Log).
+    - word_timestamps=True: segments without the prompt can run across a speaker change, so
+      alignment works per word and cuts segments at speaker changes (application.alignment).
     - language="en" is a dataset fact (all conversations are English); it skips detection.
     """
 
@@ -25,7 +27,9 @@ class FasterWhisperTranscriber:
             raise TranscriptionError("expected 16 kHz audio", stage="transcribe", sample_rate=audio.sample_rate)
         try:
             segments, _info = self._model.transcribe(audio.samples, language="en", beam_size=5, temperature=0.0,
-                                                     condition_on_previous_text=False)
-            return [TranscriptSegment(start=s.start, end=s.end, text=s.text) for s in segments]
+                                                     condition_on_previous_text=False, word_timestamps=True)
+            return [TranscriptSegment(start=s.start, end=s.end, text=s.text,
+                                      words=tuple(Word(w.start, w.end, w.word) for w in (s.words or ())))
+                    for s in segments]
         except Exception as e:
             raise TranscriptionError("whisper failed", stage="transcribe", file=str(audio.path), error=type(e).__name__) from e

@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 
-from application.alignment import align
+from application.alignment import align_words
 from application.chunking import ChunkingConfig, ChunkingReport, chunk_semantic, link
 from domain.errors import DomainError, InvalidInputError
 from domain.models import AudioFile, Chunk
@@ -118,7 +118,7 @@ class IngestService:
         with _Stage(outcome, "diarize"):
             turns = await asyncio.to_thread(self._diarizer.diarize, audio, NUM_SPEAKERS)
         with _Stage(outcome, "align"):
-            aligned = align(segments, turns)
+            aligned = align_words(segments, turns)
         with _Stage(outcome, "chunk"):
             report = ChunkingReport()
             pieces = await chunk_semantic(aligned, self._chunking, self._embedder, report)

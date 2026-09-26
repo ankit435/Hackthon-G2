@@ -32,10 +32,18 @@ class DecodedAudio:
 
 
 @dataclass(frozen=True)
+class Word:
+    start: float
+    end: float
+    text: str  # as emitted by the transcriber, including its leading space
+
+
+@dataclass(frozen=True)
 class TranscriptSegment:
     start: float
     end: float
     text: str
+    words: tuple[Word, ...] = ()  # empty when the transcriber gave no word timings
 
 
 @dataclass(frozen=True)

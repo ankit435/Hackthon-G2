@@ -9,3 +9,4 @@ logs/
 *.wav
 .venv
 dataset/*.wav
+*.WAV
