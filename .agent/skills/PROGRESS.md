@@ -19,7 +19,7 @@
 
 
 **Last updated:** 2026-09-26
-**Current phase:** Phase 1 — Foundation (Tasks 1–2 done; Task 3 in progress)
+**Current phase:** Phase 1 — Foundation **complete** (Tasks 1–3 done). Next: Phase 2, Task 4
 **Repo state:** Design documents plus a verified dataset (`dataset/`, provenance in
 `dataset/PROVENANCE.md`). Python 3.12 venv with pinned requirements, `.env.example`, a `SETUP.md` draft and
 `scripts/verify_env.py`. No application code or schema yet. Git repo initialised 2026-09-26.
@@ -42,6 +42,7 @@ Mirrors `PLAN.md` §13 one-to-one. Task numbers are stable — never renumber th
 | # | Task | Completed | Evidence |
 |---|---|---|---|
 | 1 | Dataset: golden set 01–06 (`dataset/golden_set.json`); provenance + defects in `dataset/PROVENANCE.md`; originals unmodified; D1-corrected references in `dataset/reference_corrected/` | 2026-09-26 | `python -m pytest` → 43 passed (checksums, durations, well-formedness, correction provenance/durations, **energy-based onset check 307/307**, QA quotes 30/30 unique). Mutation-tested: uncorrected times and an altered duration both fail. **One sub-item not verifiable from the data: "unique speaker pair per file" (Q20)**, carried as an open question, not claimed |
+| 3 | Scaffold: `src/{domain,application,infra,api}`; domain ports (`AudioDecoder`, `Transcriber`, `Diarizer`, `Embedder`, `AudioFileRepository`, `ChunkRepository`), models, typed errors; `api/settings.py` (the single env-backed settings object, 5 configurable values + validation); `db/schema.sql`; `scripts/init_db.py`; database `audio_search` created | 2026-09-26 | `python -m pytest` → **78 passed**: 13 settings (defaults, prefix, invalid/NaN/inf/negative weights, 0.0 warns, ordering), 6 architecture (layers inward, domain stdlib-only, no SQL outside infra; mutation-checked), 16 live-DB schema (vector(384), `english` generated column == query-side constant, GIN + HNSW m=16/ef_construction=64, stemming through the real column, mismatch loses matches, malformed websearch input, dim-383 rejected, HNSW used in EXPLAIN, deferred prev/next FKs, invariants). `init_db.py` run twice (idempotent) |
 | 2 | Environment: `.venv` (Python 3.12.14), pinned `requirements*.txt`, `.env.example` (all settings, `AUDIO_SEARCH_` prefix), `.gitignore`, `SETUP.md` draft, `scripts/verify_env.py` | 2026-09-26 | `python scripts/verify_env.py` → **ALL CHECKS PASSED (6/6)**; `pyannote/speaker-diarization-3.1` pipeline **loaded with the user's token in 6.9 s** (proves gated access to both repos); `pip check` clean. The clean-clone check remains Task 13 |
 
 
@@ -57,7 +58,6 @@ Mirrors `PLAN.md` §13 one-to-one. Task numbers are stable — never renumber th
 
 | # | Task | Phase | Blocked by |
 |---|---|---|---|
-| 3 | Scaffold repo (`src/domain`, `src/infra`, `src/application`, `src/api`, `db/schema.sql` with `vector(384)`, `english` tsvector column, GIN + **HNSW** indexes,); define all domain ports and the settings object (5 configurable values) | 1 | — ready (venv exists) |
 | 4 | Ingestion pipeline: transcribe → diarize → align → chunk → embed → index, incl. **both chunkers** ⚠️ *high-risk: alignment, chunking* | 2 | 1, 3 |
 | 5 | Hybrid search service: keyword + semantic → **weighted RRF with configurable weights** → hydrated ranked top-K ⚠️ *high-risk: fusion* | 2 | 3, 4 |
 | 6 | Labeled query set: ~90 queries (15 × 6 files), 50/50 keyword/semantic, LLM-drafted + human-verified | 3 | 4 |
@@ -117,10 +117,10 @@ Per `PLAN.md` §4A. All must exist and be current before Phase 2.
 | `SETUP.md` verified on a clean clone | ⬜ Not done | Task 13 |
 | HF gated access accepted (both pyannote repos) | ✅ 2026-09-26 | Token in `.env` (`HF_TOKEN`). The pipeline loads for real (6.9 s) |
 | `ffmpeg` installed | ✅ Verified | 9.0.2 (Homebrew). torchcodec 0.16 decodes with it (442.08 s file decoded exactly) |
-| Postgres + pgvector up; `vector` extension enabled | 🟡 Partly | Postgres 18.6 running; the user's `AUDIO_SEARCH_DATABASE_URL` credentials connect, but database `audio_search` **does not exist yet** (Task 3 creates it). pgvector 0.8.6 is available |
-| tsvector generated column uses `english` config | ⬜ Not verified | **Must match the query-side config** |
-| HNSW index created on the embedding column | ⬜ Not done | Record `m` / `ef_construction` used (Q10) |
-| Five settings env-backed and read at the composition root | ⬜ Not done | RRF k, branch weights, HNSW `ef_search`, candidate depth multiplier, split soft-min/cap |
+| Postgres + pgvector up; `vector` extension enabled | ✅ 2026-09-26 | DB `audio_search` created by `scripts/init_db.py`; pgvector 0.8.6 enabled |
+| tsvector generated column uses `english` config | ✅ Verified | Asserted equal to `infra.postgres.TEXT_SEARCH_CONFIG` against the live catalog |
+| HNSW index created on the embedding column | ✅ 2026-09-26 | `m=16`, `ef_construction=64` (pgvector defaults, recorded in `db/schema.sql`); used by the planner for `ORDER BY embedding <=>` |
+| Five settings env-backed and read at the composition root | ✅ Defined 2026-09-26 | `src/api/settings.py`. Wiring into services comes in Tasks 4–5. `candidate_depth_multiplier` has no default until Task 5 |
 | `jiwer` + `pyannote.metrics` in `requirements-dev.txt` | ✅ 2026-09-26 | jiwer 4.0.0, pyannote.metrics 4.1. Note: pyannote.metrics is **also a transitive runtime dep of pyannote.audio 4**. The rule "served system never imports it" still applies to our code |
 
 
@@ -288,6 +288,12 @@ resolved; if unresolved, put it in Known Issues.
 
 | Date | Decision | Rationale | Affects |
 |---|---|---|---|
+| 2026-09-26 | **Added an `AudioDecoder` domain port** (beyond §5's five) and a `DecodedAudio` model. `Transcriber`/`Diarizer` take decoded audio, not paths | Decode each file once and share the waveform, so PyAV and torchcodec (two FFmpeg builds, Known Issue) never both decode the same file. It also removes a duplicate decode per file | Tasks 3, 4 |
+| 2026-09-26 | **Embedder and repository ports are async**; decoder, transcriber and diarizer are sync | §6 requires an async chunker over the `Embedder` port. Search runs the two branches concurrently (§0B.11 allows exactly that parallelism). Ingest-side models are CPU-bound batch calls | Tasks 4, 5 |
+| 2026-09-26 | Schema additions beyond §8: `chunk_index` (unique per file), CHECK constraints (non-blank text, `end_time > start_time`, positive counts), NOT NULL `speaker_id`, and **deferrable** prev/next FKs | Deterministic ordering for chunking QA. Invariants enforced by the database, not just the code (Rule 3). Deferred FKs let a file's chunks and their links be inserted in one transaction | Tasks 4, 8 |
+| 2026-09-26 | `TEXT_SEARCH_CONFIG = "english"` lives in `infra/postgres.py`, and a live-DB test asserts it equals the generated column's regconfig | Trap 1 (config mismatch) becomes a failing test rather than silently missing matches | Tasks 3, 5 |
+| 2026-09-26 | Integration tests connect to the real DB and **fail, not skip**, when it is unreachable | §4B: never skip a test to get past a missing dependency | all tests |
+| 2026-09-26 | Imports use the plan's top-level packages (`domain`, `application`, `infra`, `api`) with `src` on the path (`pyproject.toml` pythonpath; scripts insert `src`) | This follows `PLAN.md` §13's layout literally | all |
 | 2026-09-26 | **App env vars use the `AUDIO_SEARCH_` prefix** (pydantic-settings `env_prefix`). `HF_TOKEN` stays unprefixed | Adopted from the user's own `.env`. `HF_TOKEN` is the name huggingface_hub reads natively | Tasks 2, 3 |
 | 2026-09-26 | **The user's `.env` contains LLM answer-generation settings** (`AUDIO_SEARCH_ANSWER_*`, NVIDIA/OpenAI keys). **They are not used** | This is §11 stretch item #1 and the gate is CLOSED. Not scaffolded, not configured, not read by the settings object. Revisit only if the gate opens and the user approves | §11 |
 | 2026-09-26 | **D1 correction is shift-only, `t' = t − b·i`**, with b fitted on speech onsets. This deviates from the approved `t' = t − (a + b·i)`: the intercept is dropped, and ends are shifted by the same amount as starts | Measured: start and end slopes are equal (to within 0.0001), so the generator's durations are correct and only gaps drift. Onsets are sharp (sd ~5 ms) while offsets are fades (sd 10–19 ms). The intercepts (−0.01 start / +0.03 end) are silencedetect threshold bias, not generator error. Independently confirmed: 307/307 onsets by raw energy | Tasks 1, 6, 9 |
@@ -380,4 +386,4 @@ surprising you could not explain** (Rule 15). Empty is fine; stale is not.
 | # | Date | Phase | Tasks touched | Outcome |
 |---|---|---|---|---|
 | 0 | 2026-09-25 | — | — | Plan scoped; stack resolved; §4A environment + §4B install policy; §0 discipline; §0B engineering standard; semantic chunking (Q6); WER/DER/throughput secondary metrics; weighted RRF (Q7); stemming spec (Q8); five-endpoint API (Q9); missing-package policy (Q10) |
-| 1 | 2026-09-26 | 1 | 1 (Done), 2 (Done), 3 | Dataset verified; `dataset/PROVENANCE.md` written; defects D1 (timestamp drift) and D2 (QA from another render) found and quantified; Q17/Q18 resolved (golden = 01–06); git init. Task 2: Python 3.12 venv, pinned requirements, `.env.example`, `SETUP.md` draft, `verify_env.py` (5/6, HF token pending); found embedder limit = 256 tokens and a duplicate-FFmpeg warning. Task 1 finished: D1 corrected (shift-only model, 307/307 onsets), 43 integrity tests, mutation-tested |
+| 1 | 2026-09-26 | 1 | 1, 2, 3 (all Done) | Dataset verified; `dataset/PROVENANCE.md` written; defects D1 (timestamp drift) and D2 (QA from another render) found and quantified; Q17/Q18 resolved (golden = 01–06); git init. Task 2: Python 3.12 venv, pinned requirements, `.env.example`, `SETUP.md` draft, `verify_env.py` (5/6, HF token pending); found embedder limit = 256 tokens and a duplicate-FFmpeg warning. Task 1 finished: D1 corrected (shift-only model, 307/307 onsets), 43 integrity tests, mutation-tested |

@@ -85,13 +85,21 @@ The weights are **configuration only**. `/search` accepts no weight parameters.
 
 ## 6. Database
 
-_(Task 3 adds `db/schema.sql`.)_ Create the database and enable pgvector:
 ```bash
-createdb audio_search
-psql -d audio_search -c "CREATE EXTENSION IF NOT EXISTS vector;"
+python scripts/init_db.py
 ```
-Then check that the `vector` extension is enabled, the embedding column is
-`vector(384)`, and the tsvector generated column uses the **`english`** configuration.
+This creates the database named in `AUDIO_SEARCH_DATABASE_URL` if it is missing, enables
+`vector` and applies `db/schema.sql`. It is idempotent, so it is safe to re-run. Expected output:
+```
+database 'audio_search' created        # or: exists
+schema applied; pgvector 0.8.6
+```
+The schema's own tests confirm the `vector` extension, `vector(384)`, the tsvector
+generated column using **`english`** (the same constant the query side uses), the GIN
+and HNSW indexes, and HNSW usability:
+```bash
+python -m pytest tests/integration -q
+```
 
 ## 7. Verify the install
 
@@ -115,9 +123,11 @@ The exit code is 0 on success and 1 if any check fails.
 
 | Symptom | Cause | Fix |
 |---|---|---|
+| `database "audio_search" does not exist` | Database not created yet | `python scripts/init_db.py` (step 6) |
+| Integration tests fail with `connection failed` | Postgres not running, or a wrong `AUDIO_SEARCH_DATABASE_URL` | `brew services start postgresql@18`, then check the URL. These tests fail rather than skip by design |
 | `ffmpeg not on PATH`, or torchcodec fails to load `libavutil` | ffmpeg missing | Install ffmpeg (step 1) and reopen the shell |
 | `401`/`403`, "gated repo", "Cannot access" when loading diarization | Conditions not accepted on **both** pyannote repos, or `HF_TOKEN` unset | Step 4 |
-| `type "vector" does not exist` | pgvector not enabled in this database | `CREATE EXTENSION vector;` (step 6) |
+| `type "vector" does not exist` | pgvector not enabled in this database | Re-run `python scripts/init_db.py` (step 6). If pgvector isn't installed on the server: `brew install pgvector` / `apt install postgresql-18-pgvector` |
 | `expected 384 dimensions, not N` | Embedding model changed without a schema change | Restore `AUDIO_SEARCH_EMBEDDING_MODEL`, or change the schema and re-ingest |
 | Keyword search returns nothing for words that are clearly in the transcript | **Text search configuration mismatch**: the tsvector column and the query parser use different configs | Both must be `english`. Check with `SELECT to_tsvector('english','archived') @@ websearch_to_tsquery('english','archiving');` → `t` |
 | macOS prints `objc: Class AVF… is implemented in both …` | PyAV (faster-whisper) and Homebrew ffmpeg each bring their own libavdevice | Printed at import. It has not caused a failure so far, but macOS warns it *may*. See `PROGRESS.md` Known Issues. The pipeline decodes each file once and passes the waveform to both models, so the two decoders are never both used on a file |

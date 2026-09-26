@@ -120,11 +120,11 @@ semantic-split soft minimum and cap. **All ship at defaults** — change any
 of them only with a before/after measurement.
 
 
-**Next task:** Task 3 (scaffold, schema, ports, settings). Task 2 is Done (verify_env 6/6; the pyannote pipeline loads with the token). **Do not use the `AUDIO_SEARCH_ANSWER_*` / NVIDIA / OpenAI vars in the user's `.env`**: they are stretch item #1 and the gate is closed.
+**Next task:** **Phase 2, Task 4: the ingestion pipeline** (high-risk: alignment + chunking; read `PLAN.md` §6, §8, §9 and plan the edge cases before coding). Tasks 1–3 are Done: 78 tests pass, the DB is initialised, and the ports and settings exist in `src/`. Build order per §14: deterministic chunker → full pipeline end to end → semantic splitter → baseline. **Do not use the `AUDIO_SEARCH_ANSWER_*` / NVIDIA / OpenAI vars in the user's `.env`**: they are stretch item #1 and the gate is closed.
 
 
 **Do this next:**
-1. `source .venv/bin/activate`, then `python -m pytest` (expect 43 passed). **Before Task 4:** read `PROGRESS.md` Known
+1. `source .venv/bin/activate`, then `python -m pytest` (expect 78 passed; needs Postgres running). **Before Task 4:** read `PROGRESS.md` Known
    Issues. The duplicate-FFmpeg warning means ingestion should decode each file once.
    The embedder limit is 256 tokens, not 512.
 2. **Task 2** — set up the environment per `PLAN.md` §4A/§4B: `.venv/`,
