@@ -119,6 +119,18 @@ ALL CHECKS PASSED
 ```
 The exit code is 0 on success and 1 if any check fails.
 
+## 7b. Multilingual evaluation audio (optional, dev only)
+
+The translated es/hi/zh evaluation set (`dataset/multilingual/`, Task 17) ships as text. To create its audio:
+```bash
+brew install espeak-ng            # Linux: sudo apt install espeak-ng  (Spanish/Hindi phonemes)
+pip install -r requirements-dev.txt
+python scripts/synthesize_multilingual.py      # downloads Kokoro-82M (~330 MB, not gated); writes 18 WAVs
+python -m pytest tests/data/test_multilingual_dataset.py -q
+```
+If you change a translation (`dataset/multilingual/translations/`), run `python scripts/build_multilingual_dataset.py`
+and then re-synthesise that language with `--lang <code> --force`.
+
 ## 8. Troubleshooting
 
 | Symptom | Cause | Fix |

@@ -1,0 +1,401 @@
+{
+  "dataset": "Synthetic Two-Speaker Golden Audio Dataset — multilingual translations",
+  "audio_id": "audio_05_payment_idempotency_zh",
+  "source_audio_id": "audio_05_payment_idempotency",
+  "language": "zh",
+  "topic": "支付处理与幂等性",
+  "source_topic": "Payment Processing and Idempotency",
+  "duration_seconds": null,
+  "speakers": [
+    "SPEAKER_00",
+    "SPEAKER_01"
+  ],
+  "segments": [
+    {
+      "index": 0,
+      "speaker": "SPEAKER_00",
+      "text": "我们来设计一个支付服务，它负责刷卡扣款，而且绝不会重复扣客户的钱。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 1,
+      "speaker": "SPEAKER_01",
+      "text": "硬性要求是资金上的效果恰好发生一次，尽管网络只能给我们最多一次或者至少一次的保证。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 2,
+      "speaker": "SPEAKER_00",
+      "text": "对。客户端可能超时后重试，如果没有额外的帮助，我们根本无法区分这是一次重试，还是真正的第二次购买。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 3,
+      "speaker": "SPEAKER_01",
+      "text": "这个帮助就是幂等键。客户端为每一次逻辑上的支付尝试生成一个唯一的键，每次重试都带上它。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 4,
+      "speaker": "SPEAKER_00",
+      "text": "服务器把这个键和请求以及最终结果一起保存，这样同一个键再来时就返回原来的结果。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 5,
+      "speaker": "SPEAKER_01",
+      "text": "我们必须把键的作用域限定在账户内，否则一个客户可能猜到另一个客户的键，读取他的支付结果。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 6,
+      "speaker": "SPEAKER_00",
+      "text": "我们还应该对请求体做哈希并进行比较，这样同一个键带着不同参数过来时，就会被当作冲突拒绝。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 7,
+      "speaker": "SPEAKER_01",
+      "text": "这能发现客户端的错误，比如同一个键被复用在另一个金额上，否则系统会悄悄地返回错误的结果。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 8,
+      "speaker": "SPEAKER_00",
+      "text": "棘手的部分是并发。在第一次请求还在处理的时候，两个重试可能同时到达。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 9,
+      "speaker": "SPEAKER_01",
+      "text": "所以键的记录需要一个状态机。我们用唯一约束把它插入为处理中状态，竞争失败的一方要么等待，要么返回冲突。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 10,
+      "speaker": "SPEAKER_00",
+      "text": "我会返回四零九并附带重试提示，而不是阻塞等待，因为让请求一直挂着会占用资源。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 11,
+      "speaker": "SPEAKER_01",
+      "text": "然后当第一次请求完成时，我们把记录更新为成功或失败，并保存响应体。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 12,
+      "speaker": "SPEAKER_00",
+      "text": "那如果我们已经调用了支付处理方，却在记录结果之前崩溃了，这段时间怎么办？",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 13,
+      "speaker": "SPEAKER_01",
+      "text": "这就是经典的悬挂状态。我们必须在外部调用之前先写下意图，这样恢复程序就知道这次调用可能已经发生了。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 14,
+      "speaker": "SPEAKER_00",
+      "text": "所以顺序是：先持久化意图，再调用处理方，然后持久化结果。恢复程序会找出只有意图没有结果的记录，去做对账。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 15,
+      "speaker": "SPEAKER_01",
+      "text": "对账时用我们自己的参考标识去查询处理方，而这个标识正是为了这个目的，我们必须在对外调用时传过去。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 16,
+      "speaker": "SPEAKER_00",
+      "text": "这就是为什么每个处理方都支持商户参考号。它让我们可以直接问：这笔你是不是已经处理过了，而不用去猜。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 17,
+      "speaker": "SPEAKER_01",
+      "text": "而且我们绝不应该不先检查就盲目重试一笔对外扣款，因为那正是导致重复扣款的直接途径。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 18,
+      "speaker": "SPEAKER_00",
+      "text": "我们来明确地建模支付的生命周期。我会用已创建、已授权、已请款、失败、已退款和争议中这样的状态。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 19,
+      "speaker": "SPEAKER_01",
+      "text": "状态转换必须严格校验。失败的支付不能请款，从未请款的支付也不能退款。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 20,
+      "speaker": "SPEAKER_00",
+      "text": "把状态机存在数据库里并加上版本列，就能在状态转换上实现乐观并发控制。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 21,
+      "speaker": "SPEAKER_01",
+      "text": "版本检查意味着两个并发的工作进程不可能都从同一个起始状态把支付往前推进。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 22,
+      "speaker": "SPEAKER_00",
+      "text": "至于金额本身，我们用最小货币单位的整数来存储，绝不用浮点数。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 23,
+      "speaker": "SPEAKER_01",
+      "text": "完全同意。在金融代码里用浮点数做舍入，必然会产生分钱级的差异，审计人员一定会发现。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 24,
+      "speaker": "SPEAKER_00",
+      "text": "而且每个金额都带着货币代码，因为在多币种系统里，一个光秃秃的数字毫无意义。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 25,
+      "speaker": "SPEAKER_01",
+      "text": "我们来谈谈账本。支付状态是运营层面的，但会计上的事实应该是一个复式记账账本。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 26,
+      "speaker": "SPEAKER_00",
+      "text": "每一笔资金变动都写入借贷平衡的分录，账本只能追加，不能更新或删除。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 27,
+      "speaker": "SPEAKER_01",
+      "text": "更正通过记一笔冲销分录来完成，这样可以保留完整的历史，也让审计变得简单直接。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 28,
+      "speaker": "SPEAKER_00",
+      "text": "这种不可变性也很适合事件溯源的设计，当前余额就是这些分录的一个投影。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 29,
+      "speaker": "SPEAKER_01",
+      "text": "我们要注意保持投影的一致性。一个滞后的投影如果显示了过时的余额，就可能批准一笔透支。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 30,
+      "speaker": "SPEAKER_00",
+      "text": "做余额检查时，我们用强一致读直接读账本，而不是读一个最终一致的视图。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 31,
+      "speaker": "SPEAKER_01",
+      "text": "接下来是分布式事务的问题。一次购买会跨越不同的服务，涉及库存、支付和订单创建。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 32,
+      "speaker": "SPEAKER_00",
+      "text": "在服务边界之间做两阶段提交在这里并不现实，所以我们使用带补偿操作的 Saga。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 33,
+      "speaker": "SPEAKER_01",
+      "text": "由订单服务来编排。预留库存，扣款，确认订单，任何一步失败就反向执行补偿。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 34,
+      "speaker": "SPEAKER_00",
+      "text": "请款的补偿是退款，库存预留的补偿是释放。它们都不是真正的回滚。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 35,
+      "speaker": "SPEAKER_01",
+      "text": "这是思维方式上最关键的转变。Saga 提供的是带业务层面撤销的最终一致性，而不是原子性。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 36,
+      "speaker": "SPEAKER_00",
+      "text": "为了服务之间的可靠性，我们应该使用事务性发件箱模式，而不是直接发布事件。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 37,
+      "speaker": "SPEAKER_01",
+      "text": "也就是说，状态变更和要发出的事件写在同一个本地事务里，再由一个中继程序从发件箱发布出去。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 38,
+      "speaker": "SPEAKER_00",
+      "text": "这就消除了那种扣款已经提交、却在发布事件之前崩溃的故障模式。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 39,
+      "speaker": "SPEAKER_01",
+      "text": "然后消费者必须是幂等的，因为中继只保证至少一次投递，出现重复是正常的。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 40,
+      "speaker": "SPEAKER_00",
+      "text": "支付处理方发来的网络回调也有同样的特性。它们会频繁重试，而且可能乱序到达。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 41,
+      "speaker": "SPEAKER_01",
+      "text": "所以回调处理程序应该以事件标识为准做到幂等，并忽略那些让状态倒退的转换。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 42,
+      "speaker": "SPEAKER_00",
+      "text": "我们还需要验证回调的签名，因为这个接口是公网可访问的，攻击者可能伪造一个支付成功的事件。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 43,
+      "speaker": "SPEAKER_01",
+      "text": "我们再从更广的角度谈谈安全。我们绝不应该在自己的系统里保存原始卡号。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 44,
+      "speaker": "SPEAKER_00",
+      "text": "通过处理方做令牌化，可以让我们避开最严格的合规范围，我们手里只保存一个不透明的令牌。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 45,
+      "speaker": "SPEAKER_01",
+      "text": "我们还应该对敏感字段做静态加密，按角色限制访问，并记录每一次对支付数据的读取，以供审计。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 46,
+      "speaker": "SPEAKER_00",
+      "text": "在可观测性方面，我们需要每个处理方的成功率和延迟，并在失败率偏离基线时发出明确的告警。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 47,
+      "speaker": "SPEAKER_01",
+      "text": "拒付是正常现象，所以告警应该和历史规律做比较，而不是用一个固定阈值。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 48,
+      "speaker": "SPEAKER_00",
+      "text": "我们还应该支持多个处理方并能故障切换，否则单个处理方宕机就会让所有收入停摆。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 49,
+      "speaker": "SPEAKER_01",
+      "text": "在它们之间路由需要小心，因为一笔处理中的支付，在没有查询状态之前，绝不能换到另一个处理方去重试。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 50,
+      "speaker": "SPEAKER_00",
+      "text": "总结一下：限定作用域的幂等键加上请求指纹，外部调用之前先记录意图，以及通过商户参考号对账。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 51,
+      "speaker": "SPEAKER_01",
+      "text": "再加上经过校验的状态机、不可变的复式记账账本、带补偿的 Saga，以及用于事件的事务性发件箱。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 52,
+      "speaker": "SPEAKER_00",
+      "text": "贯穿始终的主题是，这里的正确性来自持久化的意图和幂等性，而不是分布式锁。",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 53,
+      "speaker": "SPEAKER_01",
+      "text": "没错。你没法让网络变得可靠，所以要让操作可以重复执行而不改变结果。",
+      "start": null,
+      "end": null
+    }
+  ],
+  "translation": {
+    "method": "LLM-drafted by the coding agent (session 2), segment-aligned; PENDING human verification (PLAN.md §7B). Proper nouns (Redis, Lua, WebSocket, RTMP, Feistel, Saga, API, URL) are kept in Latin script in every language.",
+    "source_reference": "reference_corrected/audio_05_payment_idempotency.json",
+    "source_reference_sha256": "a1fa2c1577666534131883ae4f68099094b9120ea37a858c9a15053ab77391ca",
+    "translation_file": "multilingual/translations/zh/audio_05_payment_idempotency.txt",
+    "translation_sha256": "af64edef9d91da0d5fb9427f906cb0f1d805b6e69fe22a84825f9cf0c83c19b4"
+  },
+  "synthesis": null
+}

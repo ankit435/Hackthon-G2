@@ -6,8 +6,9 @@ __pycache__/
 .pytest_cache/
 .claude/settings.local.json
 logs/
-*.wav
-.venv
-dataset/*.wav
-*.WAV
 .claude/worktrees/
+# Audio is ignored in general, EXCEPT the dataset: the brief requires the golden dataset in the repo
+# (user decision 2026-09-26). This includes the synthesised multilingual audio (Task 17 M8).
+*.wav
+*.WAV
+!dataset/**/*.wav

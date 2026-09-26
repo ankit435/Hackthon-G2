@@ -111,6 +111,18 @@ semantic-split soft minimum and cap. **All ship at defaults** — change any
 of them only with a before/after measurement.
 
 
+> **Session 3 update (2026-09-26, cloud branch `claude/upbeat-bell-4zoza6`).** **Multilingual support
+> is confirmed by the user and compulsory** (Task 17). Those `PLAN.md` / `MULTILINGUAL_UPDATE_PLAN.md` edits
+> were not "someone else's": they came from cloud session 2, were merged in PRs #1 and #2, and the user
+> answered Q21–Q24 (see `PROGRESS.md`). Session 3 built the **M8 translated dataset** in
+> `dataset/multilingual/`: es/hi/zh translations of 01–06, per-language QA, a manifest,
+> `scripts/build_multilingual_dataset.py`, `scripts/synthesize_multilingual.py` and
+> `tests/data/test_multilingual_dataset.py`.
+> **On the Mac, next:** (1) `pip install -r requirements-dev.txt` and `brew install espeak-ng`, then
+> `python scripts/synthesize_multilingual.py` (downloads Kokoro-82M, writes 18 WAVs plus exact timings), then
+> listen to one file per language. (2) Have a human review the translations (Known Issues). (3) Continue
+> Task 17 with M1/M3, then M4/M5, per `MULTILINGUAL_UPDATE_PLAN.md`.
+
 **⚠️ Two agents are active (user decision, 2026-09-26):** the external agent owns **Task 11** (`src/api/main.py`, `tests/unit/test_api.py`); the Claude Code agent owns **Task 17**. Task 17 is changing `SearchResultItem`/`AudioFile`/`Chunk` (a new `language` field), `settings.py`, `container.py`, the schema (a `language` column now, then `vector(1024)` and a per-row keyword config), and `postgres.py`. **The API must pass `language` through and must add no language or weight query parameters.** Commit only your own paths.
 
 **Next task:** Task 17 (multilingual, user-confirmed; checklist `MULTILINGUAL_UPDATE_PLAN.md`; step 1 baseline done) starting at M1. **Blocked on the user:** human verification of `dataset/queries/en.review.md` (Task 6). Primary misses so far: semantic recall (0.60/0.67). Diagnose them (Task 10) **after** the M4 embedder swap, since bge-m3 changes the semantic branch; compare English before/after. Run the eval with `python scripts/evaluate.py` or `pytest -m eval`. Task 4 is Done: the DB holds run 3 (313 chunks, word-level alignment). Re-ingest with `python scripts/ingest.py` (≈ 25 min, CPU-heavy). Old runs are snapshotted in `logs/chunks-run{1,2}-*.json` (gitignored). **Do not use the `AUDIO_SEARCH_ANSWER_*` / NVIDIA / OpenAI vars in the user's `.env`**: they are stretch item #1 and the gate is closed.

@@ -1,0 +1,50 @@
+Trabajemos en un feed de noticias social, del tipo en que un usuario abre la aplicación y ve publicaciones de las personas a las que sigue.
+La tensión central de este problema siempre es el fan out en escritura frente al fan out en lectura.
+Definámoslos con claridad. Fan out en escritura significa que, cuando alguien publica, insertamos de inmediato una referencia en el feed de cada seguidor.
+Y fan out en lectura significa que guardamos la publicación una sola vez y armamos el feed en el momento de la solicitud consultando a todos los que sigue quien la ve.
+El fan out en escritura hace que las lecturas sean extremadamente rápidas, lo que importa porque en este producto las lecturas dominan por un factor enorme.
+Pero la amplificación de escrituras es brutal para las cuentas con millones de seguidores. Una publicación se convierte en millones de inserciones.
+Y la mayoría de esas inserciones se desperdician, porque solo una pequeña fracción de los seguidores abrirá la aplicación antes de que la publicación quede vieja.
+Así que la respuesta estándar es un híbrido. Las cuentas normales hacen fan out en escritura, y las cuentas con muchos seguidores se mezclan en el momento de la lectura.
+Fijamos un umbral, quizá cien mil seguidores, por encima del cual una cuenta se marca como celebridad y se excluye del envío.
+En la lectura tomamos el feed precalculado, traemos las publicaciones recientes de las celebridades que sigue el usuario y combinamos las dos listas.
+La combinación es barata porque el conjunto de celebridades por usuario es pequeño, normalmente un puñado de cuentas.
+Deberíamos cachear de forma agresiva las líneas de tiempo de las celebridades, ya que millones de usuarios piden las mismas pocas líneas de tiempo de autores.
+Definamos el modelo de datos. Un registro de publicación contiene el autor, la referencia al contenido, la fecha de creación y la configuración de visibilidad.
+Y el feed en sí es una lista por usuario de identificadores de publicaciones con una puntuación de ranking, recortada a una longitud máxima.
+No guardamos el contenido de la publicación en el feed, solo referencias, así que una edición o un borrado surten efecto en todas partes de inmediato.
+La hidratación ocurre en el momento de la lectura, obteniendo en lote los objetos reales de las publicaciones desde el almacén de publicaciones o la caché.
+Eso también nos permite filtrar en la lectura. Los autores bloqueados, las publicaciones eliminadas y los cambios de privacidad se aplican durante la hidratación.
+Sin eso, una publicación eliminada permanecería en millones de feeds precalculados y tendríamos que perseguirla con borrados.
+Ahora el ranking. El feed más sencillo es el cronológico inverso, que es predecible y no necesita aprendizaje automático.
+Pero los feeds optimizados para la interacción puntúan cada candidato según la interacción prevista y luego ordenan por esa puntuación en lugar de por tiempo.
+El pipeline típico tiene tres etapas. Generación de candidatos, luego una pasada de ranking ligera y luego un modelo más pesado sobre los supervivientes.
+La generación de candidatos puede producir unos pocos miles de publicaciones, el ranking ligero las reduce a unos pocos cientos y el ranking pesado ordena la página final.
+Ese embudo por etapas es lo que mantiene la latencia aceptable, porque el modelo costoso solo ve un conjunto pequeño de candidatos.
+Las características incluirían la interacción pasada del usuario con el autor, la recencia, el tipo de contenido y las primeras señales de interacción con la publicación.
+También deberíamos aplicar reglas de diversidad después del ranking, para que el feed no muestre diez publicaciones seguidas del mismo autor.
+Y filtros de integridad, que eliminen el contenido que infringe las políticas o que el usuario ha silenciado explícitamente.
+Hablemos de la latencia de la ruta de servicio. Una solicitud de feed debería completarse en un par de cientos de milisegundos en el percentil noventa y nueve.
+Eso significa que la consulta del feed precalculado debe ser una sola lectura de caché, y la hidratación debe ser un único multi get en lote.
+La paginación necesita un cursor estable, porque si paginamos por desplazamiento la lista se mueve bajo el usuario a medida que llegan publicaciones nuevas.
+Un cursor que codifique la última posición vista y la instantánea del ranking evita duplicados y huecos al desplazarse.
+En la ruta de escritura, publicar debería ser rápido para el autor. Persistimos la publicación, confirmamos y luego hacemos el fan out de forma asíncrona.
+El worker de fan out lee la lista de seguidores y escribe en los almacenes de feeds por lotes, con contrapresión para que un pico no sature el clúster.
+Deberíamos dar prioridad primero a los seguidores activos, para que las personas que probablemente abran pronto la aplicación reciban la publicación antes que las cuentas inactivas.
+Es una buena optimización. Reduce drásticamente la latencia de fan out percibida aunque el fan out completo tarde minutos.
+De hecho, para los usuarios inactivos podríamos omitir el envío por completo y reconstruir su feed en la lectura cuando por fin vuelvan.
+Eso ahorra una cantidad enorme de volumen de escritura, ya que una gran fracción de las cuentas registradas está inactiva en un día cualquiera.
+En cuanto al almacenamiento, los feeds son pura caché. Siempre podemos reconstruirlos a partir de las publicaciones y del grafo de seguimiento si los perdemos.
+Así que podemos mantenerlos en memoria con una longitud acotada, digamos las pocas cientos de entradas más recientes, y reconstruirlos cuando falten.
+El grafo de seguimiento en sí debe poder recorrerse rápido, porque tanto el fan out como el armado en la lectura dependen de él.
+Guardamos seguidores y seguidos como listas de adyacencia separadas, porque las dos direcciones se consultan en rutas de código distintas.
+Para listas de seguidores muy grandes paginamos el recorrido, y el trabajo de fan out las procesa por bloques en lugar de cargarlas todas.
+Veamos el caso de arranque en frío. Un usuario completamente nuevo no sigue a nadie, así que su feed está vacío.
+Lo llenamos con contenido popular y temático según los intereses declarados, y pasamos poco a poco a contenido basado en el grafo a medida que sigue cuentas.
+Para la observabilidad, deberíamos medir la latencia del feed, la tasa de aciertos de la caché, el retraso del fan out y la fracción del feed que viene de la combinación en la lectura.
+El retraso del fan out es la métrica de salud clave. Si crece, los usuarios ven feeds desactualizados aunque técnicamente no haya nada roto.
+Deberíamos alertar por ese retraso y no por la profundidad de la cola de los workers, porque el retraso se corresponde directamente con la experiencia del usuario.
+En resumen, fan out híbrido con un umbral de celebridades, almacenamiento del feed solo con referencias, con hidratación y filtrado en la lectura.
+Además de un embudo de ranking por etapas, paginación basada en cursores, fan out priorizado por actividad y feeds tratados como caché reconstruible.
+Lo elegante es que el feed es desechable. Todo se puede reconstruir, lo que simplifica mucho la parte operativa.
+De acuerdo. Tratar los datos derivados como caché y no como fuente de verdad elimina toda una clase de problemas de consistencia.

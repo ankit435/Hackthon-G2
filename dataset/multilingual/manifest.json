@@ -1,0 +1,205 @@
+{
+  "name": "Multilingual evaluation set: translations of golden files 01-06",
+  "decision": "PLAN.md §7B Q21b: es, hi, zh translations of golden 01-06, segment-aligned",
+  "translation": "LLM-drafted by the coding agent (session 2), segment-aligned; PENDING human verification (PLAN.md §7B). Proper nouns (Redis, Lua, WebSocket, RTMP, Feistel, Saga, API, URL) are kept in Latin script in every language.",
+  "files": [
+    {
+      "audio_id": "audio_01_rate_limiter_es",
+      "source_audio_id": "audio_01_rate_limiter",
+      "language": "es",
+      "audio": "es/audio_01_rate_limiter_es.wav",
+      "reference": "es/audio_01_rate_limiter_es.json",
+      "segments": 56,
+      "duration_seconds": null,
+      "sha256": null,
+      "status": "pending_synthesis"
+    },
+    {
+      "audio_id": "audio_02_url_shortener_es",
+      "source_audio_id": "audio_02_url_shortener",
+      "language": "es",
+      "audio": "es/audio_02_url_shortener_es.wav",
+      "reference": "es/audio_02_url_shortener_es.json",
+      "segments": 52,
+      "duration_seconds": null,
+      "sha256": null,
+      "status": "pending_synthesis"
+    },
+    {
+      "audio_id": "audio_03_chat_system_es",
+      "source_audio_id": "audio_03_chat_system",
+      "language": "es",
+      "audio": "es/audio_03_chat_system_es.wav",
+      "reference": "es/audio_03_chat_system_es.json",
+      "segments": 51,
+      "duration_seconds": null,
+      "sha256": null,
+      "status": "pending_synthesis"
+    },
+    {
+      "audio_id": "audio_04_news_feed_es",
+      "source_audio_id": "audio_04_news_feed",
+      "language": "es",
+      "audio": "es/audio_04_news_feed_es.wav",
+      "reference": "es/audio_04_news_feed_es.json",
+      "segments": 50,
+      "duration_seconds": null,
+      "sha256": null,
+      "status": "pending_synthesis"
+    },
+    {
+      "audio_id": "audio_05_payment_idempotency_es",
+      "source_audio_id": "audio_05_payment_idempotency",
+      "language": "es",
+      "audio": "es/audio_05_payment_idempotency_es.wav",
+      "reference": "es/audio_05_payment_idempotency_es.json",
+      "segments": 54,
+      "duration_seconds": null,
+      "sha256": null,
+      "status": "pending_synthesis"
+    },
+    {
+      "audio_id": "audio_06_video_streaming_es",
+      "source_audio_id": "audio_06_video_streaming",
+      "language": "es",
+      "audio": "es/audio_06_video_streaming_es.wav",
+      "reference": "es/audio_06_video_streaming_es.json",
+      "segments": 50,
+      "duration_seconds": null,
+      "sha256": null,
+      "status": "pending_synthesis"
+    },
+    {
+      "audio_id": "audio_01_rate_limiter_hi",
+      "source_audio_id": "audio_01_rate_limiter",
+      "language": "hi",
+      "audio": "hi/audio_01_rate_limiter_hi.wav",
+      "reference": "hi/audio_01_rate_limiter_hi.json",
+      "segments": 56,
+      "duration_seconds": null,
+      "sha256": null,
+      "status": "pending_synthesis"
+    },
+    {
+      "audio_id": "audio_02_url_shortener_hi",
+      "source_audio_id": "audio_02_url_shortener",
+      "language": "hi",
+      "audio": "hi/audio_02_url_shortener_hi.wav",
+      "reference": "hi/audio_02_url_shortener_hi.json",
+      "segments": 52,
+      "duration_seconds": null,
+      "sha256": null,
+      "status": "pending_synthesis"
+    },
+    {
+      "audio_id": "audio_03_chat_system_hi",
+      "source_audio_id": "audio_03_chat_system",
+      "language": "hi",
+      "audio": "hi/audio_03_chat_system_hi.wav",
+      "reference": "hi/audio_03_chat_system_hi.json",
+      "segments": 51,
+      "duration_seconds": null,
+      "sha256": null,
+      "status": "pending_synthesis"
+    },
+    {
+      "audio_id": "audio_04_news_feed_hi",
+      "source_audio_id": "audio_04_news_feed",
+      "language": "hi",
+      "audio": "hi/audio_04_news_feed_hi.wav",
+      "reference": "hi/audio_04_news_feed_hi.json",
+      "segments": 50,
+      "duration_seconds": null,
+      "sha256": null,
+      "status": "pending_synthesis"
+    },
+    {
+      "audio_id": "audio_05_payment_idempotency_hi",
+      "source_audio_id": "audio_05_payment_idempotency",
+      "language": "hi",
+      "audio": "hi/audio_05_payment_idempotency_hi.wav",
+      "reference": "hi/audio_05_payment_idempotency_hi.json",
+      "segments": 54,
+      "duration_seconds": null,
+      "sha256": null,
+      "status": "pending_synthesis"
+    },
+    {
+      "audio_id": "audio_06_video_streaming_hi",
+      "source_audio_id": "audio_06_video_streaming",
+      "language": "hi",
+      "audio": "hi/audio_06_video_streaming_hi.wav",
+      "reference": "hi/audio_06_video_streaming_hi.json",
+      "segments": 50,
+      "duration_seconds": null,
+      "sha256": null,
+      "status": "pending_synthesis"
+    },
+    {
+      "audio_id": "audio_01_rate_limiter_zh",
+      "source_audio_id": "audio_01_rate_limiter",
+      "language": "zh",
+      "audio": "zh/audio_01_rate_limiter_zh.wav",
+      "reference": "zh/audio_01_rate_limiter_zh.json",
+      "segments": 56,
+      "duration_seconds": null,
+      "sha256": null,
+      "status": "pending_synthesis"
+    },
+    {
+      "audio_id": "audio_02_url_shortener_zh",
+      "source_audio_id": "audio_02_url_shortener",
+      "language": "zh",
+      "audio": "zh/audio_02_url_shortener_zh.wav",
+      "reference": "zh/audio_02_url_shortener_zh.json",
+      "segments": 52,
+      "duration_seconds": null,
+      "sha256": null,
+      "status": "pending_synthesis"
+    },
+    {
+      "audio_id": "audio_03_chat_system_zh",
+      "source_audio_id": "audio_03_chat_system",
+      "language": "zh",
+      "audio": "zh/audio_03_chat_system_zh.wav",
+      "reference": "zh/audio_03_chat_system_zh.json",
+      "segments": 51,
+      "duration_seconds": null,
+      "sha256": null,
+      "status": "pending_synthesis"
+    },
+    {
+      "audio_id": "audio_04_news_feed_zh",
+      "source_audio_id": "audio_04_news_feed",
+      "language": "zh",
+      "audio": "zh/audio_04_news_feed_zh.wav",
+      "reference": "zh/audio_04_news_feed_zh.json",
+      "segments": 50,
+      "duration_seconds": null,
+      "sha256": null,
+      "status": "pending_synthesis"
+    },
+    {
+      "audio_id": "audio_05_payment_idempotency_zh",
+      "source_audio_id": "audio_05_payment_idempotency",
+      "language": "zh",
+      "audio": "zh/audio_05_payment_idempotency_zh.wav",
+      "reference": "zh/audio_05_payment_idempotency_zh.json",
+      "segments": 54,
+      "duration_seconds": null,
+      "sha256": null,
+      "status": "pending_synthesis"
+    },
+    {
+      "audio_id": "audio_06_video_streaming_zh",
+      "source_audio_id": "audio_06_video_streaming",
+      "language": "zh",
+      "audio": "zh/audio_06_video_streaming_zh.wav",
+      "reference": "zh/audio_06_video_streaming_zh.json",
+      "segments": 50,
+      "duration_seconds": null,
+      "sha256": null,
+      "status": "pending_synthesis"
+    }
+  ]
+}

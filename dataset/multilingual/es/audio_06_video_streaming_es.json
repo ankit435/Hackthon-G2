@@ -1,0 +1,373 @@
+{
+  "dataset": "Synthetic Two-Speaker Golden Audio Dataset — multilingual translations",
+  "audio_id": "audio_06_video_streaming_es",
+  "source_audio_id": "audio_06_video_streaming",
+  "language": "es",
+  "topic": "Pipeline de streaming y entrega de vídeo",
+  "source_topic": "Video Streaming and Delivery Pipeline",
+  "duration_seconds": null,
+  "speakers": [
+    "SPEAKER_00",
+    "SPEAKER_01"
+  ],
+  "segments": [
+    {
+      "index": 0,
+      "speaker": "SPEAKER_00",
+      "text": "Diseñemos una plataforma de vídeo que cubra la subida, el procesamiento y la reproducción a gran escala.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 1,
+      "speaker": "SPEAKER_01",
+      "text": "Yo la dividiría en tres sistemas bastante independientes. La ingesta, el pipeline de transcodificación y la ruta de entrega.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 2,
+      "speaker": "SPEAKER_00",
+      "text": "Empezando por la subida, los archivos grandes sobre redes poco fiables implican que necesitamos subidas reanudables y por partes.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 3,
+      "speaker": "SPEAKER_01",
+      "text": "El cliente solicita una sesión de subida, divide el archivo en partes, sube cada parte de forma independiente y reintenta solo las partes que fallan.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 4,
+      "speaker": "SPEAKER_00",
+      "text": "La subida directa al almacenamiento con una URL prefirmada mantiene los bytes del archivo completamente fuera de nuestros servidores de aplicación.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 5,
+      "speaker": "SPEAKER_01",
+      "text": "Eso es importante. Hacer pasar archivos de varios gigabytes por los nodos de aplicación desperdicia ancho de banda y ocupa conexiones durante mucho tiempo.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 6,
+      "speaker": "SPEAKER_00",
+      "text": "Cuando llegan todas las partes, el almacenamiento ensambla el objeto y emitimos un evento que pone en marcha el procesamiento.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 7,
+      "speaker": "SPEAKER_01",
+      "text": "El pipeline de procesamiento es donde está la mayor parte de la complejidad. Necesitamos varias versiones con distintas resoluciones y tasas de bits.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 8,
+      "speaker": "SPEAKER_00",
+      "text": "El streaming de tasa de bits adaptativa requiere una escalera, quizá de doscientos cuarenta p hasta cuatro K, cada una codificada con una tasa de bits adecuada.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 9,
+      "speaker": "SPEAKER_01",
+      "text": "Y cada versión se divide en fragmentos cortos, normalmente de dos a seis segundos, con un manifiesto que enumera las variantes disponibles.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 10,
+      "speaker": "SPEAKER_00",
+      "text": "El reproductor cambia entonces de versión en mitad de la reproducción según el rendimiento medido y el nivel del búfer.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 11,
+      "speaker": "SPEAKER_01",
+      "text": "Ese cambio solo funciona si los segmentos están alineados entre versiones, con fotogramas clave en marcas de tiempo idénticas.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 12,
+      "speaker": "SPEAKER_00",
+      "text": "Exacto. Los fotogramas clave desalineados provocan fallos visibles o cambios fallidos, así que el codificador debe configurarse con un intervalo fijo de fotogramas clave.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 13,
+      "speaker": "SPEAKER_01",
+      "text": "Para la transcodificación en sí, deberíamos paralelizar dividiendo el original en segmentos y codificándolos de forma independiente.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 14,
+      "speaker": "SPEAKER_00",
+      "text": "Eso convierte un trabajo largo y secuencial en uno amplio y paralelo, así que una película de dos horas puede procesarse en minutos con suficientes workers.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 15,
+      "speaker": "SPEAKER_01",
+      "text": "Necesitamos un orquestador de trabajos con un grafo dirigido de tareas, ya que la extracción de miniaturas, el procesamiento del audio y cada versión pueden ejecutarse a la vez.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 16,
+      "speaker": "SPEAKER_00",
+      "text": "Los reintentos deben ser idempotentes a nivel de segmento, así que un worker que falla solo implica volver a codificar ese segmento.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 17,
+      "speaker": "SPEAKER_01",
+      "text": "También deberíamos priorizar. Un clip corto de un creador popular no debería esperar detrás de una subida de cuatro horas en la misma cola.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 18,
+      "speaker": "SPEAKER_00",
+      "text": "Tener varias colas según la duración prevista y el nivel de la cuenta resuelve casi todo eso, además de un carril aparte para los trabajos de reprocesamiento.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 19,
+      "speaker": "SPEAKER_01",
+      "text": "El control de costes importa muchísimo aquí, porque la transcodificación consume mucho cómputo y suele ser la partida más grande.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 20,
+      "speaker": "SPEAKER_00",
+      "text": "Así que deberíamos codificar la escalera completa de forma perezosa para el contenido poco popular, generando por adelantado solo la versión más común.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 21,
+      "speaker": "SPEAKER_01",
+      "text": "Luego, si un vídeo gana tracción, completamos las demás versiones bajo demanda, lo que evita pagar por contenido que nadie ve.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 22,
+      "speaker": "SPEAKER_00",
+      "text": "Las instancias spot o interrumpibles también encajan bien con esta carga de trabajo, porque los reintentos a nivel de segmento hacen que una interrupción sea barata.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 23,
+      "speaker": "SPEAKER_01",
+      "text": "Pasemos a la entrega. La red de distribución de contenidos hace el trabajo pesado, sirviendo los segmentos desde ubicaciones en el borde cercanas al espectador.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 24,
+      "speaker": "SPEAKER_00",
+      "text": "Nuestro origen solo ve los fallos de caché, así que la flota de origen puede ser pequeña en relación con el ancho de banda total entregado.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 25,
+      "speaker": "SPEAKER_01",
+      "text": "La tasa de aciertos de la caché es la métrica que hay que vigilar obsesivamente. Unos pocos puntos porcentuales de fallos se traducen en grandes costes de origen.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 26,
+      "speaker": "SPEAKER_00",
+      "text": "Las URL de los segmentos deberían ser estables e inmutables, lo que las hace perfectamente cacheables con un tiempo de vida muy largo.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 27,
+      "speaker": "SPEAKER_01",
+      "text": "Los manifiestos son distintos. En el contenido en directo el manifiesto se actualiza constantemente y necesita una vida en caché muy corta.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 28,
+      "speaker": "SPEAKER_00",
+      "text": "Esa separación, segmentos inmutables y manifiestos volátiles, es la idea central de la caché para el streaming.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 29,
+      "speaker": "SPEAKER_01",
+      "text": "Para el control de acceso usamos URL firmadas con caducidad corta, de modo que un enlace filtrado deja de funcionar rápidamente.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 30,
+      "speaker": "SPEAKER_00",
+      "text": "Y para el contenido premium, gestión de derechos digitales con servidores de licencias, aunque eso añade una complejidad considerable en el cliente.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 31,
+      "speaker": "SPEAKER_01",
+      "text": "También deberíamos pensar en el preposicionamiento. Para un estreno muy esperado podemos enviar el contenido a los bordes antes del lanzamiento.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 32,
+      "speaker": "SPEAKER_00",
+      "text": "Si no, la primera ola de espectadores falla en la caché al mismo tiempo y machaca el origen justo en el peor momento.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 33,
+      "speaker": "SPEAKER_01",
+      "text": "Hablemos del streaming en directo, que cambia varias suposiciones.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 34,
+      "speaker": "SPEAKER_00",
+      "text": "La ingesta es un flujo continuo en lugar de un archivo, usando un protocolo como RTMP o una variante de baja latencia.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 35,
+      "speaker": "SPEAKER_01",
+      "text": "La transcodificación tiene que ocurrir en tiempo real, así que no podemos paralelizar dividiendo el archivo. En su lugar paralelizamos entre versiones.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 36,
+      "speaker": "SPEAKER_00",
+      "text": "Y la latencia pasa a ser un requisito de primera clase. El streaming segmentado estándar añade de diez a treinta segundos de retraso.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 37,
+      "speaker": "SPEAKER_01",
+      "text": "Los modos de baja latencia usan segmentos más cortos y transferencia por fragmentos, enviando segmentos parciales antes de que estén completos.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 38,
+      "speaker": "SPEAKER_00",
+      "text": "Eso reduce la latencia a unos pocos segundos, a costa de una caché menos eficiente y más solicitudes por espectador.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 39,
+      "speaker": "SPEAKER_01",
+      "text": "También necesitamos una ruta de conmutación por error para la ingesta, porque una conexión del codificador que se cae significa silencio para todos los espectadores.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 40,
+      "speaker": "SPEAKER_00",
+      "text": "La doble ingesta desde el emisor hacia dos regiones, con conmutación automática, es la respuesta estándar para los eventos importantes.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 41,
+      "speaker": "SPEAKER_01",
+      "text": "En el lado de la reproducción necesitamos telemetría del cliente para entender la calidad real, no solo métricas del lado del servidor.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 42,
+      "speaker": "SPEAKER_00",
+      "text": "El tiempo de arranque, la proporción de rebuffering, la tasa de bits media y los fallos de reproducción son los cuatro números que realmente describen la experiencia.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 43,
+      "speaker": "SPEAKER_01",
+      "text": "La proporción de rebuffering es la que más notan los usuarios. Una tasa de bits un poco más baja casi siempre es mejor que un parón.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 44,
+      "speaker": "SPEAKER_00",
+      "text": "Por eso el algoritmo de adaptación del reproductor debería ser conservador al subir y agresivo al bajar.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 45,
+      "speaker": "SPEAKER_01",
+      "text": "Para el almacenamiento, guardamos el máster original para reprocesar, además de todas las versiones, lo que multiplica bastante el espacio ocupado.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 46,
+      "speaker": "SPEAKER_00",
+      "text": "Deberíamos escalonar ese almacenamiento. Los másteres van a almacenamiento de archivo en frío, y las versiones poco populares pueden borrarse y regenerarse si hace falta.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 47,
+      "speaker": "SPEAKER_01",
+      "text": "En resumen, subidas reanudables directas al almacenamiento, transcodificación paralela por segmentos con generación perezosa de la escalera y entrega en el borde con segmentos inmutables.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 48,
+      "speaker": "SPEAKER_00",
+      "text": "Además de acceso firmado, preposicionamiento para los lanzamientos, una ruta aparte en tiempo real para el directo y telemetría de calidad en el cliente.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 49,
+      "speaker": "SPEAKER_01",
+      "text": "La economía determina la mayoría de las decisiones aquí. El cómputo de transcodificación y el ancho de banda de salida dominan, así que la arquitectura sigue al coste.",
+      "start": null,
+      "end": null
+    }
+  ],
+  "translation": {
+    "method": "LLM-drafted by the coding agent (session 2), segment-aligned; PENDING human verification (PLAN.md §7B). Proper nouns (Redis, Lua, WebSocket, RTMP, Feistel, Saga, API, URL) are kept in Latin script in every language.",
+    "source_reference": "reference_corrected/audio_06_video_streaming.json",
+    "source_reference_sha256": "067286ca9d1634707f4940ca6e9a6414ff41a7e18148db57258d109ab209e745",
+    "translation_file": "multilingual/translations/es/audio_06_video_streaming.txt",
+    "translation_sha256": "3c5d3b72cb7bf9196eaee3e4299ea20b0cc2e17e7fef90b5f1814c9c043eda65"
+  },
+  "synthesis": null
+}

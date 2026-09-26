@@ -1,0 +1,415 @@
+{
+  "dataset": "Synthetic Two-Speaker Golden Audio Dataset — multilingual translations",
+  "audio_id": "audio_01_rate_limiter_es",
+  "source_audio_id": "audio_01_rate_limiter",
+  "language": "es",
+  "topic": "Limitador de tasa distribuido",
+  "source_topic": "Distributed Rate Limiter",
+  "duration_seconds": null,
+  "speakers": [
+    "SPEAKER_00",
+    "SPEAKER_01"
+  ],
+  "segments": [
+    {
+      "index": 0,
+      "speaker": "SPEAKER_00",
+      "text": "Diseñemos un limitador de tasa distribuido para una API pública.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 1,
+      "speaker": "SPEAKER_01",
+      "text": "El primer requisito es cien solicitudes por minuto para cada cliente normal, y también necesitamos un nivel superior para los socios que han firmado un contrato con nosotros.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 2,
+      "speaker": "SPEAKER_00",
+      "text": "Entonces necesitamos al menos dos niveles de política. ¿Aplicamos el límite por la clave de API, por la identidad del usuario o por la dirección IP de origen?",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 3,
+      "speaker": "SPEAKER_01",
+      "text": "Yo lo aplicaría por la clave de API como identidad principal, y recurriría a la dirección IP solo para los endpoints no autenticados, como el inicio de sesión y el restablecimiento de contraseña.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 4,
+      "speaker": "SPEAKER_00",
+      "text": "Tiene sentido. Limitar solo por IP falla gravemente detrás de un NAT corporativo, donde miles de usuarios comparten una única dirección de salida.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 5,
+      "speaker": "SPEAKER_01",
+      "text": "Exacto, y también falla con los operadores móviles. Una sola pasarela de operador puede dar servicio a una población enorme, así que castigaríamos tráfico legítimo.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 6,
+      "speaker": "SPEAKER_00",
+      "text": "Hablemos del algoritmo. El punto de partida obvio es un contador de ventana fija, un contador por clave y por minuto.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 7,
+      "speaker": "SPEAKER_01",
+      "text": "Las ventanas fijas son baratas y fáciles de razonar, pero permiten una ráfaga del doble del límite en el borde de la ventana.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 8,
+      "speaker": "SPEAKER_00",
+      "text": "Exactamente. Un cliente puede enviar cien solicitudes en el último segundo de un minuto y otras cien en el primer segundo del siguiente.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 9,
+      "speaker": "SPEAKER_01",
+      "text": "Para una API pública eso es un problema real, porque el backend recibe doscientas solicitudes en un intervalo de dos segundos aunque la política diga cien por minuto.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 10,
+      "speaker": "SPEAKER_00",
+      "text": "El registro de ventana deslizante lo resuelve con precisión. Guardamos una marca de tiempo por cada solicitud y contamos las entradas de los últimos sesenta segundos.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 11,
+      "speaker": "SPEAKER_01",
+      "text": "Preciso, pero caro. Para una clave que hace cien solicitudes por minuto guardamos cien marcas de tiempo, y la memoria crece linealmente con el tráfico.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 12,
+      "speaker": "SPEAKER_00",
+      "text": "Así que el término medio práctico es el contador de ventana deslizante, donde combinamos la ventana anterior y la actual mediante una media ponderada.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 13,
+      "speaker": "SPEAKER_01",
+      "text": "Eso nos da precisión dentro de un pequeño margen de error guardando solo dos enteros por clave, lo cual es un buen compromiso para una API de alto volumen.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 14,
+      "speaker": "SPEAKER_00",
+      "text": "También está el cubo de tokens, que me gusta porque expresa la capacidad de ráfaga como un concepto de primera clase.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 15,
+      "speaker": "SPEAKER_01",
+      "text": "De acuerdo. El cubo contiene un número máximo de tokens, los tokens se recargan a un ritmo constante y una solicitud solo se permite si puede retirar un token.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 16,
+      "speaker": "SPEAKER_00",
+      "text": "Así que un cliente que ha estado inactivo acumula tokens y puede enviar una ráfaga corta, que suele ser justo lo que quieren los consumidores de la API.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 17,
+      "speaker": "SPEAKER_01",
+      "text": "Deberíamos limitar el cubo para que los clientes inactivos no acumulen una ráfaga ilimitada. Una capacidad de cien con una recarga de uno coma sesenta y siete tokens por segundo coincide con nuestra política.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 18,
+      "speaker": "SPEAKER_00",
+      "text": "Pasemos a la parte distribuida. Vamos a ejecutar muchos nodos de pasarela de API sin estado, así que el contador no puede vivir en la memoria local.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 19,
+      "speaker": "SPEAKER_01",
+      "text": "Si cada nodo mantiene su propio contador, con diez nodos un cliente obtiene en la práctica diez veces el límite, suponiendo que el balanceador de carga reparte el tráfico de forma uniforme.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 20,
+      "speaker": "SPEAKER_00",
+      "text": "Así que necesitamos estado compartido. La opción estándar es Redis, con la clave formada por el identificador del cliente y la ventana, usando operaciones de incremento atómicas.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 21,
+      "speaker": "SPEAKER_01",
+      "text": "Deberíamos hacer toda la comprobación y el decremento dentro de un único script de Lua, para que la lectura, la comparación y la escritura sean atómicas en el lado de Redis.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 22,
+      "speaker": "SPEAKER_00",
+      "text": "Eso evita la condición de carrera clásica en la que dos nodos de pasarela leen noventa y nueve y ambos deciden permitir la solicitud.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 23,
+      "speaker": "SPEAKER_01",
+      "text": "Para el cubo de tokens, el script calcularía el tiempo transcurrido desde la última recarga, sumaría los tokens ganados, los limitaría a la capacidad y luego intentaría gastar uno.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 24,
+      "speaker": "SPEAKER_00",
+      "text": "Guardamos el número de tokens y la marca de tiempo de la última recarga en un único hash, así que un solo viaje de ida y vuelta toma toda la decisión.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 25,
+      "speaker": "SPEAKER_01",
+      "text": "Aquí importa el presupuesto de latencia. Cada solicitud paga este coste, así que queremos que la llamada a Redis se mantenga en pocos milisegundos.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 26,
+      "speaker": "SPEAKER_00",
+      "text": "Eso significa que el clúster de Redis debería estar en la misma región e idealmente en el mismo grupo de zonas de disponibilidad que la flota de pasarelas.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 27,
+      "speaker": "SPEAKER_01",
+      "text": "También deberíamos particionar por clave para que un cliente muy activo no concentre toda la carga en un único primario de Redis.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 28,
+      "speaker": "SPEAKER_00",
+      "text": "Redis Cluster aplica un hash a la clave para asignarla a una ranura, así que mientras nuestro espacio de claves sea amplio, la distribución queda equilibrada de forma natural.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 29,
+      "speaker": "SPEAKER_01",
+      "text": "Pero un único cliente abusivo sigue siendo una única clave, y una única clave siempre cae en un único nodo. Ese es nuestro problema de clave caliente.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 30,
+      "speaker": "SPEAKER_00",
+      "text": "Para ese caso podemos particionar el propio contador, repartiendo el límite entre unos pocos subcontadores y eligiendo uno al azar en cada solicitud.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 31,
+      "speaker": "SPEAKER_01",
+      "text": "Eso reduce la contención a costa de algo de precisión, porque los subcontadores se desvían y uno puede agotarse antes que los demás.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 32,
+      "speaker": "SPEAKER_00",
+      "text": "Otra opción para tráfico extremo es un modelo de asignación local de tokens, en el que cada nodo de pasarela alquila una porción del presupuesto a Redis.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 33,
+      "speaker": "SPEAKER_01",
+      "text": "Así que un nodo pide diez tokens a la vez, los sirve localmente sin ninguna llamada de red y vuelve a pedir más cuando el alquiler se está agotando.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 34,
+      "speaker": "SPEAKER_00",
+      "text": "Eso reduce la tasa de llamadas a Redis en un orden de magnitud, y la pérdida de precisión está acotada por los alquileres sin gastar en el momento de una ráfaga.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 35,
+      "speaker": "SPEAKER_01",
+      "text": "Hablemos del manejo de fallos. ¿Qué pasa cuando Redis no está disponible o es más lento que nuestro tiempo de espera?",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 36,
+      "speaker": "SPEAKER_00",
+      "text": "Necesitamos una política explícita. Fallar abierto significa permitir el tráfico y proteger la disponibilidad. Fallar cerrado significa rechazar y proteger el backend.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 37,
+      "speaker": "SPEAKER_01",
+      "text": "Para una API pública yo fallaría abierto en los endpoints normales, pero fallaría cerrado en los costosos o sensibles, como la creación de cuentas y la exportación masiva.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 38,
+      "speaker": "SPEAKER_00",
+      "text": "También deberíamos degradar a un limitador local en memoria cuando el almacén compartido esté caído, para que siga habiendo algún techo en lugar de ninguno.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 39,
+      "speaker": "SPEAKER_01",
+      "text": "Bien. El respaldo local debería usar un límite conservador, ya que cada nodo lo aplica de forma independiente y el total efectivo se multiplica por el tamaño de la flota.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 40,
+      "speaker": "SPEAKER_00",
+      "text": "Ahora el contrato de respuesta. Al rechazar devolvemos el estado cuatrocientos veintinueve, demasiadas solicitudes, con una cabecera Retry-After.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 41,
+      "speaker": "SPEAKER_01",
+      "text": "Y en cada respuesta deberíamos incluir el límite, la cuota restante y la marca de tiempo de reinicio, para que los clientes bien comportados puedan regular su ritmo.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 42,
+      "speaker": "SPEAKER_00",
+      "text": "Esas cabeceras convierten el limitador de tasa de un castigo en un protocolo. Los clientes pueden reducir el ritmo de forma proactiva en lugar de insistir y quedar bloqueados.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 43,
+      "speaker": "SPEAKER_01",
+      "text": "También deberíamos recomendar un retroceso exponencial con variación aleatoria en la documentación para clientes; si no, todos los clientes rechazados reintentan en el mismo instante de reinicio.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 44,
+      "speaker": "SPEAKER_00",
+      "text": "Esa tormenta de reintentos sincronizados es un modo de fallo real. La variación aleatoria reparte el tráfico de recuperación en lugar de crear un segundo pico.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 45,
+      "speaker": "SPEAKER_01",
+      "text": "¿Y la configuración de reglas? Yo mantendría las políticas en un plano de control y las enviaría a las pasarelas, en lugar de codificarlas de forma fija.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 46,
+      "speaker": "SPEAKER_00",
+      "text": "Sí, un servicio de políticas con reglas versionadas, para poder cambiar el nivel de un socio sin un despliegue. Las pasarelas guardan las reglas en caché y las actualizan periódicamente.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 47,
+      "speaker": "SPEAKER_01",
+      "text": "También deberíamos admitir excepciones por endpoint. Un endpoint de lectura barato y un endpoint de búsqueda caro no deberían compartir el mismo presupuesto.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 48,
+      "speaker": "SPEAKER_00",
+      "text": "Un modelo de coste ponderado resuelve eso bien. Una solicitud de búsqueda gasta cinco tokens mientras que una lectura simple gasta uno.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 49,
+      "speaker": "SPEAKER_01",
+      "text": "Para la observabilidad necesitamos métricas de solicitudes permitidas y rechazadas por nivel, las claves más rechazadas y la latencia del propio limitador.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 50,
+      "speaker": "SPEAKER_00",
+      "text": "Deberíamos alertar cuando la tasa de rechazo supere un umbral, porque eso suele significar un ataque o un cliente que ha publicado un bucle defectuoso.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 51,
+      "speaker": "SPEAKER_01",
+      "text": "Otra preocupación más es el multirregión. Si un cliente puede llegar a dos regiones, ¿aplicamos un límite global o un límite por región?",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 52,
+      "speaker": "SPEAKER_00",
+      "text": "Las comprobaciones síncronas entre regiones añadirían decenas de milisegundos, así que yo aplicaría presupuestos por región y conciliaría de forma asíncrona para la facturación.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 53,
+      "speaker": "SPEAKER_01",
+      "text": "Es un compromiso razonable. El limitador protege la capacidad, que de todos modos es regional, y el recuento global exacto solo importa para el contrato.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 54,
+      "speaker": "SPEAKER_00",
+      "text": "Así que, en resumen, cubo de tokens en Redis con scripts de Lua atómicos, alquileres locales para las claves calientes, una política explícita de fallar abierto y cabeceras estándar.",
+      "start": null,
+      "end": null
+    },
+    {
+      "index": 55,
+      "speaker": "SPEAKER_01",
+      "text": "Además de un plano de control de políticas versionadas, costes ponderados por endpoint y aplicación por región. Creo que eso cubre el diseño de principio a fin.",
+      "start": null,
+      "end": null
+    }
+  ],
+  "translation": {
+    "method": "LLM-drafted by the coding agent (session 2), segment-aligned; PENDING human verification (PLAN.md §7B). Proper nouns (Redis, Lua, WebSocket, RTMP, Feistel, Saga, API, URL) are kept in Latin script in every language.",
+    "source_reference": "reference_corrected/audio_01_rate_limiter.json",
+    "source_reference_sha256": "07e7d3754239e3951e29cf1b6be7edaf370d852e3662cdcb34c0e5d324d09556",
+    "translation_file": "multilingual/translations/es/audio_01_rate_limiter.txt",
+    "translation_sha256": "4d16ba4b3b4deb8e55ab962b9fcf6152eda6d28bf07928241870ca14789a71d2"
+  },
+  "synthesis": null
+}
