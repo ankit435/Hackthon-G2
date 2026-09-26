@@ -77,8 +77,8 @@ baseline. The first ingest downloads model weights: Whisper `large-v3-turbo` is
 | `AUDIO_SEARCH_RRF_K` | `60` | Higher values flatten rank differences; lower values let the top ranks dominate. Change only with a before/after measurement |
 | `AUDIO_SEARCH_FUSION_WEIGHT_KEYWORD` | `1.0` | Scales the keyword branch's contribution `w / (k + rank)`. `0.0` disables the branch (diagnostic; logs WARNING). Negative values are rejected |
 | `AUDIO_SEARCH_FUSION_WEIGHT_SEMANTIC` | `1.0` | Same, for the semantic branch. **1.0 / 1.0 is the permanent measured baseline** |
-| `AUDIO_SEARCH_CANDIDATE_DEPTH_MULTIPLIER` | _set in Task 5_ | Each branch fetches `top_k × multiplier` candidates. Top-K is cut only after fusion |
-| `AUDIO_SEARCH_HNSW_EF_SEARCH` | `40` | Higher improves vector recall at the cost of latency. No reindex needed |
+| `AUDIO_SEARCH_CANDIDATE_DEPTH_MULTIPLIER` | `5` | Each branch fetches `top_k × multiplier` candidates (50 at top_k 10). Top-K is cut only after fusion. Deeper lists let fusion see more cross-branch agreement at a small latency cost |
+| `AUDIO_SEARCH_HNSW_EF_SEARCH` | `40` | Higher improves vector recall at the cost of latency. No reindex needed. Branch depth is guaranteed separately: the repository enables pgvector's iterative HNSW scan (`strict_order`), because a plain scan can silently return fewer rows than requested |
 | `AUDIO_SEARCH_SPLIT_SOFT_MIN_SECONDS` / `AUDIO_SEARCH_SPLIT_CAP_SECONDS` | `20` / `45` | Semantic split window for long turns. Chunks must stay under the embedder's **256-token** limit |
 
 The weights are **configuration only**. `/search` accepts no weight parameters.

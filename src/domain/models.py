@@ -46,6 +46,15 @@ class SpeakerTurn:
 
 
 @dataclass(frozen=True)
+class AlignedSegment:
+    """A transcript segment with its speaker. `speaker` is never empty (PLAN.md §6.4)."""
+    start: float
+    end: float
+    text: str
+    speaker: str
+
+
+@dataclass(frozen=True)
 class AudioFile:
     file_name: str
     file_path: str

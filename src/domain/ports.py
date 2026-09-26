@@ -42,6 +42,15 @@ class Embedder(Protocol):
     @property
     def dimension(self) -> int: ...
 
+    @property
+    def max_tokens(self) -> int:
+        """Input beyond this many tokens is silently truncated by the model."""
+        ...
+
+    def count_tokens(self, text: str) -> int:
+        """Tokens as the model sees them, special tokens included."""
+        ...
+
     async def embed(self, texts: Sequence[str]) -> list[list[float]]:
         """One batched call; output order matches input order. Raises EmbeddingError."""
         ...

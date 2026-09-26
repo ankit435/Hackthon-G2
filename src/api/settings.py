@@ -9,6 +9,7 @@ import logging
 from pathlib import Path
 
 from pydantic import AliasChoices, Field, ValidationError, field_validator, model_validator
+from pydantic_core import PydanticUseDefault
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from domain.errors import ConfigurationError
@@ -39,8 +40,9 @@ class Settings(BaseSettings):
     # Equal weights are the permanent measured baseline (§7); change only with a recorded before/after.
     fusion_weight_keyword: float = Field(default=1.0, ge=0.0, allow_inf_nan=False)
     fusion_weight_semantic: float = Field(default=1.0, ge=0.0, allow_inf_nan=False)
-    # Default is decided and recorded in Task 5; until then it must be set explicitly to search.
-    candidate_depth_multiplier: int | None = Field(default=None, ge=1)
+    # 5 x top_k 10 = 50 candidates per branch: ~16% of the ~313-chunk golden corpus and inside the
+    # 50-100 list depth RRF is normally run with. Chosen from corpus size, not tuned on any queries (Task 5).
+    candidate_depth_multiplier: int = Field(default=5, ge=1)
     hnsw_ef_search: int = Field(default=40, ge=1)
     split_soft_min_seconds: float = Field(default=20.0, gt=0)
     split_cap_seconds: float = Field(default=45.0, gt=0)
@@ -50,7 +52,9 @@ class Settings(BaseSettings):
     @field_validator("candidate_depth_multiplier", mode="before")
     @classmethod
     def _blank_is_unset(cls, value: object) -> object:
-        return None if isinstance(value, str) and not value.strip() else value
+        if isinstance(value, str) and not value.strip():
+            raise PydanticUseDefault()
+        return value
 
     @field_validator("log_level")
     @classmethod
