@@ -19,9 +19,9 @@
 
 
 **Last updated:** 2026-09-26
-**Current phase:** Phase 1 — Foundation **complete** (Tasks 1–3 done). Phase 2 — Tasks 4 and 5 are In Progress; code and unit tests exist, with real-data/live-DB verification pending.
+**Current phase:** Phase 2 — Core Pipeline. Tasks 1–5 are complete; Tasks 6–7 and compulsory multilingual Task 17 remain.
 **⚠️ Compulsory feature added 2026-09-26: multilingual support.** Checklist `MULTILINGUAL_UPDATE_PLAN.md`, rationale `PLAN.md` §7B, Task 17. Decisions final (Q21–Q24). Not implemented yet.
-**Repo state:** Verified dataset and provenance, Python 3.12 environment, schema, and Task 4/5 application code are present. All 119 unit tests and the 15 Task 5 live-Postgres repository tests passed in the synced checkout. Task 4 real-audio ingestion and Task 5 real-corpus search/baseline verification remain pending. Multilingual implementation remains pending.
+**Repo state:** Verified dataset and provenance, Python 3.12 environment, schema, and Task 4/5 application code are present. The recorded Task 4/5 verification includes three real-data ingestion runs, 195 passing tests, live Postgres repository checks, and 30 warm real-corpus search queries. Multilingual implementation remains pending; see Task 17 and `MULTILINGUAL_UPDATE_PLAN.md`.
 Golden set = files 01–06 (`dataset/golden_set.json`). The dataset deviates from the plan's spec,
 and the ground truth has two verified defects. See Known Issues and Q17–Q20.
 
@@ -41,6 +41,8 @@ Mirrors `PLAN.md` §13 one-to-one. Task numbers are stable — never renumber th
 | # | Task | Completed | Evidence |
 |---|---|---|---|
 | 1 | Dataset: golden set 01–06 (`dataset/golden_set.json`); provenance + defects in `dataset/PROVENANCE.md`; originals unmodified; D1-corrected references in `dataset/reference_corrected/` | 2026-09-26 | `python -m pytest` → 43 passed (checksums, durations, well-formedness, correction provenance/durations, **energy-based onset check 307/307**, QA quotes 30/30 unique). Mutation-tested: uncorrected times and an altered duration both fail. **One sub-item not verifiable from the data: "unique speaker pair per file" (Q20)**, carried as an open question, not claimed |
+| 4 | Ingestion pipeline: decode once → Whisper → pyannote → word-level alignment → merge/split/link → batched embed → atomic persist; `scripts/ingest.py` ingests golden set | 2026-09-26 | Run 3: 6/6 files ingested, 313 chunks (= reference segments), 0 loops, 0 truncated, max 37 tokens; time-weighted speaker purity 0.991–0.997, no chunks below 0.9 purity or 1 s. 137 focused Task 4 tests passed. Three runs were compared; rejected prompt-on loop and nondeterministic temperature-fallback alternatives are recorded in Decisions Log |
+| 5 | Hybrid search: keyword + semantic branches, weighted RRF, configurable depth and hydration | 2026-09-26 | 58 new tests passed (fusion 22, service 21, repository integration 15); total suite 195 passed. Mutation checks: fusion 5/5, service 3/3, repository 6/6 killed; one `relaxed_order`/`strict_order` survivor was indistinguishable at this corpus size. Run 3 real-data spot checks returned expected hits; 30 warm ad-hoc queries measured p50 15.1 ms / p95 21.0 ms |
 | 3 | Scaffold: `src/{domain,application,infra,api}`; domain ports (`AudioDecoder`, `Transcriber`, `Diarizer`, `Embedder`, `AudioFileRepository`, `ChunkRepository`), models, typed errors; `api/settings.py` (the single env-backed settings object, 5 configurable values + validation); `db/schema.sql`; `scripts/init_db.py`; database `audio_search` created | 2026-09-26 | `python -m pytest` → **78 passed**: 13 settings (defaults, prefix, invalid/NaN/inf/negative weights, 0.0 warns, ordering), 6 architecture (layers inward, domain stdlib-only, no SQL outside infra; mutation-checked), 16 live-DB schema (vector(384), `english` generated column == query-side constant, GIN + HNSW m=16/ef_construction=64, stemming through the real column, mismatch loses matches, malformed websearch input, dim-383 rejected, HNSW used in EXPLAIN, deferred prev/next FKs, invariants). `init_db.py` run twice (idempotent) |
 | 2 | Environment: `.venv` (Python 3.12.14), pinned `requirements*.txt`, `.env.example` (all settings, `AUDIO_SEARCH_` prefix), `.gitignore`, `SETUP.md` draft, `scripts/verify_env.py` | 2026-09-26 | `python scripts/verify_env.py` → **ALL CHECKS PASSED (6/6)**; `pyannote/speaker-diarization-3.1` pipeline **loaded with the user's token in 6.9 s** (proves gated access to both repos); `pip check` clean. The clean-clone check remains Task 13 |
 
@@ -50,8 +52,6 @@ Mirrors `PLAN.md` §13 one-to-one. Task numbers are stable — never renumber th
 
 | # | Task | Done so far | Remaining |
 |---|---|---|---|
-| 4 | Ingestion pipeline | Pipeline, adapters, alignment, both chunkers and unit tests exist; included in the 119 passing unit tests | Run against real audio and verify output/metrics before marking Done |
-| 5 | Hybrid search service | Weighted RRF, keyword/semantic repository methods, hydration, search service and tests exist; 119 unit tests and 15 live-Postgres repository tests pass | Search the real corpus and record baseline results before marking Done |
 
 
 ### ⬜ Not Done
@@ -193,7 +193,7 @@ than a blank or an inflated number. Leave `—` for anything not yet measured;
 | recall@10 — keyword queries | ≥ 0.90 | — | — | |
 | recall@10 — semantic queries | ≥ 0.90 | — | — | |
 | Speaker attribution accuracy | ≥ 0.90 | — | — | align label sets before scoring |
-| Search latency p95 | < 500 ms | — | — | warmed-up, excludes cold start |
+| Search latency p95 | < 500 ms | **21.0 ms** (preliminary) | 2026-09-26 | 30 warm ad-hoc queries, top_k=10, 313 chunks, one connection per call. Formal labeled-set measurement remains Task 9 |
 
 
 ### Secondary — measured and reported, no threshold
@@ -212,11 +212,11 @@ accuracy points at alignment, not the diarizer.**
 | **Per-branch recall@10 — keyword only** | — | — | pre-fusion; evidence base for weight decisions |
 | **Per-branch recall@10 — semantic only** | — | — | pre-fusion |
 | **Fusion uplift over best single branch** | — | — | if ~0, fusion is not earning its place |
-| Indexing throughput (audio-min / wall-clock-min) | — | — | overall |
-| — transcribe / diarize / chunk / embed / index | — | — | per stage, from `ingest.*` log events |
+| Indexing throughput (audio-min / wall-clock-min) | **1.63** | 2026-09-26 | Run 3: 38.1 audio-min in ~23.3 wall-min, excluding one-time model loads |
+| — transcribe / diarize / chunk / embed / index | transcribe 5.07× real time (450 s for 2,284 s audio); diarize 2.41× (946 s); align/chunk/embed/persist < 1 s per file | 2026-09-26 | Run 3 on CPU (M5 Pro), from local `logs/ingest-run3.out`; diarization dominates. MPS available, not tested |
 | MRR | — | — | diagnostic |
 | Search latency p50 / p99 | — | — | |
-| Long turns split semantically vs. fallback | — | — | high fallback = splitter not actually running |
+| Long turns split semantically vs. fallback | 0 / 0 (0 long turns) | 2026-09-26 | Golden set strictly alternates speakers, so no turn exceeds 45 s. Splitter is unit-tested but did not fire on this data |
 
 
 ---
@@ -292,6 +292,9 @@ resolved; if unresolved, put it in Known Issues.
 
 | Date | Decision | Rationale | Affects |
 |---|---|---|---|
+| 2026-09-26 | **Task 5 fusion/search decisions**: validate 1-based rank positions and reject duplicate hits; zero-weight branches contribute no results; ties use fused score, best branch rank, then chunk id; candidate depth multiplier is 5 (50 candidates at top_k=10, chosen from corpus size, not tuned) | Contracts are documented and unit-tested. `ts_rank_cd` uses normalization `1|32`; semantic search uses `hnsw.iterative_scan = strict_order` because a plain scan returned fewer rows than LIMIT | Tasks 5, 7 |
+| 2026-09-26 | **Word-level alignment shipped after three real-data runs**: Whisper prompt-off avoids the audio_02 repetition loop; `word_timestamps=True` plus `align_words` splits at diarized speaker changes | Run 1 had a repetition loop; temperature fallback was nondeterministic and invented text. Run 2 was deterministic but 104/313 chunks were below 0.9 speaker purity. Run 3 had no loops, impure chunks, tiny chunks or truncation; purity 0.991–0.997, max 37 tokens | Tasks 4, 8, 9 |
+| 2026-09-26 | `speaker_for` is the shared speaker-assignment rule for segments and words; whitespace text is dropped and counted only in chunking | Avoids duplicate alignment rules drifting; keeps dropped-text accounting in one place | Task 4 |
 | 2026-09-26 | **Multilingual decisions finalised (session 2, continued)**: Q21 any language, eval on es/hi/zh translations of 01–06 · Q22 `BAAI/bge-m3` (`vector(1024)`) · Q23 CJK bigrams + `simple`, no extension · Q24 thresholds per language AND overall. `PLAN.md` rewritten **in place** (§1, §2, §4, §6, §7, §8, §10, §12, §13, §17 rows Q2/Q4/Q8 replaced; no more 'amended by' pointers). New self-contained checklist `MULTILINGUAL_UPDATE_PLAN.md` | User answered Q21/Q23/Q24 and asked the agent to choose the model for a 24 GB Apple Silicon Mac. bge-m3: best multilingual/cross-lingual quality that still fits the laptop comfortably, symmetric (no prefix trap), not gated, window large enough that chunk caps never truncate. Bigrams give CJK keyword recall with no stack change. es/hi/zh exercise every code path (Snowball stemmer, non-Latin script, CJK) | Task 17; `PLAN.md`; schema; settings |
 | 2026-09-26 | **Multilingual support is COMPULSORY** (project owner, session 2). Added as core scope: `PLAN.md` §3 item 6, new §7B, Task 17, amendments Q2a/Q4a/Q8a in §17. Summary: Whisper auto-detects language (no forced `en`), language stored per file and chunk; script-aware sentence split; multilingual local embedder (Q22, by measurement); keyword tsvector per chunk `to_tsvector(language, text)` with the query parsed per configuration present; unmapped → `simple` + WARNING; results carry `language`; evaluation per language (Q21/Q24); CJK keyword = Q23. Diarization, alignment and fusion unchanged | The owner requires non-English conversations to be searchable with the same file/timestamp/speaker guarantees. The previous stack was English-only in exactly three places (forced `language="en"`, English-only `all-MiniLM-L6-v2`, fixed `english` FTS config) plus the sentence regex. Per-row config keeps trap 1's rule (same config at index and query) true by construction. English golden set stays the regression baseline | Tasks 4, 5, 6, 7, 8, 9, 11, 13, 14, 17; `db/schema.sql`, `src/infra/whisper.py`, `src/infra/postgres.py`, `src/infra/embedder.py`, `src/application/chunking.py`, settings |
 | 2026-09-26 | **§6 "turn" interpretation**: a turn is a maximal run of one speaker's consecutive segments. Turns ≤ split cap are merge-packed at segment boundaries (target 15 s, cap 30 s). Turns > cap go to the semantic or deterministic splitter | §6 as written is inconsistent: merge caps at 30 s, so its output could never reach the > 45 s split step. This is the only reading under which "both chunkers agree below the cap" is meaningful. The golden set strictly alternates speakers (max reference segment 10.4 s), so on real data merge is ~a no-op and the splitter is expected to fire ~0 times. That gets reported as a count, not claimed as a benefit | Tasks 4, 8 |
@@ -384,11 +387,13 @@ surprising you could not explain** (Rule 15). Empty is fine; stale is not.
 | **D1** Reference timestamps drift late by ~0.0823 s per segment boundary (the generator overstated the gap: 0.300 s vs a real ~0.218 s) | ✅ **Fixed for 01–06** | `dataset/reference_corrected/` | **Use the corrected files for all timestamp-based evaluation. Never use the originals.** Files 07–10 are uncorrected (not in the golden set) |
 | **D2** `all.json` `evidence_time_ranges` match no reference segment (0/134). Offsets 6.8–420 s; they come from a longer render. 09/10 segment indices are wrong in 9/10 items | **High** for Task 6 | `dataset/all.json` | Quotes resolve uniquely (134/134). Derivation plan pending Q19 |
 | Golden files are 5.9–7.4 min, below the 8–10 min spec | Low | `dataset/golden_set.json` | Accepted (Q17). Disclose in `SOLUTION.md` |
-| WAVs are 22.05 kHz mono; pyannote wants 16 kHz | Low | ingestion | pyannote/faster-whisper resample internally. Verify in Task 4 |
-| **Two FFmpeg builds in one process**: PyAV 18.1 (faster-whisper) bundles libavdevice 62, and torchcodec loads Homebrew libavdevice 63. macOS prints `objc: Class AVFFrameReceiver is implemented in both…` and warns of possible crashes | Medium | ingestion (Task 4) | Not yet seen to fail (decode + imports OK). Mitigation plan: decode each file **once**, then pass the numpy waveform to faster-whisper and the in-memory dict to pyannote. If a crash appears, investigate before working around it (Rule 15) |
+| WAVs are 22.05 kHz mono; pyannote wants 16 kHz | ✅ Resolved | ingestion | Decoded once to 16 kHz by torchcodec; neither model resamples |
+| **Two FFmpeg builds in one process**: PyAV 18.1 bundles libavdevice 62 and torchcodec loads Homebrew libavdevice 63; macOS emits a duplicate AVFFrameReceiver warning | Low (mitigated) | ingestion | Decode-once path implemented. No crash in 18 file ingests across three runs; continue monitoring |
 | `dataset/.DS_Store` present | Low | `dataset/` | Ignored via `.gitignore` (created early, in Session 1) |
-| **Real-corpus verification is incomplete**: 119 unit tests and 15 live-Postgres repository tests pass, but no real-audio ingestion or search baseline against the full corpus is recorded | Medium | ingestion/search, this file | Keep Tasks 4/5 In Progress until real-audio ingestion and full-corpus search metrics are run and recorded |
-| **Code is English-only** in `src/infra/whisper.py` (`language="en"`), `src/infra/embedder.py` model default (`all-MiniLM-L6-v2`), `db/schema.sql` + `src/infra/postgres.py` (`english`), `src/application/chunking.py` (`_SENTENCE_END`), `tests/integration/test_schema.py` (asserts `'english'::regconfig`) | **High** (compulsory feature) | listed files | Task 17 / `PLAN.md` §7B. Not a bug in the old spec — a gap against the new requirement |
+| **Keyword branch returns no candidates for many natural-language queries** (17 of 34 ad-hoc searches) | Medium (recall) | `infra/postgres.py` `KEYWORD_SQL` | `websearch_to_tsquery` ANDs non-stop-word terms, so a query can require one chunk to contain every term. Recorded for Task 7; do not change parser semantics before per-branch recall evaluation |
+| **Turn-initial word may be assigned to the previous speaker**: 34/307 speaker changes (11%); 29 were stop words, three were content words | Low–Medium | `application/alignment.py` | Whisper can stretch a turn's first word across the pause, increasing overlap with the preceding turn. Do not change assignment heuristically unless evaluation traces a miss to this; measure first |
+| Transcript text is mostly lowercase with sparse punctuation; Whisper renders some spoken numbers as digits | Low | Whisper / evaluation | 97/313 chunks start lowercase. Case and punctuation do not affect English tsvector matching; number normalization should be considered when Task 9 computes WER/CER |
+| **Multilingual implementation is pending**: ingestion, embeddings and keyword indexing are still English-only | **High** (compulsory feature) | files listed by `MULTILINGUAL_UPDATE_PLAN.md` | Task 17 / `PLAN.md` §7B. Follow the checklist; do not treat the current English-only implementation as multilingual-complete |
 
 
 ---
@@ -402,4 +407,5 @@ surprising you could not explain** (Rule 15). Empty is fine; stale is not.
 | 0 | 2026-09-25 | — | — | Plan scoped; stack resolved; §4A environment + §4B install policy; §0 discipline; §0B engineering standard; semantic chunking (Q6); WER/DER/throughput secondary metrics; weighted RRF (Q7); stemming spec (Q8); five-endpoint API (Q9); missing-package policy (Q10) |
 | 1 | 2026-09-26 | 1 | 1, 2, 3 (all Done) | Dataset verified; `dataset/PROVENANCE.md` written; defects D1 (timestamp drift) and D2 (QA from another render) found and quantified; Q17/Q18 resolved (golden = 01–06); git init. Task 2: Python 3.12 venv, pinned requirements, `.env.example`, `SETUP.md` draft, `verify_env.py` (5/6, HF token pending); found embedder limit = 256 tokens and a duplicate-FFmpeg warning. Task 1 finished: D1 corrected (shift-only model, 307/307 onsets), 43 integrity tests, mutation-tested |
 | 2 | 2026-09-26 | 1→2 | 17 (spec only) | Multilingual support made **compulsory** by the owner: spec written into `PLAN.md` §7B + Task 17; `skiil.md`, `HANDOFF.md`, this file updated; Q21–Q24 opened. No code changed. Found tracking files lagging the repo on Task 4 (Known Issues) |
-| 3 | 2026-09-26 | 2 | 4, 5 (partial) | Added weighted-RRF hybrid search and Postgres search methods on the remote-based branch; 119 unit tests and 15 live-Postgres repository tests passed. Real-audio ingestion and full-corpus search baseline remain pending. |
+| 3 | 2026-09-26 | 2 | 4, 5 (partial) | Added weighted-RRF hybrid search and Postgres search methods on the remote-based branch; 119 unit tests and 15 live-Postgres repository tests passed. |
+| 4 | 2026-09-26 | 2 | 4, 5 (verified) | Recorded the three real-data ingestion runs and run-3 quality/latency results; 195 tests passed. Formal labeled-set/per-branch evaluation and compulsory multilingual implementation remain. |

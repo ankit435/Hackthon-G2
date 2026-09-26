@@ -96,21 +96,22 @@ lost work — the next agent will redo it or contradict it.
 **Update this section at the end of every session.**
 
 
-> **Session 3 update (2026-09-26) — read before the older text below.**
+> **Session 4 update (2026-09-26) — read before the older text below.**
 >
-> 1. Task 4 ingestion code and Task 5 hybrid search code are present. All 119
->    unit tests and 15 Task 5 live-Postgres repository tests passed. Neither
->    task is Done yet: real-audio ingestion and full-corpus search/baseline
->    verification remain pending.
-> 2. Task 5 uses weighted RRF, configurable branch weights and candidate depth,
->    keyword and semantic repository methods, and ordered hydration. The current
->    keyword path remains English-only; Task 17 M5 must make it language-aware.
-> 3. Continue from the synced `main` history. Do not force-push the unrelated
->    original local history; it contains WAV assets and would replace published
->    commits. Keep audio files out of pushes.
-> 4. **Next:** search the real corpus and record baseline results. Separately
->    run Task 4 on real audio and record its output.
->    Continue Task 17 from `MULTILINGUAL_UPDATE_PLAN.md` in its specified order.
+> 1. Tasks 4 and 5 are complete per the recorded verification: 195 tests
+>    passed; Task 4 ran three times on the golden audio, and Task 5 was
+>    exercised against the real 313-chunk corpus.
+> 2. Run 3: 6/6 files, 313 chunks, no repetition loops, truncation, impure or
+>    tiny chunks; speaker purity 0.991–0.997, max 37 tokens. Thirty warm
+>    searches measured p50 15.1 ms / p95 21.0 ms. Formal labeled-set recall
+>    and per-branch metrics are not yet measured.
+> 3. Known evaluation leads: keyword search returned no candidates for 17/34
+>    ad-hoc natural-language queries; 34/307 turn-initial words overlap the
+>    previous speaker (mostly stop words). Measure their impact before changing
+>    behavior.
+> 4. **Next:** continue compulsory Task 17 using
+>    `MULTILINGUAL_UPDATE_PLAN.md`; then build the labeled query set and formal
+>    retrieval evaluation. Q19/Q20 remain open as recorded in `PROGRESS.md`.
 
 
 > **Session 2 update (2026-09-26) — read before the older text below.**

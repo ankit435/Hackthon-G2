@@ -76,3 +76,16 @@ Packages installed: none.
 Files touched: `.env.example`, `SETUP.md`, `.agent/skills/PROGRESS.md`, `.agent/skills/HANDOFF.md`, `.agent/skills/AGENT_LOG.md`, `src/api/search_wiring.py`, `src/api/settings.py`, `src/application/fusion.py`, `src/application/search.py`, `src/infra/postgres.py`, `tests/integration/test_search_repository.py`, `tests/unit/test_fusion.py`, `tests/unit/test_search_service.py`, `tests/unit/test_settings.py`.
 Verified how: `/Users/ankit/Desktop/HackthonG2/.venv/bin/python -m pytest -q tests/unit` in the synced checkout → 119 passed. Focused fusion/search/settings tests → 58 passed. `tests/integration/test_search_repository.py` with local environment configuration → 15 passed. `git diff --check` passed before the tracking-file update. Real-audio ingestion and full-corpus search baseline were not run.
 Open items left: search the real corpus and record retrieval baseline; verify Task 4 against real audio; implement Task 17 multilingual changes in the required order.
+
+## Session 4 — 2026-09-26 — Phase 2
+Model/agent: GitHub Copilot (VS Code)
+Prompt summary: Push the current `.agent` folder status while preserving the already-merged multilingual plan and checklist.
+Key decisions:
+- Kept the GitHub multilingual plan authoritative; the original checkout's `PLAN.md`, `HANDOFF.md`, and `skiil.md` are older and were not copied over it.
+- Carried the original checkout's recorded Task 4/5 run-3 evidence into the current tracking files. Did not force-push the unrelated local branch; its history contains the ten WAV assets.
+- Task 4/5 are recorded as Done based on the existing local run report: code, tests, real-data verification, and commits are present. Task 17 remains compulsory and unimplemented.
+Deviations from PLAN: none. The current search keyword path remains English-only pending Task 17 M5.
+Packages installed: none.
+Files touched: `.agent/skills/PROGRESS.md`, `.agent/skills/AGENT_LOG.md`, `.agent/skills/HANDOFF.md`.
+Verified how: compared local and remote agent docs; confirmed the multilingual checklist is identical on both. Transferred recorded evidence: 195 tests passed; three real-data ingests, with run 3 ingesting 6/6 files (313 chunks), no loops/truncation/impure chunks, max 37 tokens, speaker purity 0.991–0.997; 30 warm searches measured p50 15.1 ms / p95 21.0 ms. Tests were not rerun during this documentation-only sync.
+Open items left: implement Task 17 from `MULTILINGUAL_UPDATE_PLAN.md`; build the labeled query set and formal per-branch/per-language evaluation; investigate the measured keyword-query misses and turn-initial word leakage only through evaluation evidence.
