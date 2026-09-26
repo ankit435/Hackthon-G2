@@ -90,8 +90,9 @@ lost work — the next agent will redo it or contradict it.
 **Update this section at the end of every session.**
 
 
-**Last session:** 2026-09-26 (Task 11: FastAPI endpoints & live server)
-**Repo state:** Tasks 1, 2, 3, 4, 5, 7, and 11 are **Done**. `src/api/main.py` created with all 5 endpoints (`/ingest`, `/search`, `/search/keyword`, `/search/semantic`, `/evaluation`). Unit tests in `tests/unit/test_api.py` pass (155 unit tests passing across repo). Live server running on port 8000.
+**Last session:** 2026-09-26 (Task 8: Chunking QA regression tests)
+**Repo state:** Tasks 1, 2, 3, 4, 5, 7, 8, and 11 are **Done**. `tests/unit/test_chunking_qa.py` verifies chunking invariants (speaker purity, length distribution, two-chunker agreement below cap, embedder fallback handling, link sequence sanity). 182 unit tests pass across the codebase. Live FastAPI server running on port 8000.
+**Task 8: Done.** Chunking QA regression test suite added and passing (`tests/unit/test_chunking_qa.py`).
 **Task 11: Done.** FastAPI app created in `src/api/main.py`, tested with unit tests and live HTTP calls (`curl http://localhost:8000/docs` -> 200 OK, `/search` returns hydrated result items with `language`, `score`, `speaker`, `file_name`, `timestamps`).
 
 **Never evaluate timestamps against the uncorrected `dataset/audio_*.json`. Use `dataset/reference_corrected/`.**
