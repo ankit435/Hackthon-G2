@@ -128,6 +128,13 @@ class SearchResultItem:
     score: float
 
 
+@dataclass(frozen=True)
+class AnswerResult:
+    """LLM answer plus the retrieval results that are its authoritative citations."""
+    answer: str
+    sources: tuple[SearchResultItem, ...]
+
+
 # --- evaluation (PLAN.md §10): shared by the application metric core and the infra dataset loader ---
 
 @dataclass(frozen=True)

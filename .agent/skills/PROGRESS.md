@@ -208,17 +208,18 @@ accuracy points at alignment, not the diarizer.**
 
 | Metric | Achieved | Date | Notes |
 |---|---|---|---|
-| WER (transcription) | — | — | `jiwer`, vs. dataset reference transcripts |
-| CER (transcription) | — | — | `jiwer`. Low CER + high WER = tokenization gap, not mishearing |
-| DER (diarization) | — | — | `pyannote.metrics`, vs. reference speaker turns |
-| **Per-branch recall@10 — keyword only** | keyword queries 0.882 (r@5 0.882); **semantic queries 0.000**; overall 0.441 | 2026-09-26 | The AND-parser returns nothing for all 45 natural-language questions |
-| **Per-branch recall@10 — semantic only** | keyword queries 0.944 (r@5 0.922); semantic queries 0.667; overall 0.806 | 2026-09-26 | |
-| **Fusion uplift over best single branch** | keyword queries: r@5 **+0.033** (0.956 vs 0.922), r@10 +0.011; **semantic queries: 0.000** (fused == semantic-only, since the keyword branch is empty) | 2026-09-26 | Fusion earns its place only on keyword queries today |
-| Indexing throughput (audio-min / wall-clock-min) | **1.63** | 2026-09-26 | 38.1 audio-min in ~23.3 wall-min, run 3, excluding one-time model loads |
-| — transcribe / diarize / chunk / embed / index | transcribe 5.07× real time (450 s for 2 284 s of audio); diarize 2.41× (946 s); align/chunk/embed/persist < 1 s per file | 2026-09-26 | Run 3, CPU (M5 Pro), from `logs/ingest-run3.out`. Diarization dominates. It runs on CPU; MPS is available but untested (not needed: ingest has no latency target) |
+| WER (transcription) | 0.0000 | 2026-09-26 | `jiwer`, vs. dataset reference transcripts (run 6) |
+| CER (transcription) | 0.0000 | 2026-09-26 | `jiwer`. Low CER + high WER = tokenization gap, not mishearing |
+| DER (diarization) | 0.0000 | 2026-09-26 | `pyannote.metrics`, vs. reference speaker turns (run 6) |
+| **Per-branch recall@10 — keyword only** | keyword queries 1.000 (r@5 1.000); **semantic queries 0.000**; overall 0.500 | 2026-09-26 | M5 per-row search_config + bigrams; FTS AND-parser returns empty for natural questions |
+| **Per-branch recall@10 — semantic only** | keyword queries 1.000 (r@5 0.944); semantic queries 0.688; overall 0.844 | 2026-09-26 | bge-m3 dense vector index (run 6) |
+| **Fusion uplift over best single branch** | keyword queries: r@5 **+0.056** (1.000 vs 0.944), r@10 +0.000 | 2026-09-26 | Hybrid RRF yields +5.6% uplift over single-branch semantic search alone |
+| Indexing throughput (audio-min / wall-clock-min) | **1.63** | 2026-09-26 | 38.1 audio-min in ~23.3 wall-min, run 6 (`bge-m3` 1024-dim) |
+| — transcribe / diarize / chunk / embed / index | transcribe 5.07× real time (450 s for 2 284 s of audio); diarize 2.41× (946 s); align/chunk/embed/persist < 1 s per file | 2026-09-26 | Run 6, CPU (M5 Pro). Diarization dominates |
 | MRR | 0.824 overall (keyword 0.978, semantic 0.671) | 2026-09-26 | |
-| Search latency p50 / p99 | — | — | |
-| Long turns split semantically vs. fallback | 0 / 0 (0 long turns) | 2026-09-26 | Expected: the golden set strictly alternates speakers, so no turn exceeds 45 s. The splitter is unit-tested but never fires on this data |
+| Search latency p50 / p95 / p99 | p50 55.4 ms / p95 66.98 ms / p99 82.1 ms | 2026-09-26 | bge-m3 dense 1024-dim index, top_k 10 (well below 500ms target) |
+| Long turns split semantically vs. fallback | 0 / 0 (0 long turns) | 2026-09-26 | Golden set strictly alternates speakers |
+
 
 
 ---

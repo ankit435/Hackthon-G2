@@ -48,3 +48,7 @@ class EmbeddingError(DomainError):
 
 class RepositoryError(DomainError):
     pass
+
+
+class AnswerGenerationError(DomainError):
+    """NVIDIA answer-generation request failed after deterministic retrieval succeeded."""

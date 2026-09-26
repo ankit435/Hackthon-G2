@@ -78,3 +78,9 @@ class ChunkRepository(Protocol):
         ...
 
     async def list_by_file(self, audio_file_id: UUID) -> list[Chunk]: ...
+
+
+class AnswerGenerator(Protocol):
+    async def answer(self, query: str, context: str) -> str:
+        """Generate an answer solely from numbered retrieved context."""
+        ...

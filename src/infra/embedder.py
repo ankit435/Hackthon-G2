@@ -10,7 +10,10 @@ class SentenceTransformerEmbedder:
     def __init__(self, model_name: str, device: str = "cpu") -> None:
         from sentence_transformers import SentenceTransformer
 
-        self._model = SentenceTransformer(model_name, device=device)
+        try:
+            self._model = SentenceTransformer(model_name, device=device, local_files_only=True)
+        except Exception:
+            self._model = SentenceTransformer(model_name, device=device)
         self._dimension = self._model.get_embedding_dimension()
 
     @property
