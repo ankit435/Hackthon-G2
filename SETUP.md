@@ -148,3 +148,56 @@ python scripts/synthesize_multilingual.py --lang <es|hi|zh> --force   # model fi
 | `expected 1024 dimensions, not N` | Embedding model changed without a schema change | Restore `AUDIO_SEARCH_EMBEDDING_MODEL`, or change the schema (`db/schema.sql` `vector()` width) and re-ingest |
 | Keyword search returns nothing for words that are clearly in the transcript | **Text search configuration mismatch**: the tsvector column and the query parser use different configs | Both must be `english`. Check with `SELECT to_tsvector('english','archived') @@ websearch_to_tsquery('english','archiving');` → `t` |
 | macOS prints `objc: Class AVF… is implemented in both …` | PyAV (faster-whisper) and Homebrew ffmpeg each bring their own libavdevice | Printed at import. It has not caused a failure so far, but macOS warns it *may*. See `PROGRESS.md` Known Issues. The pipeline decodes each file once and passes the waveform to both models, so the two decoders are never both used on a file |
+
+## 9. Evaluator Guide — Testing Any Custom Audio File
+
+An evaluator or developer can test any custom or arbitrary audio file (`.wav`, `.mp3`, `.m4a`, `.flac`) using either the CLI ingestion script or the live FastAPI REST API endpoints.
+
+### Option A: CLI Ingestion & Search (Terminal)
+
+1. **Ingest any custom audio file**:
+   ```bash
+   python scripts/ingest.py /path/to/custom_audio.wav
+   ```
+   *Output*: Ingest outcome status, checksum, chunk count, and time breakdown per stage (transcribe, diarize, align, chunk, embed, persist).
+
+2. **Search ingested audio via Python / CLI**:
+   ```bash
+   # Run automated evaluation suite across query set:
+   python scripts/evaluate.py
+
+   # Or run retrievability tests:
+   python -m pytest tests/eval/test_retrieval.py
+   ```
+
+### Option B: Live REST API & Swagger UI (Interactive)
+
+1. **Start the live FastAPI Uvicorn server**:
+   ```bash
+   PYTHONPATH=src .venv/bin/uvicorn api.main:app --host 0.0.0.0 --port 8000
+   ```
+
+2. **Open Interactive Swagger Documentation**:
+   Navigate to `http://localhost:8000/docs` in your browser.
+
+3. **Ingest an Audio File via POST `/ingest`**:
+   ```bash
+   curl -X POST "http://localhost:8000/ingest" \
+     -H "Content-Type: application/json" \
+     -d '{"file_paths": ["/path/to/custom_audio.wav"]}'
+   ```
+   *Response*: `[{"status": "ingested", "path": "/path/to/custom_audio.wav", "chunks": 12, ...}]`
+
+4. **Execute Graded Hybrid Search via GET `/search`**:
+   ```bash
+   curl -s "http://localhost:8000/search?query=rate+limiting&top_k=5"
+   ```
+   *Response*: Hydrated ranked list with `file_name`, `start_time`, `end_time`, `speaker`, `text`, `language`, and fused score.
+
+5. **Execute Diagnostic Single-Branch Searches**:
+   - Keyword FTS branch only: `curl "http://localhost:8000/search/keyword?query=rate+limiting&top_k=5"`
+   - Semantic Dense Vector branch only: `curl "http://localhost:8000/search/semantic?query=rate+limiting&top_k=5"`
+
+6. **Trigger Automated Evaluation via `/evaluation`**:
+   - `curl "http://localhost:8000/evaluation"` (GET)
+

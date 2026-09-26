@@ -10,11 +10,7 @@ from pgvector.psycopg import register_vector_async
 
 from domain.errors import RepositoryError
 from domain.models import AudioFile, BranchHit, Chunk, SearchResultItem
-
-# Must equal the configuration of chunk.text_search in db/schema.sql. Queries parse with this
-# (websearch_to_tsquery(TEXT_SEARCH_CONFIG, ...)); a mismatch silently loses matches.
-# tests/integration/test_schema.py asserts both sides agree.
-TEXT_SEARCH_CONFIG = "english"
+from infra.text_search import cjk_bigrams, config_for
 
 # ts_rank_cd normalization: 1 divides by 1 + log(document length), so a longer chunk cannot win
 # just by repeating a term but is not punished harshly; 32 maps rank to rank/(rank+1), bounding
@@ -24,9 +20,12 @@ TS_RANK_NORMALIZATION = 1 | 32
 # websearch_to_tsquery never raises on malformed input and honours "quotes", OR, -exclusions.
 # A stop-word-only query yields an empty tsquery that matches nothing, so the result is [].
 # Ties on score break by id, so row position (the rank fusion consumes) is deterministic.
-KEYWORD_SQL = ("SELECT id, ts_rank_cd(text_search, q, %s) AS score "
-               "FROM chunk, websearch_to_tsquery(%s::regconfig, %s) AS q "
-               "WHERE text_search @@ q ORDER BY score DESC, id LIMIT %s")
+#
+# Each chunk carries its own `search_config` (PLAN.md §7B, M5; infra.text_search): a query is run
+# ONCE PER DISTINCT CONFIG PRESENT, scoped to that config's rows, then merged. This keeps
+# websearch_to_tsquery(cfg, ...) a per-pass constant so the planner can use the GIN index within
+# each pass — a single query with a per-row config (`websearch_to_tsquery(search_config, ...)`)
+# would force a sequential scan, since the tsquery operand would vary row to row.
 # ORDER BY the raw <=> operator (not the alias) so the planner can use the HNSW index.
 SEMANTIC_SQL = ("SELECT id, 1 - (embedding <=> %s) AS similarity FROM chunk "
                 "WHERE embedding IS NOT NULL ORDER BY embedding <=> %s LIMIT %s")
@@ -36,6 +35,9 @@ HYDRATE_SQL = ("SELECT c.id, c.audio_file_id, a.file_name, a.file_path, c.speake
 
 _CHUNK_COLUMNS = ("id, audio_file_id, chunk_index, speaker_id, text, start_time, end_time, embedding, "
                   "prev_chunk_id, next_chunk_id, token_count, char_count, language")
+# search_config/search_text are derived, write-only (from `language`/`text`); not read back onto the
+# domain Chunk model, so they are appended here rather than folded into _CHUNK_COLUMNS above.
+_CHUNK_INSERT_COLUMNS = _CHUNK_COLUMNS + ", search_config, search_text"
 
 
 class PostgresRepository:
@@ -71,12 +73,16 @@ class PostgresRepository:
                     "language_probability) VALUES (%s,%s,%s,%s,%s,%s,%s)",
                     (audio_file.id, audio_file.file_name, audio_file.file_path, audio_file.checksum,
                      audio_file.duration_seconds, audio_file.language, audio_file.language_probability))
+                # The configs Postgres actually has (a fresh install may be missing an optional
+                # dictionary); config_for falls back to 'simple' + WARNING for anything not present.
+                available = {r[0] for r in await (await conn.execute("SELECT cfgname FROM pg_ts_config")).fetchall()}
                 async with conn.cursor() as cur:
                     await cur.executemany(
-                        f"INSERT INTO chunk ({_CHUNK_COLUMNS}) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                        f"INSERT INTO chunk ({_CHUNK_INSERT_COLUMNS}) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
                         [(c.id, c.audio_file_id, c.chunk_index, c.speaker, c.text, c.start_time, c.end_time,
                           None if c.embedding is None else np.asarray(c.embedding, dtype=np.float32),
-                          c.prev_chunk_id, c.next_chunk_id, c.token_count, c.char_count, c.language) for c in chunks])
+                          c.prev_chunk_id, c.next_chunk_id, c.token_count, c.char_count, c.language,
+                          config_for(c.language, available), cjk_bigrams(c.text)) for c in chunks])
         except psycopg.Error as e:
             raise RepositoryError("persisting file and chunks failed; nothing was written", stage="persist",
                                   file=audio_file.file_name, error=type(e).__name__, detail=str(e).splitlines()[0]) from e
@@ -92,9 +98,22 @@ class PostgresRepository:
                 for r in rows]
 
     async def keyword_search(self, query: str, limit: int) -> list[BranchHit]:
+        bigrammed = cjk_bigrams(query)  # identity unless the query itself contains CJK text
         try:
             async with await self._connect() as conn:
-                rows = await (await conn.execute(KEYWORD_SQL, (TS_RANK_NORMALIZATION, TEXT_SEARCH_CONFIG, query, limit))).fetchall()
+                configs = [r[0] for r in await (await conn.execute(
+                    "SELECT DISTINCT search_config::text FROM chunk")).fetchall()]
+                if not configs:
+                    return []
+                # One pass per config present, UNION ALL'd: within each pass the tsquery is a
+                # constant (see the module comment above), then merged and re-ranked across passes.
+                passes = " UNION ALL ".join(
+                    "(SELECT id, ts_rank_cd(text_search, websearch_to_tsquery(%s::regconfig, %s), %s) AS score "
+                    "FROM chunk WHERE search_config = %s::regconfig "
+                    "AND text_search @@ websearch_to_tsquery(%s::regconfig, %s))" for _ in configs)
+                sql = f"SELECT id, score FROM ({passes}) AS per_config ORDER BY score DESC, id LIMIT %s"
+                params = [v for cfg in configs for v in (cfg, bigrammed, TS_RANK_NORMALIZATION, cfg, cfg, bigrammed)]
+                rows = await (await conn.execute(sql, params + [limit])).fetchall()
         except psycopg.Error as e:
             raise RepositoryError("keyword search failed", stage="search.keyword", error=type(e).__name__) from e
         return [BranchHit(chunk_id=r[0], rank=i, score=float(r[1])) for i, r in enumerate(rows, start=1)]

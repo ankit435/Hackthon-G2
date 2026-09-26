@@ -33,17 +33,27 @@ CREATE TABLE IF NOT EXISTS chunk (
     token_count    integer NOT NULL CHECK (token_count > 0),
     char_count     integer NOT NULL CHECK (char_count > 0),
     language       text NOT NULL CHECK (btrim(language) <> ''),  -- the file's detected language
+    -- Per-row keyword config (PLAN.md §7B, M5): mapped from `language` by infra.text_search.config_for,
+    -- e.g. 'spanish' for es, 'simple' for zh/ja/ko or any language with no Postgres config. The query
+    -- side MUST parse with the SAME config a row was indexed with (infra.text_search, not a single
+    -- shared constant any more) — a mismatch produces lexemes by different rules and matches vanish
+    -- with no error. Generated, so stemming is identical for every row by construction; to_tsvector
+    -- keeps positions, which cover-density ranking (ts_rank_cd) needs.
+    search_config  regconfig NOT NULL,
+    -- `text` after infra.text_search.cjk_bigrams: CJK runs (Han/Kana/Hangul) rewritten as space-
+    -- separated overlapping bigrams, since simple/CJK configs have no word segmenter and would
+    -- otherwise index a whole run as one unsearchable token. Identity for every other script.
+    search_text    text NOT NULL CHECK (btrim(search_text) <> ''),
     created_at     timestamptz NOT NULL DEFAULT now(),
-    -- The query side MUST parse with this same 'english' configuration (infra, TEXT_SEARCH_CONFIG).
-    -- A mismatch produces lexemes by different rules and matches vanish with no error.
-    -- Generated, so stemming is identical for every row by construction; to_tsvector keeps
-    -- positions, which cover-density ranking (ts_rank_cd) needs.
-    text_search    tsvector GENERATED ALWAYS AS (to_tsvector('english'::regconfig, text)) STORED,
+    text_search    tsvector GENERATED ALWAYS AS (to_tsvector(search_config, search_text)) STORED,
     CHECK (end_time > start_time),
     UNIQUE (audio_file_id, chunk_index)
 );
 
 CREATE INDEX IF NOT EXISTS chunk_text_search_gin ON chunk USING gin (text_search);
+-- Lets keyword_search's per-config UNION ALL pass restrict to one config's rows before the GIN
+-- probe, so each pass's websearch_to_tsquery(cfg, ...) stays a per-scan constant the planner can use.
+CREATE INDEX IF NOT EXISTS chunk_search_config ON chunk (search_config);
 
 -- HNSW needs no training step, so it is valid on an empty table and stays correct as
 -- files are ingested incrementally (Q10). m / ef_construction are pgvector's defaults,
