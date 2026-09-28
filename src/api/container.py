@@ -16,6 +16,7 @@ from infra.diarizer import PyannoteDiarizer
 from infra.embedder import SentenceTransformerEmbedder
 from infra.nvidia import NvidiaAnswerGenerator
 from infra.postgres import PostgresRepository
+from infra.reranker import CrossEncoderReranker
 from infra.whisper import FasterWhisperTranscriber
 
 _STANDARD_ATTRS = set(vars(logging.LogRecord("", 0, "", 0, "", None, None))) | {"message", "asctime"}
@@ -59,6 +60,9 @@ def build_search_service(settings: Settings, embedder: SentenceTransformerEmbedd
         weights=settings.fusion_weights,
         rrf_k=settings.rrf_k,
         candidate_depth_multiplier=settings.candidate_depth_multiplier,
+        reranker=CrossEncoderReranker(settings.reranker_model, device=settings.reranker_device)
+        if settings.reranker_model else None,
+        rerank_depth=settings.rerank_depth,
     )
 
 

@@ -56,10 +56,23 @@ class Settings(BaseSettings):
     # 50-100 list depth RRF is normally run with. Chosen from corpus size, not tuned on any queries (Task 5).
     candidate_depth_multiplier: int = Field(default=5, ge=1)
     hnsw_ef_search: int = Field(default=40, ge=1)
+    # Cross-encoder re-ranking (PLAN.md §11 item 5, approved by the user 2026-09-28). None (blank) = OFF,
+    # which keeps the evaluated /search path unchanged. Enable only with a recorded before/after
+    # (scripts/evaluate.py with and without it): it must lift recall and keep p95 < 500 ms.
+    # Recommended: cross-encoder/mmarco-mMiniLMv2-L12-H384-v1 (multilingual, small and fast).
+    reranker_model: str | None = None
+    reranker_device: Literal["cpu", "mps", "cuda"] = "cpu"
+    # Fused candidates the cross-encoder re-scores; top_k is cut after re-ranking. 30 >= 3x top_k 10.
+    rerank_depth: int = Field(default=30, ge=1, le=100)
     split_soft_min_seconds: float = Field(default=20.0, gt=0)
     split_cap_seconds: float = Field(default=45.0, gt=0)
 
     log_level: str = "INFO"
+
+    @field_validator("reranker_model", mode="before")
+    @classmethod
+    def _blank_disables_reranker(cls, value: object) -> object:
+        return None if isinstance(value, str) and not value.strip() else value
 
     @field_validator("candidate_depth_multiplier", mode="before")
     @classmethod

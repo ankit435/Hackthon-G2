@@ -1,4 +1,5 @@
-"""Hybrid search (PLAN.md §7): keyword + semantic branches -> weighted RRF -> top-K -> hydrate."""
+"""Hybrid search (PLAN.md §7): keyword + semantic branches -> weighted RRF -> [optional cross-encoder
+re-rank of the top fused candidates, PLAN.md §11 item 5] -> top-K -> hydrate."""
 from __future__ import annotations
 
 import asyncio
@@ -11,7 +12,7 @@ from dataclasses import replace
 from application.fusion import fuse
 from domain.errors import InvalidInputError
 from domain.models import Branch, BranchHit, SearchResultItem
-from domain.ports import ChunkRepository, Embedder
+from domain.ports import ChunkRepository, Embedder, Reranker
 
 log = logging.getLogger(__name__)
 
@@ -27,16 +28,22 @@ class SearchService:
     """The graded path is `search`. `keyword` / `semantic` are diagnostics over the SAME repository methods."""
 
     def __init__(self, chunks: ChunkRepository, embedder: Embedder, *, weights: Mapping[Branch, float],
-                 rrf_k: int, candidate_depth_multiplier: int) -> None:
+                 rrf_k: int, candidate_depth_multiplier: int, reranker: Reranker | None = None,
+                 rerank_depth: int = 30) -> None:
         if candidate_depth_multiplier < 1:
             raise ValueError("candidate_depth_multiplier must be >= 1")
+        if rerank_depth < 1:
+            raise ValueError("rerank_depth must be >= 1")
         self._chunks, self._embedder = chunks, embedder
         self._weights, self._k, self._depth = dict(weights), rrf_k, candidate_depth_multiplier
+        self._reranker, self._rerank_depth = reranker, rerank_depth
 
     @property
     def config(self) -> dict:
         return {"weights": {b.value: w for b, w in self._weights.items()}, "rrf_k": self._k,
-                "candidate_depth_multiplier": self._depth}
+                "candidate_depth_multiplier": self._depth,
+                "reranker": self._reranker.model_name if self._reranker else None,
+                "rerank_depth": self._rerank_depth if self._reranker else None}
 
     @staticmethod
     def _validate(query: str, top_k: int) -> str:
@@ -88,11 +95,44 @@ class SearchService:
             "duration_ms": round((time.perf_counter() - fusion_started) * 1000, 2),
         })
         # Slice only AFTER fusion: cutting each branch to top_k first would drop cross-branch agreement.
-        results = await self._hydrate_in_order([(h.chunk_id, h.score) for h in fused[:top_k]], qh)
+        if self._reranker is None:
+            results = await self._hydrate_in_order([(h.chunk_id, h.score) for h in fused[:top_k]], qh)
+        else:
+            results = await self._rerank(text, fused, top_k, qh)
         log.info("search.response", extra={"event": "search.response", "query_hash": qh, "results": len(results),
                                            "top_score": results[0].score if results else None,
                                            "duration_ms": round((time.perf_counter() - t0) * 1000, 2)})
         return results
+
+    async def _rerank(self, query: str, fused: list, top_k: int, qh: str) -> list[SearchResultItem]:
+        """Re-score the top fused candidates with the cross-encoder, then cut to top_k.
+
+        - The pool is the first max(rerank_depth, top_k) fused hits, so re-ranking can only reorder and
+          promote within that pool; it never pulls in a chunk neither branch retrieved.
+        - Result scores become the cross-encoder's relevance scores (comparable within a query only).
+        - Exact score ties keep their fused order, so the output is deterministic.
+        - Any re-ranker failure returns the fused order (WARNING): a smarter ranker must never fail a search.
+        """
+        candidates = await self._hydrate_in_order(
+            [(h.chunk_id, h.score) for h in fused[:max(self._rerank_depth, top_k)]], qh)
+        if not candidates:
+            return []
+        started = time.perf_counter()
+        try:
+            scores = await self._reranker.score(query, [c.text for c in candidates])
+            if len(scores) != len(candidates):
+                raise ValueError(f"{len(scores)} scores for {len(candidates)} candidates")
+        except Exception as e:  # noqa: BLE001 — isolation is the contract; failure is logged, fused order returned
+            log.warning("rerank failed; returning fused order", extra={
+                "event": "search.rerank.failed", "query_hash": qh, "error_type": type(e).__name__, "error": str(e)})
+            return candidates[:top_k]
+        order = sorted(range(len(candidates)), key=lambda i: (-scores[i], i))
+        log.info("search.rerank.end", extra={
+            "event": "search.rerank.end", "query_hash": qh, "model": self._reranker.model_name,
+            "candidates": len(candidates),
+            "top_k_changed": sum(i != j for i, j in zip(order[:top_k], range(top_k))),
+            "duration_ms": round((time.perf_counter() - started) * 1000, 2)})
+        return [replace(candidates[i], score=scores[i]) for i in order[:top_k]]
 
     async def keyword(self, query: str, top_k: int = 10) -> list[SearchResultItem]:
         """Diagnostic only: the keyword branch alone, ranked by its own score."""

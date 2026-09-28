@@ -144,3 +144,13 @@ Verified how:
 
 
 
+
+## Session 4 — 2026-09-28 — Stretch item #5 (cross-encoder re-ranker)
+Model/agent: Claude Code (cloud session, branch `claude/upbeat-bell-4zoza6`, from `main` at da761b9)
+Prompt summary: "can you implement cross encoder model at reranking". User approval for `PLAN.md` §11 item 5.
+Key decisions: implemented as an optional stage of `SearchService.search`, **OFF by default** (`AUDIO_SEARCH_RERANKER_MODEL` blank), so the evaluated path is unchanged until a before/after measurement (§11 "stretch features are additive"). Pool = first max(rerank_depth=30, top_k) fused hits; ties keep fused order; any re-ranker failure returns the fused order with WARNING `search.rerank.failed`. Diagnostic branch endpoints are never re-ranked. Recommended model `cross-encoder/mmarco-mMiniLMv2-L12-H384-v1` (multilingual, small), chosen for the p95 budget.
+Deviations from PLAN: §11 gate conditions 1–2 are not met (recall@5 0.782 < 0.80); built on the user's explicit request, recorded in the gate table.
+Packages installed: none added to requirements (sentence-transformers 6.1.0 already pinned provides `CrossEncoder`). In this container only: pydantic, fastapi, psycopg, httpx, faster-whisper, pytest-asyncio (pinned versions) to run the tests, plus a scratch venv with sentence-transformers for the adapter smoke test.
+Files touched: `src/domain/{errors,ports}.py`, `src/infra/reranker.py` (new), `src/application/search.py`, `src/api/{settings,container}.py`, `tests/unit/{test_search_service,test_settings}.py`, `.env.example`, `README.md`, `.agent/skills/{PROGRESS,AGENT_LOG,modelChat}.md`.
+Verified how: 13 new unit tests (pool promotion beyond top_k, pool size, tie order, failure fallback, score-count mismatch, OFF path unchanged, config, diagnostics untouched, settings). Mutation-checked: broken tie order, pool cut to top_k, and removed fallback each fail tests. Full `tests/unit` + multilingual data tests: 229 passed. Real `CrossEncoder` adapter smoke-tested on a tiny locally built BERT (Hugging Face blocked): deterministic, one score per passage, batch == one-by-one, empty input, errors wrapped as `RerankError`; found and documented that sentence-transformers applies a sigmoid (scores in (0,1), not raw logits).
+Open items left: **measure on the Mac**: `python scripts/evaluate.py` with and without `AUDIO_SEARCH_RERANKER_MODEL=cross-encoder/mmarco-mMiniLMv2-L12-H384-v1`; switch it on only if recall rises and p95 stays < 500 ms; record both rows in PROGRESS.md.

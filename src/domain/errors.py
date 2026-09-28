@@ -50,5 +50,9 @@ class RepositoryError(DomainError):
     pass
 
 
+class RerankError(DomainError):
+    """The cross-encoder could not score the candidates. Search falls back to the fused order."""
+
+
 class AnswerGenerationError(DomainError):
     """NVIDIA answer-generation request failed after deterministic retrieval succeeded."""

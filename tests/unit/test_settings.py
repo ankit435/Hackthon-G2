@@ -119,3 +119,21 @@ def test_unknown_embedding_device_is_rejected():
 def test_embedding_model_is_overridable(monkeypatch):
     monkeypatch.setenv("AUDIO_SEARCH_EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
     assert load_settings(database_url=DB).embedding_model == "sentence-transformers/all-MiniLM-L6-v2"
+
+
+def test_reranker_is_off_by_default_and_blank_means_off(monkeypatch):
+    s = load_settings(database_url=DB)
+    assert (s.reranker_model, s.reranker_device, s.rerank_depth) == (None, "cpu", 30)
+    monkeypatch.setenv("AUDIO_SEARCH_RERANKER_MODEL", "  ")
+    assert load_settings(database_url=DB).reranker_model is None
+    monkeypatch.setenv("AUDIO_SEARCH_RERANKER_MODEL", "cross-encoder/mmarco-mMiniLMv2-L12-H384-v1")
+    monkeypatch.setenv("AUDIO_SEARCH_RERANK_DEPTH", "40")
+    s = load_settings(database_url=DB)
+    assert (s.reranker_model, s.rerank_depth) == ("cross-encoder/mmarco-mMiniLMv2-L12-H384-v1", 40)
+
+
+@pytest.mark.parametrize("depth", ["0", "101", "x"])
+def test_invalid_rerank_depth_is_rejected(monkeypatch, depth):
+    monkeypatch.setenv("AUDIO_SEARCH_RERANK_DEPTH", depth)
+    with pytest.raises(ConfigurationError, match="rerank_depth"):
+        load_settings(database_url=DB)

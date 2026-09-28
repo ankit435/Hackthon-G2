@@ -56,6 +56,18 @@ class Embedder(Protocol):
         ...
 
 
+class Reranker(Protocol):
+    """Cross-encoder: reads the query and each passage TOGETHER, so it scores relevance directly
+    rather than comparing two independently computed vectors (PLAN.md §11 item 5)."""
+
+    @property
+    def model_name(self) -> str: ...
+
+    async def score(self, query: str, passages: Sequence[str]) -> list[float]:
+        """One batched call; one score per passage, input order, higher = more relevant. Raises RerankError."""
+        ...
+
+
 class AudioFileRepository(Protocol):
     async def find_by_checksum(self, checksum: str) -> AudioFile | None: ...
 

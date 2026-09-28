@@ -295,6 +295,7 @@ resolved; if unresolved, put it in Known Issues.
 
 | Date | Decision | Rationale | Affects |
 |---|---|---|---|
+| 2026-09-28 | **Cross-encoder re-ranking (§11 item 5), user-approved, shipped OFF by default.** After fusion, the first `max(rerank_depth, top_k)` fused hits are hydrated, scored by a `Reranker` port (one batched call), re-ordered by score (exact ties keep fused order), then cut to top_k; result scores become the cross-encoder's sigmoid relevance. Any re-ranker error returns the fused order with a WARNING (`search.rerank.failed`). Diagnostic branch endpoints are never re-ranked. `SearchService.config` (and therefore every evaluation report) records the reranker model and depth. Recommended model `cross-encoder/mmarco-mMiniLMv2-L12-H384-v1` | Primary misses are ordering, not retrieval: semantic recall@5 0.563 while hit@10 is 0.978, which is exactly what a cross-encoder fixes. OFF by default keeps the evaluated path unchanged (§11: "stretch features are additive") until a before/after measurement shows recall up and p95 < 500 ms; a large model such as bge-reranker-v2-m3 over 30 candidates would likely break p95 on CPU. Fallback on failure mirrors the semantic splitter's isolation rule | `SearchService`, settings, Tasks 7, 9 |
 | 2026-09-26 | **Task 17 M4: embedder swapped to `BAAI/bge-m3`** (measured 1024 dims, 8192 max tokens). `db/schema.sql` embedding column changed to `vector(1024)`; DB recreated (`scripts/init_db.py --recreate`) and the golden set fully re-ingested (run 5). Verified transcription/diarization/alignment/chunking are byte-identical to run 4 (313/313 chunks; only embeddings differ) | Required by the compulsory multilingual scope (§7B); MiniLM is English-only. Re-ingest was mandatory since the vector width changed | Tasks 4, 5, 17, schema |
 | 2026-09-26 | **English M4 before/after is a mixed result, recorded honestly, not spun as a clean win**: recall@10 and hit@5/hit@10 improved; **recall@5 on semantic queries regressed from 0.600 to 0.563**; speaker accuracy unaffected (1.000); **p95 latency rose from 15.5 ms to 67.0 ms** (bge-m3 is a much larger model), still ≪ 500 ms target | Rule: record misses honestly, never present a mixed result as a pass. The regression is on a primary metric slice and is carried into Task 10 (failure-mode analysis) rather than silently accepted | Tasks 10, 17, Measured Results |
 | 2026-09-26 | **User decisions on multi-agent/GitHub workflow**: (1) **pushes to `origin` (github.com/ankit435/Hackthon-G2) need the user's approval each time**; (2) the M8 translated text from cloud session 3 (branch `claude/upbeat-bell-4zoza6`, a44eb11) is **reviewed and merged**, not redone; (3) **dataset audio is committed**: `.gitignore` ignores `*.wav` except `!dataset/**/*.wav` | Several agents (Claude Code main, a Claude cloud session, Antigravity) write to this repo. Explicit push approval prevents half-finished states reaching GitHub. The main agent's review of M8: 18/18 files match their English source in segment count, order and speakers; none empty, none left in English; 95–100% target script; 30 QA items per language; 272 tests pass after the merge. The brief requires the dataset in the repo | Tasks 17, all |
@@ -365,10 +366,10 @@ resolved; if unresolved, put it in Known Issues.
 | All core tasks (1–16) Done | 🟡 Most done; Task 6 unverified, Task 17 M7/M8 pending |
 | All **primary** §2 criteria met and recorded | 🟡 Partial — speaker/latency/keyword-recall pass, semantic recall@5 misses (0.563 < 0.80) |
 | Time remains before submission | — |
-| User approved a specific item | ✅ **User approved item #1 (LLM answer generation) on 2026-09-26**, ahead of the other conditions being fully met — an explicit exception, not a reinterpretation of the rule |
+| User approved a specific item | ✅ **User approved item #1 (LLM answer generation) on 2026-09-26** and **item #5 (cross-encoder re-ranker) on 2026-09-28**, ahead of the other conditions being fully met — explicit exceptions, not a reinterpretation of the rule |
 
 
-**Gate: OPEN for item #1 only** (user override, 2026-09-26). All other items stay CLOSED.
+**Gate: OPEN for items #1 and #5 only** (user overrides, 2026-09-26 and 2026-09-28). All other items stay CLOSED.
 
 
 | Priority | Item | Status | Approved by / date |
@@ -377,7 +378,7 @@ resolved; if unresolved, put it in Known Issues.
 | 2 | Streaming / SSE search endpoint | Not started — gated | — |
 | 3 | Background ingestion job queue | Not started — gated | — |
 | 4 | Relevance feedback loop (would populate fusion weights from click data) | Not started — gated | — |
-| 5 | Cross-encoder re-ranker | Not started — gated | — |
+| 5 | Cross-encoder re-ranker | **Implemented, OFF by default** (2026-09-28): `Reranker` port, `infra/reranker.py`, optional stage in `SearchService.search`, settings `AUDIO_SEARCH_RERANKER_MODEL/_DEVICE/_RERANK_DEPTH`. **Not yet measured**: needs a before/after `scripts/evaluate.py` on the Mac before it is switched on | User, 2026-09-28 |
 | 6 | Query expansion / rewriting | Not started — gated | — |
 | — | Embedding fine-tuning | Not viable at this scale — write-up only | — |
 
