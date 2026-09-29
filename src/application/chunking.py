@@ -245,6 +245,63 @@ async def chunk_semantic(segments: Sequence[AlignedSegment], cfg: ChunkingConfig
     return out
 
 
+def _units(text: str) -> tuple[list[str], str]:
+    """Words, or characters for text written without spaces (CJK), plus the separator to rejoin them."""
+    return (text.split(), " ") if " " in text.strip() else (list(text), "")
+
+
+def context_texts(texts: Sequence[str], count_tokens, budget: int) -> list[str]:
+    """Embedding input per chunk: its own text plus the surrounding text, within `budget` tokens.
+
+    Answers in dialogue span turns ("Exactly. A client can send..." only makes sense after the previous
+    line), so each chunk is embedded with what was said around it. Only the embedding changes; the
+    stored text, times and speaker stay the chunk's own.
+    - The chunk's own text is always kept whole, even if it alone exceeds the budget.
+    - The remaining space is filled from the immediate neighbours outward, one word (one character for
+      unspaced text) at a time, alternating the word just before and the word just after. The two
+      sides share the space evenly; a side that runs out (start/end of the recording) leaves the rest
+      to the other. A side stops at the first unit that no longer fits.
+    - budget <= 0 disables context: each chunk embeds its own text (the pre-context baseline).
+    """
+    if budget <= 0:
+        return list(texts)
+    split = [_units(t) for t in texts]
+    out = []
+    for i, own in enumerate(texts):
+        # nearest-first queues of (chunk index, unit index) on each side
+        prev_q = [(j, u) for j in range(i - 1, -1, -1) for u in range(len(split[j][0]) - 1, -1, -1)]
+        next_q = [(j, u) for j in range(i + 1, len(texts)) for u in range(len(split[j][0]))]
+        taken: dict[int, list[int]] = {}
+
+        def render(extra: tuple[int, int] | None = None) -> str:
+            chosen = {j: sorted(us) for j, us in taken.items()}
+            if extra:
+                chosen.setdefault(extra[0], []).append(extra[1])
+                chosen[extra[0]].sort()
+            parts = [split[j][1].join(split[j][0][u] for u in chosen[j]) for j in sorted(chosen) if j < i]
+            parts.append(own)
+            parts += [split[j][1].join(split[j][0][u] for u in chosen[j]) for j in sorted(chosen) if j > i]
+            return " ".join(parts)
+
+        queues = [prev_q, next_q]
+        pos = [0, 0]
+        open_ = [bool(prev_q), bool(next_q)]
+        if count_tokens(own) < budget:
+            while any(open_):
+                for side in (0, 1):
+                    if not open_[side]:
+                        continue
+                    cand = queues[side][pos[side]]
+                    if count_tokens(render(cand)) > budget:
+                        open_[side] = False
+                        continue
+                    taken.setdefault(cand[0], []).append(cand[1])
+                    pos[side] += 1
+                    open_[side] = pos[side] < len(queues[side])
+        out.append(render())
+    return out
+
+
 def link(count: int) -> list[tuple[UUID, UUID | None, UUID | None]]:
     """(id, prev_id, next_id) for `count` chunks in order; the ends have None neighbours."""
     ids = [uuid4() for _ in range(count)]

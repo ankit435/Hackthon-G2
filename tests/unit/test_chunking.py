@@ -251,3 +251,51 @@ def test_link_edge_counts():
     assert link(0) == []
     [(only, prev, nxt)] = link(1)
     assert prev is None and nxt is None
+
+
+# --- context_texts: neighbour-context embedding input -------------------------------------------
+
+from application.chunking import context_texts  # noqa: E402
+
+
+def words(t):
+    return len(t.split())
+
+
+def test_context_off_returns_own_texts():
+    assert context_texts(["a b", "c d"], words, 0) == ["a b", "c d"]
+
+
+def test_context_fills_from_immediate_neighbours_first():
+    texts = ["p2 p2", "p1 p1", "own own", "n1 n1", "n2 n2"]
+    # budget 6 words: own (2) + prev (2) + next (2); nothing further out
+    assert context_texts(texts, words, 6)[2] == "p1 p1 own own n1 n1"
+    # budget 10: both immediate neighbours, then the next ring
+    assert context_texts(texts, words, 10)[2] == "p2 p2 p1 p1 own own n1 n1 n2 n2"
+
+
+def test_neighbour_that_does_not_fit_is_trimmed_to_the_part_nearest_the_chunk():
+    texts = ["x1 x2 x3 x4", "own", "y1 y2 y3 y4"]
+    # budget 5: own (1) + 2 words of prev (its tail) + 2 words of next (its head)
+    assert context_texts(texts, words, 5)[1] == "x3 x4 own y1 y2"
+
+
+def test_own_text_is_never_trimmed_even_over_budget():
+    assert context_texts(["a", "one two three four", "b"], words, 2)[1] == "one two three four"
+
+
+def test_edges_and_single_chunk():
+    assert context_texts(["only"], words, 50) == ["only"]
+    assert context_texts(["a", "b"], words, 50) == ["a b", "a b"]
+
+
+def test_text_without_spaces_is_trimmed_by_characters():
+    chars = lambda t: len(t.replace(" ", ""))  # noqa: E731  one token per character, spaces free
+    out = context_texts(["甲乙丙丁", "我", "戊己庚辛"], chars, 5)
+    assert out[1] == "丙丁 我 戊己"  # nearest characters of each neighbour, shared evenly
+
+
+def test_space_unused_by_one_side_goes_to_the_other():
+    # last chunk: no next neighbour, so the previous side may use the whole remaining budget
+    texts = ["a1 a2", "b1 b2", "own"]
+    assert context_texts(texts, words, 5)[2] == "a1 a2 b1 b2 own"

@@ -66,6 +66,10 @@ class Settings(BaseSettings):
     rerank_depth: int = Field(default=30, ge=1, le=100)
     split_soft_min_seconds: float = Field(default=20.0, gt=0)
     split_cap_seconds: float = Field(default=45.0, gt=0)
+    # Each chunk is EMBEDDED with its neighbours' text, up to this many tokens (the stored text stays the
+    # chunk's own). Dialogue answers span turns, so a lone "Exactly. ..." line otherwise never matches the
+    # question. 0 = off (pre-context baseline). Ingest-time only: re-ingest after changing it.
+    context_embedding_tokens: int = Field(default=256, ge=0, le=8192)
 
     # Browser uploads (POST /ingest/upload) are written here, then ingested by path. Gitignored.
     upload_dir: Path = REPO_ROOT / "uploads"

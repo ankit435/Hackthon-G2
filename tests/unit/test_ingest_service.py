@@ -71,9 +71,9 @@ def wavs(tmp_path):
     return paths
 
 
-def service(repo, transcriber=None, embedder=None):
+def service(repo, transcriber=None, embedder=None, context_tokens=0):
     return IngestService(FakeDecoder(), transcriber or FakeTranscriber(), FakeDiarizer(),
-                         embedder or FakeEmbedder(), repo, CFG)
+                         embedder or FakeEmbedder(), repo, CFG, context_tokens=context_tokens)
 
 
 def test_ingests_file_end_to_end_with_linked_chunks(wavs):
@@ -158,3 +158,26 @@ def test_ingest_logs_per_file_and_batch_aggregation_events(wavs, caplog):
     [batch] = [r for r in caplog.records if getattr(r, "event", "") == "ingest.batch.end"]
     assert (batch.files, batch.ingested, batch.failed, batch.skipped_existing) == (2, 2, 0, 0)
     assert batch.duration_ms >= 0
+
+
+class RecordingEmbedder(FakeEmbedder):
+    def __init__(self):
+        super().__init__()
+        self.texts = []
+
+    async def embed(self, texts):
+        self.texts.append(list(texts))
+        return await super().embed(texts)
+
+
+@pytest.mark.parametrize("budget, expected", [
+    (0, ["Hello there.", "General Kenobi."]),                                    # off: own text only
+    (64, ["Hello there. General Kenobi.", "Hello there. General Kenobi."]),     # each embedded with its neighbour
+])
+def test_chunks_are_embedded_with_neighbour_context_but_stored_with_their_own_text(wavs, budget, expected):
+    repo, embedder = FakeRepo(), RecordingEmbedder()
+    asyncio.run(service(repo, embedder=embedder, context_tokens=budget).ingest(wavs[:1]))
+    assert embedder.texts[-1] == expected
+    _, chunks = repo.saved[0]
+    assert [c.text for c in chunks] == ["Hello there.", "General Kenobi."]
+    assert [c.token_count for c in chunks] == [4, 4]  # token counts describe the stored chunk, not the context

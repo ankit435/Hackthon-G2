@@ -137,3 +137,12 @@ def test_invalid_rerank_depth_is_rejected(monkeypatch, depth):
     monkeypatch.setenv("AUDIO_SEARCH_RERANK_DEPTH", depth)
     with pytest.raises(ConfigurationError, match="rerank_depth"):
         load_settings(database_url=DB)
+
+
+def test_context_embedding_defaults_on_and_zero_disables(monkeypatch):
+    assert load_settings(database_url=DB).context_embedding_tokens == 256
+    monkeypatch.setenv("AUDIO_SEARCH_CONTEXT_EMBEDDING_TOKENS", "0")
+    assert load_settings(database_url=DB).context_embedding_tokens == 0
+    monkeypatch.setenv("AUDIO_SEARCH_CONTEXT_EMBEDDING_TOKENS", "-1")
+    with pytest.raises(ConfigurationError, match="context_embedding_tokens"):
+        load_settings(database_url=DB)
