@@ -50,6 +50,10 @@ class RepositoryError(DomainError):
     pass
 
 
+class NotFoundError(DomainError):
+    """A requested file or chunk does not exist (HTTP 404 at the API boundary)."""
+
+
 class RerankError(DomainError):
     """The cross-encoder could not score the candidates. Search falls back to the fused order."""
 

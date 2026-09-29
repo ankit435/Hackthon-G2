@@ -147,6 +147,51 @@ python scripts/build_multilingual_dataset.py
 python scripts/synthesize_multilingual.py --lang <es|hi|zh> --force   # model files (~350 MB) download from GitHub on first run
 ```
 
+## 7c. Web UI (React)
+
+A browser UI for everything the API does. Pages:
+- **Search**: hybrid, or the keyword/semantic diagnostic branches, with highlighted hits. Each hit shows its file,
+  timestamp, speaker and language, plays its segment, and expands to show the surrounding chunks.
+- **Library**: every indexed file with its language, duration, chunk count and speakers. Filter by language or name.
+- **Transcript**: a file's full transcript, synchronised with the audio.
+  - The line being spoken is highlighted during playback; clicking any line plays from there.
+  - Navigation: previous/next chunk, or <kbd>j</kbd>/<kbd>k</kbd>, and <kbd>space</kbd> to play or pause.
+  - Find-in-transcript, a speaker filter, and a copyable link to each chunk.
+- **Upload**: drag and drop **multiple** audio files. Each is uploaded and ingested with its own progress and
+  outcome (indexed, already indexed, or failed with the stage and reason).
+- **Ask**: LLM answers grounded in retrieved segments (needs `NVIDIA_API_KEY`). Each citation plays its segment.
+- **Evaluation**: runs the labelled query set; shows recall, MRR, speaker accuracy and p95 against the targets.
+- **System**: the active models and search configuration.
+
+Requires Node.js 20+.
+
+**Production** (one process, UI and API on the same port):
+```bash
+cd frontend && npm ci && npm run build && cd ..
+uvicorn api.main:app --app-dir src --port 8000        # open http://localhost:8000/ui
+```
+**Development** (hot reload; Vite proxies API calls to the FastAPI server on :8000):
+```bash
+uvicorn api.main:app --app-dir src --port 8000 &
+cd frontend && npm install && npm run dev              # open http://localhost:5173/ui/
+```
+Checks: `npm test` (Vitest) and `npm run typecheck` in `frontend/`.
+
+The API endpoints behind the UI (all in Swagger at `/docs`):
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /files` | Indexed files with language, duration, chunk count and speakers |
+| `GET /files/{id}` | Full transcript of one file (every chunk, in order) |
+| `GET /files/{id}/audio` | Streams the file's audio, with range requests for seeking. Only indexed files are served |
+| `GET /chunks/{id}/context?window=2` | A chunk with up to 5 neighbours on each side |
+| `POST /ingest/upload` | Multipart upload of one or more files, then ingest. A bad file fails alone |
+| `GET /config` | Active models and search settings |
+
+Uploads are saved under `AUDIO_SEARCH_UPLOAD_DIR` (default `uploads/`, gitignored), up to
+`AUDIO_SEARCH_UPLOAD_MAX_MB` (default 500) per file. Ingest is synchronous, as `PLAN.md` §7A requires, so a
+large file keeps its request open while it is transcribed (roughly its own duration on a laptop CPU).
+
 ## 8. Troubleshooting
 
 | Symptom | Cause | Fix |

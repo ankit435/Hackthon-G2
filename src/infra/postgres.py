@@ -9,7 +9,7 @@ import psycopg
 from pgvector.psycopg import register_vector_async
 
 from domain.errors import RepositoryError
-from domain.models import AudioFile, BranchHit, Chunk, SearchResultItem
+from domain.models import AudioFile, BranchHit, Chunk, LibraryFile, SearchResultItem
 from infra.text_search import cjk_bigrams, config_for
 
 # ts_rank_cd normalization: 1 divides by 1 + log(document length), so a longer chunk cannot win
@@ -38,6 +38,17 @@ _CHUNK_COLUMNS = ("id, audio_file_id, chunk_index, speaker_id, text, start_time,
 # search_config/search_text are derived, write-only (from `language`/`text`); not read back onto the
 # domain Chunk model, so they are appended here rather than folded into _CHUNK_COLUMNS above.
 _CHUNK_INSERT_COLUMNS = _CHUNK_COLUMNS + ", search_config, search_text"
+
+
+def _audio_file(r) -> AudioFile:
+    return AudioFile(id=r[0], file_name=r[1], file_path=r[2], checksum=r[3], duration_seconds=r[4], created_at=r[5],
+                     language=r[6], language_probability=r[7])
+
+
+def _chunk(r) -> Chunk:
+    return Chunk(id=r[0], audio_file_id=r[1], chunk_index=r[2], speaker=r[3], text=r[4], start_time=r[5],
+                 end_time=r[6], embedding=None if r[7] is None else tuple(r[7].to_list()),
+                 prev_chunk_id=r[8], next_chunk_id=r[9], token_count=r[10], char_count=r[11], language=r[12])
 
 
 class PostgresRepository:
@@ -87,15 +98,44 @@ class PostgresRepository:
             raise RepositoryError("persisting file and chunks failed; nothing was written", stage="persist",
                                   file=audio_file.file_name, error=type(e).__name__, detail=str(e).splitlines()[0]) from e
 
+    async def list_files(self) -> list[LibraryFile]:
+        try:
+            async with await self._connect() as conn:
+                rows = await (await conn.execute(
+                    "SELECT f.id, f.file_name, f.file_path, f.checksum, f.duration_seconds, f.created_at, f.language, "
+                    "f.language_probability, count(c.id), "
+                    "coalesce(array_agg(DISTINCT c.speaker_id) FILTER (WHERE c.id IS NOT NULL), '{}') "
+                    "FROM audio_file f LEFT JOIN chunk c ON c.audio_file_id = f.id "
+                    "GROUP BY f.id ORDER BY f.file_name, f.id")).fetchall()
+        except psycopg.Error as e:
+            raise RepositoryError("listing files failed", stage="library", error=type(e).__name__) from e
+        return [LibraryFile(file=_audio_file(r), chunk_count=r[8], speakers=tuple(sorted(r[9]))) for r in rows]
+
+    async def get_file(self, audio_file_id: UUID) -> AudioFile | None:
+        try:
+            async with await self._connect() as conn:
+                row = await (await conn.execute(
+                    "SELECT id, file_name, file_path, checksum, duration_seconds, created_at, language, "
+                    "language_probability FROM audio_file WHERE id = %s", (audio_file_id,))).fetchone()
+        except psycopg.Error as e:
+            raise RepositoryError("file lookup failed", stage="library", error=type(e).__name__) from e
+        return _audio_file(row) if row else None
+
+    async def get_chunk(self, chunk_id: UUID) -> Chunk | None:
+        try:
+            async with await self._connect() as conn:
+                row = await (await conn.execute(
+                    f"SELECT {_CHUNK_COLUMNS} FROM chunk WHERE id = %s", (chunk_id,))).fetchone()
+        except psycopg.Error as e:
+            raise RepositoryError("chunk lookup failed", stage="library", error=type(e).__name__) from e
+        return _chunk(row) if row else None
+
     async def list_by_file(self, audio_file_id: UUID) -> list[Chunk]:
         async with await self._connect() as conn:
             rows = await (await conn.execute(
                 f"SELECT {_CHUNK_COLUMNS} FROM chunk WHERE audio_file_id = %s ORDER BY chunk_index",
                 (audio_file_id,))).fetchall()
-        return [Chunk(id=r[0], audio_file_id=r[1], chunk_index=r[2], speaker=r[3], text=r[4], start_time=r[5],
-                      end_time=r[6], embedding=None if r[7] is None else tuple(r[7].to_list()),
-                      prev_chunk_id=r[8], next_chunk_id=r[9], token_count=r[10], char_count=r[11], language=r[12])
-                for r in rows]
+        return [_chunk(r) for r in rows]
 
     async def keyword_search(self, query: str, limit: int) -> list[BranchHit]:
         bigrammed = cjk_bigrams(query)  # identity unless the query itself contains CJK text

@@ -81,7 +81,9 @@ def test_answer_endpoint_returns_llm_text_with_retrieval_citations(client):
 
     assert response.status_code == 200
     assert response.json()["answer"] == "Use a token bucket [1]."
-    assert response.json()["citations"] == [{"number": 1, "file_name": "audio_01.wav",
+    # chunk_id / audio_file_id let a client play or open the cited segment, not just name the file.
+    assert response.json()["citations"] == [{"number": 1, "chunk_id": str(hit.chunk_id),
+                                                "audio_file_id": str(hit.audio_file_id), "file_name": "audio_01.wav",
                                                 "speaker": "SPEAKER_00", "start_time": 1.0, "end_time": 5.0,
                                                 "language": "en", "text": "Rate limiting algorithm test."}]
     app.state.answer_service.answer.assert_awaited_once_with("How should I rate limit?", 3)

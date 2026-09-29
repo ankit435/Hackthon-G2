@@ -14,6 +14,7 @@ from domain.models import (
     BranchHit,
     Chunk,
     DecodedAudio,
+    LibraryFile,
     SearchResultItem,
     SpeakerTurn,
     Transcript,
@@ -75,6 +76,12 @@ class AudioFileRepository(Protocol):
         """Persist the file record and all its chunks in ONE transaction; no partial writes."""
         ...
 
+    async def list_files(self) -> list[LibraryFile]:
+        """Every indexed file with its chunk count and speakers, ordered by file name."""
+        ...
+
+    async def get_file(self, audio_file_id: UUID) -> AudioFile | None: ...
+
 
 class ChunkRepository(Protocol):
     async def keyword_search(self, query: str, limit: int) -> list[BranchHit]:
@@ -90,6 +97,8 @@ class ChunkRepository(Protocol):
         ...
 
     async def list_by_file(self, audio_file_id: UUID) -> list[Chunk]: ...
+
+    async def get_chunk(self, chunk_id: UUID) -> Chunk | None: ...
 
 
 class AnswerGenerator(Protocol):

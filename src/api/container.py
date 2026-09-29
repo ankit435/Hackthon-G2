@@ -10,6 +10,7 @@ from application.answer import AnswerService
 from application.chunking import ChunkingConfig
 from application.evaluation import EvaluationService
 from application.ingest import IngestService
+from application.library import LibraryService
 from application.search import SearchService
 from infra.audio import TorchcodecDecoder
 from infra.diarizer import PyannoteDiarizer
@@ -17,6 +18,7 @@ from infra.embedder import SentenceTransformerEmbedder
 from infra.nvidia import NvidiaAnswerGenerator
 from infra.postgres import PostgresRepository
 from infra.reranker import CrossEncoderReranker
+from infra.uploads import UploadStore
 from infra.whisper import FasterWhisperTranscriber
 
 _STANDARD_ATTRS = set(vars(logging.LogRecord("", 0, "", 0, "", None, None))) | {"message", "asctime"}
@@ -78,3 +80,12 @@ def build_answer_service(settings: Settings, search: SearchService | None = None
         search or build_search_service(settings),
         NvidiaAnswerGenerator(settings.nvidia_api_key, base_url=settings.answer_base_url, model=settings.answer_model),
     )
+
+
+def build_library_service(settings: Settings) -> LibraryService:
+    repo = PostgresRepository(settings.database_url)
+    return LibraryService(files=repo, chunks=repo)
+
+
+def build_upload_store(settings: Settings) -> UploadStore:
+    return UploadStore(settings.upload_dir, max_bytes=settings.upload_max_mb * 1024 * 1024)

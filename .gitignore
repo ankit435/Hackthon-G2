@@ -12,3 +12,6 @@ logs/
 *.wav
 *.WAV
 !dataset/**/*.wav
+
+# Browser uploads (POST /ingest/upload) land here; they are user data, not part of the repo.
+uploads/

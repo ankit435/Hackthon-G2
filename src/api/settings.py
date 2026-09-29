@@ -67,6 +67,10 @@ class Settings(BaseSettings):
     split_soft_min_seconds: float = Field(default=20.0, gt=0)
     split_cap_seconds: float = Field(default=45.0, gt=0)
 
+    # Browser uploads (POST /ingest/upload) are written here, then ingested by path. Gitignored.
+    upload_dir: Path = REPO_ROOT / "uploads"
+    upload_max_mb: int = Field(default=500, ge=1)
+
     log_level: str = "INFO"
 
     @field_validator("reranker_model", mode="before")
