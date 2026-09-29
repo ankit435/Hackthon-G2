@@ -4,6 +4,7 @@ import { ErrorBox, Highlight, LanguageBadge, PlayIcon, SpeakerBadge, Spinner, hi
 import { api } from "../lib/api";
 import { activeChunkIndex, formatRange, formatTime } from "../lib/format";
 import { usePlayer } from "../lib/player";
+import { Timeline } from "../components/visuals";
 import type { Transcript } from "../lib/types";
 
 export function FilePage() {
@@ -121,6 +122,10 @@ export function FilePage() {
           {speakers.map((s) => <SpeakerBadge key={s} speaker={s} />)}
         </div>
       </header>
+
+      <Timeline spans={chunks} duration={data.file.duration_seconds} time={onThisFile ? player.time : null}
+        activeId={currentIndex >= 0 ? chunks[currentIndex]?.id : null}
+        onSeek={(t) => (onThisFile ? player.seek(t) : player.play(track, t))} />
 
       <div className="transcript-controls">
         <button className="btn primary" onClick={() => (onThisFile ? player.toggle() : playAt(Math.max(0, currentIndex)))}>

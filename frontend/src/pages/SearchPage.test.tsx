@@ -43,8 +43,9 @@ describe("SearchPage", () => {
   });
 
   it("submits a typed query and shows server errors", async () => {
-    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ detail: "query must not be empty" }), { status: 400 }));
     renderAt("/search");
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/files", undefined));
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ detail: "query must not be empty" }), { status: 400 }));
     await userEvent.type(screen.getByLabelText("Search query"), "hello{enter}");
     expect(await screen.findByRole("alert")).toHaveTextContent("query must not be empty");
   });

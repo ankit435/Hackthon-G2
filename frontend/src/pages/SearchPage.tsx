@@ -23,7 +23,11 @@ export function SearchPage() {
   const [error, setError] = useState<unknown>(null);
   const [elapsed, setElapsed] = useState<number | null>(null);
 
+  const [durations, setDurations] = useState<Record<string, number>>({});
   useEffect(() => setDraft(q), [q]);
+  useEffect(() => {
+    api.files().then((fs) => setDurations(Object.fromEntries(fs.map((f) => [f.id, f.duration_seconds])))).catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     if (!q.trim()) { setHits(null); return; }
@@ -43,8 +47,9 @@ export function SearchPage() {
 
   return (
     <section className="page">
-      <header className="page-head">
-        <h1>Search conversations</h1>
+      <header className="page-head hero">
+        <span className="eyebrow">Hybrid · multilingual · speaker-aware</span>
+        <h1>Search what was <span className="grad">said</span></h1>
         <p className="muted">Find exact words or similar meaning across every indexed recording, in any language.
           Each hit gives the file, the timestamp and the speaker.</p>
       </header>
@@ -89,7 +94,7 @@ export function SearchPage() {
       )}
       {hits && !loading && hits.length === 0 && <Empty>No results for “{q}”.</Empty>}
       <div className="hits">
-        {hits?.map((h, i) => <HitCard key={h.chunk_id} hit={h} rank={i + 1} terms={highlightTerms(q)} />)}
+        {hits?.map((h, i) => <HitCard key={h.chunk_id} hit={h} rank={i + 1} terms={highlightTerms(q)} duration={durations[h.audio_file_id]} />)}
       </div>
     </section>
   );

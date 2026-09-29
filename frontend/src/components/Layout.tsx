@@ -2,6 +2,7 @@ import { Link, NavLink, Outlet } from "react-router-dom";
 import { formatTime } from "../lib/format";
 import { usePlayer } from "../lib/player";
 import { PlayIcon } from "./common";
+import { EqBars } from "./visuals";
 
 const NAV = [
   { to: "/search", label: "Search", icon: "M11 4a7 7 0 1 0 4.4 12.4l4.1 4.1 1.4-1.4-4.1-4.1A7 7 0 0 0 11 4zm0 2a5 5 0 1 1 0 10 5 5 0 0 1 0-10z" },
@@ -22,7 +23,7 @@ function PlayerBar() {
         <PlayIcon playing={p.playing} />
       </button>
       <div className="player-meta">
-        <Link to={`/files/${p.track.fileId}`} className="player-title">{p.track.fileName}</Link>
+        <Link to={`/files/${p.track.fileId}`} className="player-title"><EqBars playing={p.playing} /> {p.track.fileName}</Link>
         <div className="player-time">
           {formatTime(p.time)} / {formatTime(p.duration)}
           {p.segmentEnd !== null && <span className="muted"> · segment ends {formatTime(p.segmentEnd)}</span>}

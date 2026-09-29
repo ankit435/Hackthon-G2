@@ -5,8 +5,9 @@ import { usePlayer } from "../lib/player";
 import type { SearchHit } from "../lib/types";
 import { ContextPanel } from "./ContextPanel";
 import { Highlight, LanguageBadge, PlayIcon, SpeakerBadge } from "./common";
+import { PositionBar } from "./visuals";
 
-export function HitCard({ hit, rank, terms }: { hit: SearchHit; rank: number; terms: string[] }) {
+export function HitCard({ hit, rank, terms, duration }: { hit: SearchHit; rank: number; terms: string[]; duration?: number }) {
   const [showContext, setShowContext] = useState(false);
   const player = usePlayer();
   const isPlaying = player.playing && player.track?.fileId === hit.audio_file_id &&
@@ -19,6 +20,7 @@ export function HitCard({ hit, rank, terms }: { hit: SearchHit; rank: number; te
         <header className="hit-head">
           <Link to={`/files/${hit.audio_file_id}?chunk=${hit.chunk_id}`} className="hit-file">{hit.file_name}</Link>
           <span className="time">{formatRange(hit.start_time, hit.end_time)}</span>
+          <PositionBar start={hit.start_time} end={hit.end_time} duration={duration} />
           <SpeakerBadge speaker={hit.speaker} />
           <LanguageBadge code={hit.language} />
           <span className="score" title="Ranking score (fused RRF, branch score, or re-ranker relevance)">
