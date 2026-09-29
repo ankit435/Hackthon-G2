@@ -71,9 +71,9 @@ def wavs(tmp_path):
     return paths
 
 
-def service(repo, transcriber=None, embedder=None, context_tokens=0):
+def service(repo, transcriber=None, embedder=None, context_embedding=False):
     return IngestService(FakeDecoder(), transcriber or FakeTranscriber(), FakeDiarizer(),
-                         embedder or FakeEmbedder(), repo, CFG, context_tokens=context_tokens)
+                         embedder or FakeEmbedder(), repo, CFG, context_embedding=context_embedding)
 
 
 def test_ingests_file_end_to_end_with_linked_chunks(wavs):
@@ -160,24 +160,21 @@ def test_ingest_logs_per_file_and_batch_aggregation_events(wavs, caplog):
     assert batch.duration_ms >= 0
 
 
-class RecordingEmbedder(FakeEmbedder):
-    def __init__(self):
-        super().__init__()
-        self.texts = []
-
+class TwoDirectionEmbedder(FakeEmbedder):
     async def embed(self, texts):
-        self.texts.append(list(texts))
-        return await super().embed(texts)
+        self.calls += 1
+        return [[1.0, 0.0, 0.0] if "Hello" in t else [0.6, 0.8, 0.0] for t in texts]
 
 
-@pytest.mark.parametrize("budget, expected", [
-    (0, ["Hello there.", "General Kenobi."]),                                    # off: own text only
-    (64, ["Hello there. General Kenobi.", "Hello there. General Kenobi."]),     # each embedded with its neighbour
-])
-def test_chunks_are_embedded_with_neighbour_context_but_stored_with_their_own_text(wavs, budget, expected):
-    repo, embedder = FakeRepo(), RecordingEmbedder()
-    asyncio.run(service(repo, embedder=embedder, context_tokens=budget).ingest(wavs[:1]))
-    assert embedder.texts[-1] == expected
+@pytest.mark.parametrize("enabled", [False, True])
+def test_context_embedding_changes_only_the_stored_vector(wavs, enabled):
+    repo, embedder = FakeRepo(), TwoDirectionEmbedder()
+    asyncio.run(service(repo, embedder=embedder, context_embedding=enabled).ingest(wavs[:1]))
     _, chunks = repo.saved[0]
-    assert [c.text for c in chunks] == ["Hello there.", "General Kenobi."]
-    assert [c.token_count for c in chunks] == [4, 4]  # token counts describe the stored chunk, not the context
+    assert [c.text for c in chunks] == ["Hello there.", "General Kenobi."]  # stored text is the chunk's own
+    assert [c.token_count for c in chunks] == [4, 4]
+    assert embedder.calls == 1  # no second embedding pass
+    if enabled:  # each vector leans towards its related neighbour (link = cos = 0.6)
+        assert chunks[0].embedding[1] > 0 and chunks[1].embedding[0] > 0.6
+    else:
+        assert [list(c.embedding) for c in chunks] == [[1.0, 0.0, 0.0], [0.6, 0.8, 0.0]]

@@ -11,7 +11,7 @@ from enum import Enum
 from pathlib import Path
 
 from application.alignment import align_words
-from application.chunking import ChunkingConfig, ChunkingReport, chunk_semantic, context_texts, link
+from application.chunking import ChunkingConfig, ChunkingReport, chunk_semantic, contextual_vectors, link
 from domain.errors import DomainError, InvalidInputError
 from domain.models import AudioFile, Chunk
 from domain.ports import AudioDecoder, AudioFileRepository, Diarizer, Embedder, Transcriber
@@ -76,10 +76,10 @@ class _Stage:
 
 class IngestService:
     def __init__(self, decoder: AudioDecoder, transcriber: Transcriber, diarizer: Diarizer, embedder: Embedder,
-                 files: AudioFileRepository, chunking: ChunkingConfig, context_tokens: int = 0) -> None:
+                 files: AudioFileRepository, chunking: ChunkingConfig, context_embedding: bool = False) -> None:
         self._decoder, self._transcriber, self._diarizer = decoder, transcriber, diarizer
         self._embedder, self._files, self._chunking = embedder, files, chunking
-        self._context_tokens = context_tokens  # 0 = embed each chunk's own text only
+        self._context_embedding = context_embedding  # False = each chunk's own embedding only
 
     async def ingest(self, paths: Sequence[str | Path]) -> list[IngestOutcome]:
         """Each file independently: one failure never aborts the batch (PLAN.md §7A)."""
@@ -162,9 +162,9 @@ class IngestService:
                                                    "segments": len(segments), "turns": len(turns),
                                                    "chunks": len(pieces), **outcome.chunking})
         with _Stage(outcome, "embed"):
-            texts = [p.text for p in pieces]
-            vectors = await self._embedder.embed(
-                context_texts(texts, self._embedder.count_tokens, min(self._context_tokens, self._embedder.max_tokens)))
+            vectors = await self._embedder.embed([p.text for p in pieces])
+            if self._context_embedding:
+                vectors = contextual_vectors(vectors)
 
         audio_file = AudioFile(file_name=path.name, file_path=str(path.resolve()), checksum=checksum,
                                duration_seconds=audio.duration_seconds, language=transcript.language,

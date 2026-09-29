@@ -51,7 +51,7 @@ def build_ingest_service(settings: Settings) -> IngestService:
         embedder=embedder,
         files=PostgresRepository(settings.database_url),
         chunking=ChunkingConfig(settings.split_soft_min_seconds, settings.split_cap_seconds),
-        context_tokens=settings.context_embedding_tokens,
+        context_embedding=settings.context_embedding,
     )
 
 

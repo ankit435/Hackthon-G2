@@ -245,60 +245,48 @@ async def chunk_semantic(segments: Sequence[AlignedSegment], cfg: ChunkingConfig
     return out
 
 
-def _units(text: str) -> tuple[list[str], str]:
-    """Words, or characters for text written without spaces (CJK), plus the separator to rejoin them."""
-    return (text.split(), " ") if " " in text.strip() else (list(text), "")
+def contextual_vectors(vectors: Sequence[Sequence[float]]) -> list[list[float]]:
+    """Blend each chunk's embedding with its neighbours inside the same topic (no token budget).
 
-
-def context_texts(texts: Sequence[str], count_tokens, budget: int) -> list[str]:
-    """Embedding input per chunk: its own text plus the surrounding text, within `budget` tokens.
-
-    Answers in dialogue span turns ("Exactly. A client can send..." only makes sense after the previous
-    line), so each chunk is embedded with what was said around it. Only the embedding changes; the
-    stored text, times and speaker stay the chunk's own.
-    - The chunk's own text is always kept whole, even if it alone exceeds the budget.
-    - The remaining space is filled from the immediate neighbours outward, one word (one character for
-      unspaced text) at a time, alternating the word just before and the word just after. The two
-      sides share the space evenly; a side that runs out (start/end of the recording) leaves the rest
-      to the other. A side stops at the first unit that no longer fits.
-    - budget <= 0 disables context: each chunk embeds its own text (the pre-context baseline).
+    Dialogue answers span turns ("Exactly. A client can send..." only means something after the previous
+    line), so a chunk's searchable meaning includes what surrounds it. How far that context reaches is
+    read from the conversation itself, not from a fixed size:
+    - link(b) = max(0, cosine(v_b, v_b+1)): how strongly adjacent chunks b and b+1 are related.
+    - Topic breaks are found per file, TextTiling-style: a boundary whose similarity is below the file's
+      mean minus one standard deviation. Context never crosses a break. (Fewer than 3 boundaries: no
+      statistics, so no breaks.)
+    - A neighbour's weight is the product of the links between it and the chunk: the immediate neighbour
+      counts as much as it is related, and influence decays with distance on its own.
+    - The chunk's own vector has weight 1 and the neighbours' weights are scaled to sum to at most 1, so a\n      chunk is always at least half itself, however long the topic run; the result is L2-normalised.
+    Only the stored embedding changes; text, times and speaker stay the chunk's own, and so do queries.
     """
-    if budget <= 0:
-        return list(texts)
-    split = [_units(t) for t in texts]
+    n = len(vectors)
+    if n < 2:
+        return [list(v) for v in vectors]
+    links = [max(0.0, _cosine(vectors[b], vectors[b + 1])) for b in range(n - 1)]
+    if len(links) >= 3:
+        mean = sum(links) / len(links)
+        std = math.sqrt(sum((x - mean) ** 2 for x in links) / len(links))
+        if std > 1e-6:  # a uniform run has no outliers; don't let float noise invent breaks
+            links = [0.0 if x < mean - std else x for x in links]  # a topic break: no context flows across
     out = []
-    for i, own in enumerate(texts):
-        # nearest-first queues of (chunk index, unit index) on each side
-        prev_q = [(j, u) for j in range(i - 1, -1, -1) for u in range(len(split[j][0]) - 1, -1, -1)]
-        next_q = [(j, u) for j in range(i + 1, len(texts)) for u in range(len(split[j][0]))]
-        taken: dict[int, list[int]] = {}
-
-        def render(extra: tuple[int, int] | None = None) -> str:
-            chosen = {j: sorted(us) for j, us in taken.items()}
-            if extra:
-                chosen.setdefault(extra[0], []).append(extra[1])
-                chosen[extra[0]].sort()
-            parts = [split[j][1].join(split[j][0][u] for u in chosen[j]) for j in sorted(chosen) if j < i]
-            parts.append(own)
-            parts += [split[j][1].join(split[j][0][u] for u in chosen[j]) for j in sorted(chosen) if j > i]
-            return " ".join(parts)
-
-        queues = [prev_q, next_q]
-        pos = [0, 0]
-        open_ = [bool(prev_q), bool(next_q)]
-        if count_tokens(own) < budget:
-            while any(open_):
-                for side in (0, 1):
-                    if not open_[side]:
-                        continue
-                    cand = queues[side][pos[side]]
-                    if count_tokens(render(cand)) > budget:
-                        open_[side] = False
-                        continue
-                    taken.setdefault(cand[0], []).append(cand[1])
-                    pos[side] += 1
-                    open_[side] = pos[side] < len(queues[side])
-        out.append(render())
+    for i in range(n):
+        neighbours: list[tuple[float, int]] = []
+        for step in (-1, 1):
+            weight, j = 1.0, i
+            while 0 <= j + step < n:
+                weight *= links[min(j, j + step)]
+                if weight <= 1e-3:  # negligible (or a topic break): stop walking this side
+                    break
+                j += step
+                neighbours.append((weight, j))
+        total = sum(w for w, _ in neighbours)
+        scale = 1.0 / total if total > 1.0 else 1.0  # neighbours together never outweigh the chunk itself
+        acc = [float(x) for x in vectors[i]]
+        for w, j in neighbours:
+            acc = [a + scale * w * x for a, x in zip(acc, vectors[j])]
+        norm = math.sqrt(sum(x * x for x in acc)) or 1.0
+        out.append([x / norm for x in acc])
     return out
 
 
