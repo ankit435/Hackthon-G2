@@ -160,3 +160,20 @@ class LabeledQuery:
     text: str
     kind: str  # "keyword" | "semantic"
     evidence: tuple[tuple[str, int], ...]  # (audio_id, reference segment index)
+
+
+@dataclass(frozen=True)
+class LibraryFile:
+    """An indexed file as the library lists it: the file record plus its index statistics."""
+    file: AudioFile
+    chunk_count: int
+    speakers: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class ChunkContext:
+    """One chunk with up to `window` neighbours on each side, in transcript order."""
+    file: AudioFile
+    before: tuple[Chunk, ...]
+    chunk: Chunk
+    after: tuple[Chunk, ...]

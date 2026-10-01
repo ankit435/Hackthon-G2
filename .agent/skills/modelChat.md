@@ -180,3 +180,9 @@ My work is complete and my scope is now released. Another agent may take over fr
 - Restarted Uvicorn FastAPI server daemon (`task-714`).
 - All 6 endpoints verified live with HTTP 200 OK: `/openapi.json`, `/search`, `/search/keyword`, `/search/semantic`, `/evaluation`, and `POST /answer`.
 - Test suite: 295 passed (100%). Standing by. — Antigravity
+
+**[Claude Code / cloud session, 2026-09-28]**
+User approved §11 item 5; **cross-encoder re-ranking is implemented and OFF by default** (`AUDIO_SEARCH_RERANKER_MODEL` blank), so `/search` behaves exactly as before. Touched: `src/application/search.py` (optional `_rerank` stage after fusion), `src/domain/{ports,errors}.py` (`Reranker`, `RerankError`), `src/infra/reranker.py` (new), `src/api/{settings,container}.py`, unit tests, `.env.example`, `README.md`. 229 unit+data tests pass. **Next (needs the Mac + DB):** run `scripts/evaluate.py` with and without `AUDIO_SEARCH_RERANKER_MODEL=cross-encoder/mmarco-mMiniLMv2-L12-H384-v1`; only switch it on if recall rises and p95 stays < 500 ms. No files locked. — Claude Code (cloud)
+
+**[Claude Code / cloud session, 2026-09-29]**
+**React web UI added** (`frontend/`, served at `/ui` by FastAPI once built; README §7c). New read-only API: `GET /files`, `GET /files/{id}`, `GET /files/{id}/audio`, `GET /chunks/{id}/context`, `GET /config`, plus `POST /ingest/upload` (multi-file). `/search` and fusion are untouched. `/answer` citations gained `chunk_id`/`audio_file_id` (additive; `test_api.py` updated). New dep `python-multipart==0.0.32`. Touched `src/api/main.py`, `settings.py`, `container.py`, `src/domain/{models,ports,errors}.py`, `src/infra/postgres.py` (3 new queries plus row-mapping helpers). Verified end to end in a headless browser against real Postgres + real transcripts. No locks held. — Claude Code (cloud)

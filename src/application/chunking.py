@@ -245,6 +245,51 @@ async def chunk_semantic(segments: Sequence[AlignedSegment], cfg: ChunkingConfig
     return out
 
 
+def contextual_vectors(vectors: Sequence[Sequence[float]]) -> list[list[float]]:
+    """Blend each chunk's embedding with its neighbours inside the same topic (no token budget).
+
+    Dialogue answers span turns ("Exactly. A client can send..." only means something after the previous
+    line), so a chunk's searchable meaning includes what surrounds it. How far that context reaches is
+    read from the conversation itself, not from a fixed size:
+    - link(b) = max(0, cosine(v_b, v_b+1)): how strongly adjacent chunks b and b+1 are related.
+    - Topic breaks are found per file, TextTiling-style: a boundary whose similarity is below the file's
+      mean minus one standard deviation. Context never crosses a break. (Fewer than 3 boundaries: no
+      statistics, so no breaks.)
+    - A neighbour's weight is the product of the links between it and the chunk: the immediate neighbour
+      counts as much as it is related, and influence decays with distance on its own.
+    - The chunk's own vector has weight 1 and the neighbours' weights are scaled to sum to at most 1, so a\n      chunk is always at least half itself, however long the topic run; the result is L2-normalised.
+    Only the stored embedding changes; text, times and speaker stay the chunk's own, and so do queries.
+    """
+    n = len(vectors)
+    if n < 2:
+        return [list(v) for v in vectors]
+    links = [max(0.0, _cosine(vectors[b], vectors[b + 1])) for b in range(n - 1)]
+    if len(links) >= 3:
+        mean = sum(links) / len(links)
+        std = math.sqrt(sum((x - mean) ** 2 for x in links) / len(links))
+        if std > 1e-6:  # a uniform run has no outliers; don't let float noise invent breaks
+            links = [0.0 if x < mean - std else x for x in links]  # a topic break: no context flows across
+    out = []
+    for i in range(n):
+        neighbours: list[tuple[float, int]] = []
+        for step in (-1, 1):
+            weight, j = 1.0, i
+            while 0 <= j + step < n:
+                weight *= links[min(j, j + step)]
+                if weight <= 1e-3:  # negligible (or a topic break): stop walking this side
+                    break
+                j += step
+                neighbours.append((weight, j))
+        total = sum(w for w, _ in neighbours)
+        scale = 1.0 / total if total > 1.0 else 1.0  # neighbours together never outweigh the chunk itself
+        acc = [float(x) for x in vectors[i]]
+        for w, j in neighbours:
+            acc = [a + scale * w * x for a, x in zip(acc, vectors[j])]
+        norm = math.sqrt(sum(x * x for x in acc)) or 1.0
+        out.append([x / norm for x in acc])
+    return out
+
+
 def link(count: int) -> list[tuple[UUID, UUID | None, UUID | None]]:
     """(id, prev_id, next_id) for `count` chunks in order; the ends have None neighbours."""
     ids = [uuid4() for _ in range(count)]

@@ -251,3 +251,86 @@ def test_link_edge_counts():
     assert link(0) == []
     [(only, prev, nxt)] = link(1)
     assert prev is None and nxt is None
+
+
+# --- contextual_vectors: topic-aware neighbour context -----------------------------------------
+
+import math  # noqa: E402
+
+from application.chunking import contextual_vectors  # noqa: E402
+
+
+def unit(v):
+    n = math.sqrt(sum(x * x for x in v))
+    return [x / n for x in v]
+
+
+def cos(a, b):
+    return sum(x * y for x, y in zip(unit(a), unit(b)))
+
+
+def test_single_chunk_and_empty_are_unchanged():
+    assert contextual_vectors([]) == []
+    assert contextual_vectors([[1.0, 2.0]]) == [[1.0, 2.0]]
+
+
+def test_immediate_neighbour_weight_is_its_similarity():
+    # two chunks at 60 degrees: link = cos 60 = 0.5, so v0' = v0 + 0.5 * v1
+    v0, v1 = [1.0, 0.0], [0.5, math.sqrt(3) / 2]
+    out = contextual_vectors([v0, v1])
+    assert out[0] == pytest.approx(unit([1.0 + 0.25, 0.5 * math.sqrt(3) / 2]))
+    assert math.sqrt(sum(x * x for x in out[1])) == pytest.approx(1.0)
+
+
+def test_reply_moves_towards_the_turn_it_answers():
+    q = [1.0, 0.0, 0.0]            # the question's direction
+    claim = [0.9, 0.44, 0.0]       # segment 7: states the answer
+    reply = [0.3, 0.95, 0.0]       # segment 8: "Exactly. A client can send..." (weak on its own)
+    other = [0.0, 0.0, 1.0]        # unrelated topic
+    out = contextual_vectors([claim, reply, other, other])
+    assert cos(out[1], q) > cos(reply, q)       # the reply now matches the question better
+    assert cos(out[0], q) > cos(out[1], q)      # the claim is still the best match
+    assert cos(out[0], q) > cos(out[2], q) + 0.5  # and far above the unrelated topic
+
+
+def test_influence_decays_with_distance_as_a_product_of_links():
+    e = [[1.0, 0.0], [1.0, 0.1], [1.0, 0.2], [1.0, 0.3]]
+    raw = [max(0.0, cos(e[b], e[b + 1])) for b in range(3)]
+    mean = sum(raw) / 3
+    std = math.sqrt(sum((x - mean) ** 2 for x in raw) / 3)
+    links = [0.0 if x < mean - std else x for x in raw]
+    w1, w2, w3 = links[0], links[0] * links[1], links[0] * links[1] * links[2]
+    expected = unit([sum(w * v[k] for w, v in zip([1.0, w1, w2, w3], e)) for k in range(2)])
+    assert contextual_vectors(e)[0] == pytest.approx(expected)
+
+
+def test_context_never_crosses_a_topic_break():
+    a1, a2, a3 = [1.0, 0.0, 0.0], [0.98, 0.2, 0.0], [0.96, 0.28, 0.0]
+    b1, b2 = [0.0, 0.05, 1.0], [0.0, 0.0, 1.0]
+    out = contextual_vectors([a1, a2, a3, b1, b2])  # a3 -> b1 similarity is far below the file's mean - std
+    assert out[2][2] == pytest.approx(0.0, abs=1e-9)  # nothing of topic B leaked into a3
+    assert out[3][0] == pytest.approx(0.0, abs=1e-9)  # nothing of topic A leaked into b1
+
+
+def test_opposite_neighbours_contribute_nothing():
+    out = contextual_vectors([[1.0, 0.0], [-1.0, 0.0]])  # negative similarity is clipped to 0
+    assert out == [pytest.approx([1.0, 0.0]), pytest.approx([-1.0, 0.0])]
+
+
+def test_deterministic():
+    vs = [[math.sin(i), math.cos(i), 0.3] for i in range(12)]
+    assert contextual_vectors(vs) == contextual_vectors(vs)
+
+
+def test_a_long_related_run_cannot_swamp_a_chunk():
+    # 40 chunks drifting smoothly (every link = cos 0.1 rad): uncapped, the far neighbours' summed weight
+    # (~20x the chunk's own) pulls chunk 0's vector away from its own meaning (measured cos -0.28).
+    run = [[math.cos(k * 0.1), math.sin(k * 0.1)] for k in range(40)]
+    assert cos(contextual_vectors(run)[0], run[0]) > 0.85
+
+
+def test_a_uniform_run_has_no_spurious_topic_breaks():
+    run = [[math.cos(k * 0.1), math.sin(k * 0.1)] for k in range(13)]  # chunk 6 is exactly central
+    out = contextual_vectors(run)
+    # with no breaks, the middle chunk is pulled symmetrically: it keeps its own direction
+    assert cos(out[6], run[6]) == pytest.approx(1.0)

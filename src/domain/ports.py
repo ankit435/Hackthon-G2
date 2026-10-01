@@ -14,6 +14,7 @@ from domain.models import (
     BranchHit,
     Chunk,
     DecodedAudio,
+    LibraryFile,
     SearchResultItem,
     SpeakerTurn,
     Transcript,
@@ -56,12 +57,30 @@ class Embedder(Protocol):
         ...
 
 
+class Reranker(Protocol):
+    """Cross-encoder: reads the query and each passage TOGETHER, so it scores relevance directly
+    rather than comparing two independently computed vectors (PLAN.md §11 item 5)."""
+
+    @property
+    def model_name(self) -> str: ...
+
+    async def score(self, query: str, passages: Sequence[str]) -> list[float]:
+        """One batched call; one score per passage, input order, higher = more relevant. Raises RerankError."""
+        ...
+
+
 class AudioFileRepository(Protocol):
     async def find_by_checksum(self, checksum: str) -> AudioFile | None: ...
 
     async def add_with_chunks(self, audio_file: AudioFile, chunks: Sequence[Chunk]) -> None:
         """Persist the file record and all its chunks in ONE transaction; no partial writes."""
         ...
+
+    async def list_files(self) -> list[LibraryFile]:
+        """Every indexed file with its chunk count and speakers, ordered by file name."""
+        ...
+
+    async def get_file(self, audio_file_id: UUID) -> AudioFile | None: ...
 
 
 class ChunkRepository(Protocol):
@@ -78,6 +97,8 @@ class ChunkRepository(Protocol):
         ...
 
     async def list_by_file(self, audio_file_id: UUID) -> list[Chunk]: ...
+
+    async def get_chunk(self, chunk_id: UUID) -> Chunk | None: ...
 
 
 class AnswerGenerator(Protocol):

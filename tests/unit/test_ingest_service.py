@@ -71,9 +71,9 @@ def wavs(tmp_path):
     return paths
 
 
-def service(repo, transcriber=None, embedder=None):
+def service(repo, transcriber=None, embedder=None, context_embedding=False):
     return IngestService(FakeDecoder(), transcriber or FakeTranscriber(), FakeDiarizer(),
-                         embedder or FakeEmbedder(), repo, CFG)
+                         embedder or FakeEmbedder(), repo, CFG, context_embedding=context_embedding)
 
 
 def test_ingests_file_end_to_end_with_linked_chunks(wavs):
@@ -158,3 +158,23 @@ def test_ingest_logs_per_file_and_batch_aggregation_events(wavs, caplog):
     [batch] = [r for r in caplog.records if getattr(r, "event", "") == "ingest.batch.end"]
     assert (batch.files, batch.ingested, batch.failed, batch.skipped_existing) == (2, 2, 0, 0)
     assert batch.duration_ms >= 0
+
+
+class TwoDirectionEmbedder(FakeEmbedder):
+    async def embed(self, texts):
+        self.calls += 1
+        return [[1.0, 0.0, 0.0] if "Hello" in t else [0.6, 0.8, 0.0] for t in texts]
+
+
+@pytest.mark.parametrize("enabled", [False, True])
+def test_context_embedding_changes_only_the_stored_vector(wavs, enabled):
+    repo, embedder = FakeRepo(), TwoDirectionEmbedder()
+    asyncio.run(service(repo, embedder=embedder, context_embedding=enabled).ingest(wavs[:1]))
+    _, chunks = repo.saved[0]
+    assert [c.text for c in chunks] == ["Hello there.", "General Kenobi."]  # stored text is the chunk's own
+    assert [c.token_count for c in chunks] == [4, 4]
+    assert embedder.calls == 1  # no second embedding pass
+    if enabled:  # each vector leans towards its related neighbour (link = cos = 0.6)
+        assert chunks[0].embedding[1] > 0 and chunks[1].embedding[0] > 0.6
+    else:
+        assert [list(c.embedding) for c in chunks] == [[1.0, 0.0, 0.0], [0.6, 0.8, 0.0]]

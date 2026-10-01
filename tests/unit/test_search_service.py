@@ -154,3 +154,94 @@ def test_hydration_gap_is_dropped_not_invented(caplog):
     with caplog.at_level(logging.WARNING):
         results = asyncio.run(service(Gappy(hits("A", "B"), [])).search("q", 2))
     assert names(results) == ["B"] and any("missing at hydration" in r.message for r in caplog.records)
+
+
+# --- cross-encoder re-ranking (PLAN.md §11 item 5) ---------------------------------------------
+
+class FakeReranker:
+    """Scores each passage (the chunk's name, see FakeRepo.hydrate) from a fixed table."""
+    model_name = "fake-cross-encoder"
+
+    def __init__(self, scores=None, fail=None):
+        self._scores, self._fail, self.calls = scores or {}, fail, []
+
+    async def score(self, query, passages):
+        self.calls.append((query, list(passages)))
+        if self._fail:
+            raise self._fail
+        return [self._scores.get(p, 0.0) for p in passages]
+
+
+def reranked(repo, reranker, depth=30):
+    return SearchService(repo, FakeEmbedder(), weights={Branch.KEYWORD: 1.0, Branch.SEMANTIC: 1.0}, rrf_k=60,
+                         candidate_depth_multiplier=5, reranker=reranker, rerank_depth=depth)
+
+
+def test_reranker_reorders_the_fused_pool_and_cuts_to_top_k_after():
+    # Fused order is A, B, C, D. The cross-encoder prefers D, then C: re-ranking must promote D from
+    # 4th to 1st, which it can only do if it sees more than top_k=2 candidates.
+    repo = FakeRepo(hits("A", "B", "C", "D"), [])
+    rr = FakeReranker({"A": 0.1, "B": 0.2, "C": 0.8, "D": 0.9})
+    results = asyncio.run(reranked(repo, rr).search("q", top_k=2))
+    assert names(results) == ["D", "C"]
+    assert [r.score for r in results] == [0.9, 0.8]  # scores become the cross-encoder's
+    assert rr.calls == [("q", ["A", "B", "C", "D"])]  # one batched call, fused order, query as searched
+
+
+def test_rerank_pool_is_rerank_depth_and_never_below_top_k():
+    repo = FakeRepo(hits("A", "B", "C", "D", "E"), [])
+    rr = FakeReranker()
+    asyncio.run(reranked(repo, rr, depth=2).search("q", top_k=4))
+    assert rr.calls[0][1] == ["A", "B", "C", "D"]  # max(depth 2, top_k 4)
+    rr2 = FakeReranker()
+    asyncio.run(reranked(FakeRepo(hits("A", "B", "C", "D", "E"), []), rr2, depth=3).search("q", top_k=1))
+    assert rr2.calls[0][1] == ["A", "B", "C"]  # depth 3 > top_k 1
+
+
+def test_rerank_ties_keep_fused_order():
+    repo = FakeRepo(hits("A", "B", "C"), [])
+    assert names(asyncio.run(reranked(repo, FakeReranker({"A": 0.5, "B": 0.5, "C": 0.5})).search("q", 3))) == ["A", "B", "C"]
+
+
+def test_rerank_failure_falls_back_to_fused_order_and_warns(caplog):
+    repo = FakeRepo(hits("A", "B", "C"), [])
+    with caplog.at_level(logging.WARNING, logger="application.search"):
+        results = asyncio.run(reranked(repo, FakeReranker(fail=RuntimeError("model crashed"))).search("q", 2))
+    assert names(results) == ["A", "B"] and results[0].score == pytest.approx(1 / 61)  # fused scores kept
+    assert any(getattr(r, "event", "") == "search.rerank.failed" for r in caplog.records)
+
+
+def test_rerank_wrong_score_count_is_a_failure_not_a_silent_misalignment(caplog):
+    class ShortReranker(FakeReranker):
+        async def score(self, query, passages):
+            return [1.0]
+    with caplog.at_level(logging.WARNING, logger="application.search"):
+        results = asyncio.run(reranked(FakeRepo(hits("A", "B"), []), ShortReranker()).search("q", 2))
+    assert names(results) == ["A", "B"]
+    assert any(getattr(r, "event", "") == "search.rerank.failed" for r in caplog.records)
+
+
+def test_no_reranker_leaves_the_evaluated_path_unchanged():
+    repo = FakeRepo(hits("A", "B", "C", "D"), hits("A", "C", "B"))
+    plain = asyncio.run(service(repo).search("q", top_k=3))
+    [hydrate_call] = [c for c in repo.calls if c[0] == "hydrate"]
+    assert hydrate_call[1] == [r.chunk_id for r in plain]  # only top_k hydrated, as before
+    assert service(repo).config["reranker"] is None
+
+
+def test_config_reports_the_active_reranker():
+    cfg = reranked(FakeRepo([], []), FakeReranker(), depth=20).config
+    assert (cfg["reranker"], cfg["rerank_depth"]) == ("fake-cross-encoder", 20)
+
+
+def test_rerank_depth_must_be_positive():
+    with pytest.raises(ValueError):
+        reranked(FakeRepo([], []), FakeReranker(), depth=0)
+
+
+def test_diagnostic_branches_are_never_reranked():
+    rr = FakeReranker({"B": 1.0})
+    svc = reranked(FakeRepo(hits("A", "B"), hits("B", "A")), rr)
+    assert names(asyncio.run(svc.keyword("q", 2))) == ["A", "B"]
+    assert names(asyncio.run(svc.semantic("q", 2))) == ["B", "A"]
+    assert rr.calls == []

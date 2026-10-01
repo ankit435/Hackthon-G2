@@ -79,7 +79,10 @@ baseline. The first ingest downloads model weights: Whisper `large-v3-turbo` is
 | `AUDIO_SEARCH_FUSION_WEIGHT_SEMANTIC` | `1.0` | Same, for the semantic branch. **1.0 / 1.0 is the permanent measured baseline** |
 | `AUDIO_SEARCH_CANDIDATE_DEPTH_MULTIPLIER` | `5` | Each branch fetches `top_k × multiplier` candidates (50 at top_k 10). Top-K is cut only after fusion. Deeper lists let fusion see more cross-branch agreement at a small latency cost |
 | `AUDIO_SEARCH_HNSW_EF_SEARCH` | `40` | Higher improves vector recall at the cost of latency. No reindex needed. Branch depth is guaranteed separately: the repository enables pgvector's iterative HNSW scan (`strict_order`), because a plain scan can silently return fewer rows than requested |
+| `AUDIO_SEARCH_RERANKER_MODEL` | _(blank = off)_ | Cross-encoder that re-scores the top fused candidates (§11 item 5). Recommended `cross-encoder/mmarco-mMiniLMv2-L12-H384-v1`. **Off by default**: enable only with a before/after `scripts/evaluate.py` run (recall up, p95 still < 500 ms). If the model fails, search logs `search.rerank.failed` and returns the fused order |
+| `AUDIO_SEARCH_RERANKER_DEVICE` / `AUDIO_SEARCH_RERANK_DEPTH` | `cpu` / `30` | Where the cross-encoder runs (`cpu`, `mps`, `cuda`) and how many fused candidates it re-scores (1–100; never fewer than top-K). Latency grows roughly linearly with depth |
 | `AUDIO_SEARCH_SPLIT_SOFT_MIN_SECONDS` / `AUDIO_SEARCH_SPLIT_CAP_SECONDS` | `20` / `45` | Semantic split window for long turns. Chunks must stay under the embedder's **8192-token** limit (`BAAI/bge-m3`) |
+| `AUDIO_SEARCH_CONTEXT_EMBEDDING` | `true` | Each chunk's stored embedding is **blended with its neighbours inside the same topic**, so replies that span turns ("Exactly. …") match the question. How far context reaches comes from the conversation itself, not a fixed size. A neighbour's weight is how related it is to the chunk, multiplied along the way, and it stops at topic breaks found per file (TextTiling rule: similarity below mean − 1 std). The neighbours together never outweigh the chunk itself. There's no token budget, and the stored text, timestamps and speaker are unchanged. `false` = off (the baseline). Ingest-time only: **re-ingest** after changing it |
 | `AUDIO_SEARCH_EMBEDDING_DEVICE` | `cpu` | `mps` (Apple Silicon) or `cuda` speed up embedding at ingest and query time. No effect on results |
 | `AUDIO_SEARCH_TRANSCRIPTION_LANGUAGE` | blank (auto-detect) | Blank lets Whisper detect one language per file. Set a Whisper language code (`en`, `es`, `hi`, `zh`, …) only to force every file to that language |
 
@@ -144,6 +147,51 @@ pip install -r requirements-dev.txt               # kokoro-onnx bundles espeak-n
 python scripts/build_multilingual_dataset.py
 python scripts/synthesize_multilingual.py --lang <es|hi|zh> --force   # model files (~350 MB) download from GitHub on first run
 ```
+
+## 7c. Web UI (React)
+
+A browser UI for everything the API does. Pages:
+- **Search**: hybrid, or the keyword/semantic diagnostic branches, with highlighted hits. Each hit shows its file,
+  timestamp, speaker and language, plays its segment, and expands to show the surrounding chunks.
+- **Library**: every indexed file with its language, duration, chunk count and speakers. Filter by language or name.
+- **Transcript**: a file's full transcript, synchronised with the audio.
+  - The line being spoken is highlighted during playback; clicking any line plays from there.
+  - Navigation: previous/next chunk, or <kbd>j</kbd>/<kbd>k</kbd>, and <kbd>space</kbd> to play or pause.
+  - Find-in-transcript, a speaker filter, and a copyable link to each chunk.
+- **Upload**: drag and drop **multiple** audio files. Each is uploaded and ingested with its own progress and
+  outcome (indexed, already indexed, or failed with the stage and reason).
+- **Ask**: LLM answers grounded in retrieved segments (needs `NVIDIA_API_KEY`). Each citation plays its segment.
+- **Evaluation**: runs the labelled query set; shows recall, MRR, speaker accuracy and p95 against the targets.
+- **System**: the active models and search configuration.
+
+Requires Node.js 20+.
+
+**Production** (one process, UI and API on the same port):
+```bash
+cd frontend && npm ci && npm run build && cd ..
+uvicorn api.main:app --app-dir src --port 8000        # open http://localhost:8000/ui
+```
+**Development** (hot reload; Vite proxies API calls to the FastAPI server on :8000):
+```bash
+uvicorn api.main:app --app-dir src --port 8000 &
+cd frontend && npm install && npm run dev              # open http://localhost:5173/ui/
+```
+Checks: `npm test` (Vitest) and `npm run typecheck` in `frontend/`.
+
+The API endpoints behind the UI (all in Swagger at `/docs`):
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /files` | Indexed files with language, duration, chunk count and speakers |
+| `GET /files/{id}` | Full transcript of one file (every chunk, in order) |
+| `GET /files/{id}/audio` | Streams the file's audio, with range requests for seeking. Only indexed files are served |
+| `GET /chunks/{id}/context?window=2` | A chunk with up to 5 neighbours on each side |
+| `POST /ingest/upload` | Multipart upload of one or more files, then ingest. A bad file fails alone |
+| `GET /config` | Active models and search settings |
+
+Uploads are saved under `AUDIO_SEARCH_UPLOAD_DIR` (default `uploads/`, gitignored), up to
+`AUDIO_SEARCH_UPLOAD_MAX_MB` (default 500) per file. Ingest is synchronous, as `PLAN.md` §7A requires, so a
+large file keeps its request open while it is transcribed (roughly its own duration on a laptop CPU).
 
 ## 8. Troubleshooting
 
