@@ -6,15 +6,36 @@
             "type": "debugpy",
             "request": "launch",
             "module": "uvicorn",
+            
             "args": [
-                "src.api.main:app",
+                "api.main:app",
                 "--port",
                 "8000"
             ],
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/src"
+            },
             "cwd": "${workspaceFolder}",
             "envFile": "${workspaceFolder}/.env",
             "python": "${workspaceFolder}/.venv/bin/python",
             "justMyCode": true
+        },
+        {
+            "name": "Frontend: Run",
+            "type": "node-terminal",
+            "request": "launch",
+            "command": "npm run dev",
+            "cwd": "${workspaceFolder}/frontend"
+        }
+    ],
+    "compounds": [
+        {
+            "name": "Backend + Frontend",
+            "configurations": [
+                "FastAPI: Run",
+                "Frontend: Run"
+            ],
+            "stopAll": true
         }
     ]
 }
