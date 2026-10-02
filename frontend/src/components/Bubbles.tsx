@@ -10,8 +10,13 @@ const HUES = [262, 190, 290, 210, 175]; // violet, cyan, magenta, blue, teal: th
 const MAX_SPEED = 0.6; // px per frame at 60 fps
 const POINTER_RADIUS = 160;
 
-export const DEFAULT_BUBBLES = 14;
-export const MAX_BUBBLES = 40;
+// Bubble count: set VITE_BUBBLE_COUNT in frontend/.env (0 turns them off), or change the fallback here.
+// Read at build time (`npm run build`) or dev-server start.
+const DEFAULT_BUBBLES = 14;
+const MAX_BUBBLES = 40;
+const envCount = Number(import.meta.env.VITE_BUBBLE_COUNT);
+export const BUBBLE_COUNT = import.meta.env.VITE_BUBBLE_COUNT !== undefined && Number.isFinite(envCount)
+  ? Math.min(MAX_BUBBLES, Math.max(0, Math.round(envCount))) : DEFAULT_BUBBLES;
 
 function spawn(existing: Bubble[], w: number, h: number): Bubble | null {
   const base = 22 + Math.random() * Math.min(80, w / 12);
@@ -88,7 +93,7 @@ function draw(ctx: CanvasRenderingContext2D, bs: Bubble[], w: number, h: number,
   ctx.globalCompositeOperation = "source-over";
 }
 
-export function Bubbles({ count = DEFAULT_BUBBLES }: { count?: number }) {
+export function Bubbles({ count = BUBBLE_COUNT }: { count?: number }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const target = useRef(count);
   const api = useRef<{ refit: () => void } | null>(null);

@@ -61,10 +61,6 @@ body::before { /* faint grid for depth */
 .bubbles { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 0; pointer-events: none; filter: blur(6px) saturate(1.25); }
 .app > .sidebar, .app > .content { z-index: 1; }
 .app > .content { position: relative; }
-.bubble-control { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; margin-top: auto; color: var(--muted); font-size: 0.8rem; }
-.bubble-control > span { display: flex; justify-content: space-between; }
-.bubble-control b { color: var(--text); font-weight: 600; }
-.bubble-control input { width: 100%; }
 a { color: inherit; }
 h1 { font-size: 2rem; line-height: 1.15; margin: 0 0 6px; letter-spacing: -0.03em; font-weight: 800; }
 h2 { font-size: 1.05rem; margin: 0 0 12px; letter-spacing: -0.01em; }
@@ -402,8 +398,7 @@ input[type="checkbox"] { accent-color: var(--v); }
   .sidebar nav { flex-direction: row; flex-wrap: wrap; flex: 1 1 100%; }
   .nav-link { padding: 6px 10px; font-size: 0.9rem; }
   .nav-link.active::before { display: none; }
-  .nav-link.subtle, .bubble-control { display: none; }
-  .content { padding: 20px 16px 44px; }
+  .nav-link.subtle,   .content { padding: 20px 16px 44px; }
   h1, .page-head.hero h1 { font-size: 1.8rem; }
   .page-head.row { flex-direction: column; }
   .search-form::before { inset: -2px; }
