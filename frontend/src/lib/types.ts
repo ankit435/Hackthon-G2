@@ -63,6 +63,20 @@ export interface IngestOutcome {
   chunking: Record<string, number>;
 }
 
+export type JobState = "queued" | "running" | "ingested" | "skipped_existing" | "failed" | "cancelled";
+
+export interface IngestJob {
+  id: string;
+  file_name: string;
+  state: JobState;
+  stage: string | null;
+  position: number | null;
+  created_at: number;
+  started_at: number | null;
+  finished_at: number | null;
+  outcome: IngestOutcome | null;
+}
+
 export interface Citation {
   number: number;
   chunk_id: string;

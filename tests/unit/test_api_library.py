@@ -9,6 +9,7 @@ from fastapi.testclient import TestClient
 
 from api.main import app
 from application.ingest import IngestOutcome, IngestStatus
+from application.jobs import IngestQueue
 from domain.errors import InvalidInputError, NotFoundError
 from domain.models import AudioFile, Chunk, ChunkContext, LibraryFile
 from infra.uploads import UploadStore
@@ -29,6 +30,7 @@ def client(tmp_path):
         app.state.library_service = AsyncMock()
         app.state.ingest_service = AsyncMock()
         app.state.upload_store = UploadStore(tmp_path, max_bytes=1000)
+        app.state.ingest_queue = IngestQueue(app.state.ingest_service)  # not started: jobs stay queued
         yield
 
     original = app.router.lifespan_context
@@ -82,24 +84,28 @@ def test_audio_is_streamed_with_range_support(client, tmp_path):
     assert part.status_code == 206 and part.content == b"RIFF"  # seeking in the browser player needs this
 
 
-def test_upload_saves_ingests_and_isolates_a_bad_file(client, tmp_path):
-    app.state.ingest_service.ingest.side_effect = lambda paths: [
-        IngestOutcome(path=str(p), status=IngestStatus.INGESTED, chunk_count=3) for p in paths]
+def test_upload_returns_queued_jobs_at_once_and_isolates_a_bad_file(client, tmp_path):
     resp = client.post("/ingest/upload", files=[("files", ("a.wav", b"one", "audio/wav")),
                                                 ("files", ("notes.txt", b"two", "text/plain")),
                                                 ("files", ("b.mp3", b"three", "audio/mpeg"))])
-    outcomes = resp.json()["outcomes"]
-    assert [o["status"] for o in outcomes] == ["ingested", "failed", "ingested"]  # same order as uploaded
-    assert outcomes[1]["stage"] == "upload" and "unsupported" in outcomes[1]["error"]
-    [paths] = app.state.ingest_service.ingest.call_args.args
-    assert [Path(p).name.split("-", 1)[1] for p in paths] == ["a.wav", "b.mp3"]  # only valid files ingested
-    assert all(Path(p).parent == tmp_path for p in paths)
+    assert resp.status_code == 202
+    jobs = resp.json()["jobs"]
+    assert [j["state"] for j in jobs] == ["queued", "failed", "queued"]  # same order as uploaded
+    assert [j["position"] for j in jobs] == [1, None, 2]
+    assert jobs[1]["outcome"]["stage"] == "upload" and "unsupported" in jobs[1]["outcome"]["error"]
+    queued = [j for j in app.state.ingest_queue.jobs() if j.state.value == "queued"]
+    assert [Path(j.path).name.split("-", 1)[1] for j in queued] == ["a.wav", "b.mp3"]  # only valid files queued
+    assert all(Path(j.path).parent == tmp_path for j in queued)
+    app.state.ingest_service.ingest_one.assert_not_awaited()  # nothing ran inside the request
 
 
-def test_upload_with_only_bad_files_does_not_call_ingest(client):
-    outcomes = client.post("/ingest/upload", files=[("files", ("x.txt", b"1", "text/plain"))]).json()["outcomes"]
-    assert [o["status"] for o in outcomes] == ["failed"]
-    app.state.ingest_service.ingest.assert_not_awaited()
+def test_jobs_list_get_and_cancel(client):
+    [job] = client.post("/ingest/upload", files=[("files", ("a.wav", b"one", "audio/wav"))]).json()["jobs"]
+    assert [j["id"] for j in client.get("/jobs").json()] == [job["id"]]
+    assert client.get(f"/jobs/{job['id']}").json()["state"] == "queued"
+    assert client.delete(f"/jobs/{job['id']}").json()["state"] == "cancelled"
+    assert client.get("/jobs/unknown").status_code == 404
+    assert client.delete("/jobs/unknown").status_code == 404
 
 
 def test_config_reports_models_and_search_settings(client):

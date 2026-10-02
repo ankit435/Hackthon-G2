@@ -158,8 +158,10 @@ A browser UI for everything the API does. Pages:
   - The line being spoken is highlighted during playback; clicking any line plays from there.
   - Navigation: previous/next chunk, or <kbd>j</kbd>/<kbd>k</kbd>, and <kbd>space</kbd> to play or pause.
   - Find-in-transcript, a speaker filter, and a copyable link to each chunk.
-- **Upload**: drag and drop **multiple** audio files. Each is uploaded and ingested with its own progress and
-  outcome (indexed, already indexed, or failed with the stage and reason).
+- **Upload**: drag and drop **multiple** audio files. Uploads return at once and join a **processing queue**;
+  one background worker ingests them one by one. The page shows live state per file (place in line, the
+  running pipeline stage, elapsed time) and the outcome (indexed, already indexed, or failed with the stage
+  and reason). Queued files can be cancelled; you can leave the page while the queue runs.
 - **Ask**: LLM answers grounded in retrieved segments (needs `NVIDIA_API_KEY`). Each citation plays its segment.
 - **Evaluation**: runs the labelled query set; shows recall, MRR, speaker accuracy and p95 against the targets.
 - **System**: the active models and search configuration.
@@ -186,7 +188,9 @@ The API endpoints behind the UI (all in Swagger at `/docs`):
 | `GET /files/{id}` | Full transcript of one file (every chunk, in order) |
 | `GET /files/{id}/audio` | Streams the file's audio, with range requests for seeking. Only indexed files are served |
 | `GET /chunks/{id}/context?window=2` | A chunk with up to 5 neighbours on each side |
-| `POST /ingest/upload` | Multipart upload of one or more files, then ingest. A bad file fails alone |
+| `POST /ingest/upload` | Multipart upload of one or more files. Returns `202` with one queued job per file; a bad file comes back as a failed job |
+| `GET /jobs`, `GET /jobs/{id}` | Ingest queue: state (`queued`/`running`/`ingested`/`skipped_existing`/`failed`/`cancelled`), live stage, place in line, outcome |
+| `DELETE /jobs/{id}` | Cancel a queued job (a running one finishes) |
 | `GET /config` | Active models and search settings |
 
 Uploads are saved under `AUDIO_SEARCH_UPLOAD_DIR` (default `uploads/`, gitignored), up to
