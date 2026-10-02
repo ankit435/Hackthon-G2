@@ -62,3 +62,26 @@ CREATE INDEX IF NOT EXISTS chunk_embedding_hnsw ON chunk
     USING hnsw (embedding vector_cosine_ops) WITH (m = 16, ef_construction = 64);
 
 CREATE INDEX IF NOT EXISTS chunk_audio_file_id ON chunk (audio_file_id);
+
+-- Persistent ingest queue (src/application/jobs.py). One row per uploaded file; a worker claims the
+-- oldest queued row with FOR UPDATE SKIP LOCKED, so jobs survive restarts and several API processes
+-- can share one queue without running a file twice. `heartbeat_at` is refreshed while a job runs: a
+-- `running` row whose heartbeat is stale belonged to a process that died, and is queued again (or
+-- failed once `attempts` reaches the limit, so a file that crashes the worker cannot loop forever).
+CREATE TABLE IF NOT EXISTS ingest_job (
+    id            uuid PRIMARY KEY,
+    seq           bigserial NOT NULL UNIQUE,         -- FIFO order; created_at can tie within one upload
+    file_name     text NOT NULL,
+    path          text NOT NULL,
+    state         text NOT NULL DEFAULT 'queued'
+                  CHECK (state IN ('queued', 'running', 'ingested', 'skipped_existing', 'failed', 'cancelled')),
+    stage         text,                              -- live pipeline stage while running
+    attempts      integer NOT NULL DEFAULT 0 CHECK (attempts >= 0),
+    outcome       jsonb,                             -- application.ingest.IngestOutcome as JSON
+    created_at    timestamptz NOT NULL DEFAULT now(),
+    started_at    timestamptz,
+    finished_at   timestamptz,
+    heartbeat_at  timestamptz
+);
+CREATE INDEX IF NOT EXISTS ingest_job_queued ON ingest_job (seq) WHERE state = 'queued';
+CREATE INDEX IF NOT EXISTS ingest_job_running ON ingest_job (heartbeat_at) WHERE state = 'running';

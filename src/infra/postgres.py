@@ -7,9 +7,10 @@ from uuid import UUID
 import numpy as np
 import psycopg
 from pgvector.psycopg import register_vector_async
+from psycopg.types.json import Jsonb
 
 from domain.errors import RepositoryError
-from domain.models import AudioFile, BranchHit, Chunk, LibraryFile, SearchResultItem
+from domain.models import AudioFile, BranchHit, Chunk, IngestJob, JobState, LibraryFile, SearchResultItem
 from infra.text_search import cjk_bigrams, config_for
 
 # ts_rank_cd normalization: 1 divides by 1 + log(document length), so a longer chunk cannot win
@@ -184,3 +185,88 @@ class PostgresRepository:
             raise RepositoryError("hydrating results failed", stage="search.hydrate", error=type(e).__name__) from e
         return [SearchResultItem(chunk_id=r[0], audio_file_id=r[1], file_name=r[2], file_path=r[3], speaker=r[4],
                                  start_time=r[5], end_time=r[6], text=r[7], language=r[8], score=0.0) for r in rows]
+
+
+# Position is computed on read: a queued job's place is 1 + the queued jobs ahead of it (by seq).
+_JOB_SELECT = ("SELECT id, file_name, path, state, stage, attempts, outcome, created_at, started_at, finished_at, "
+               "CASE WHEN state = 'queued' THEN (SELECT count(*) FROM ingest_job q "
+               "WHERE q.state = 'queued' AND q.seq <= j.seq) END AS position "
+               "FROM ingest_job j")
+_JOB_RETURNING = "id, file_name, path, state, stage, attempts, outcome, created_at, started_at, finished_at, NULL"
+
+
+def _job(r) -> IngestJob:
+    return IngestJob(id=r[0], file_name=r[1], path=r[2], state=JobState(r[3]), stage=r[4], attempts=r[5],
+                     outcome=r[6], created_at=r[7], started_at=r[8], finished_at=r[9], position=r[10])
+
+
+class PostgresJobRepository:
+    """Implements JobRepository on the `ingest_job` table (db/schema.sql)."""
+
+    def __init__(self, database_url: str) -> None:
+        self._url = database_url
+
+    async def _run(self, what: str, sql: str, params: Sequence = (), fetch: str | None = None):
+        try:
+            async with await psycopg.AsyncConnection.connect(self._url, autocommit=True) as conn:
+                cur = await conn.execute(sql, params)
+                if fetch == "one":
+                    return await cur.fetchone()
+                if fetch == "all":
+                    return await cur.fetchall()
+                return cur.rowcount
+        except psycopg.Error as e:
+            raise RepositoryError(f"ingest job {what} failed", stage="queue", error=type(e).__name__) from e
+
+    async def add(self, job: IngestJob) -> IngestJob:
+        row = await self._run("insert", f"INSERT INTO ingest_job (id, file_name, path, state, stage, outcome, started_at, "
+                              f"finished_at) VALUES (%s, %s, %s, %s, %s, %s, "
+                              f"CASE WHEN %s THEN now() END, CASE WHEN %s THEN now() END) RETURNING {_JOB_RETURNING}",
+                              (job.id, job.file_name, job.path, job.state.value, job.stage,
+                               None if job.outcome is None else Jsonb(job.outcome),
+                               job.state is not JobState.QUEUED, job.state is not JobState.QUEUED), "one")
+        return await self.get(row[0]) or _job(row)
+
+    async def claim_next(self) -> IngestJob | None:
+        # SKIP LOCKED: concurrent workers each take a different row instead of waiting on (or repeating) one.
+        row = await self._run("claim", "UPDATE ingest_job SET state = 'running', stage = NULL, attempts = attempts + 1, "
+                              "started_at = now(), heartbeat_at = now() WHERE id = (SELECT id FROM ingest_job "
+                              "WHERE state = 'queued' ORDER BY seq FOR UPDATE SKIP LOCKED LIMIT 1) "
+                              f"RETURNING {_JOB_RETURNING}", (), "one")
+        return _job(row) if row else None
+
+    async def heartbeat(self, job_id: UUID, stage: str | None) -> None:
+        await self._run("heartbeat", "UPDATE ingest_job SET stage = %s, heartbeat_at = now() "
+                        "WHERE id = %s AND state = 'running'", (stage, job_id))
+
+    async def finish(self, job_id: UUID, state: JobState, outcome: dict | None) -> None:
+        await self._run("finish", "UPDATE ingest_job SET state = %s, stage = NULL, outcome = %s, finished_at = now() "
+                        "WHERE id = %s", (state.value, None if outcome is None else Jsonb(outcome), job_id))
+
+    async def cancel(self, job_id: UUID) -> IngestJob | None:
+        await self._run("cancel", "UPDATE ingest_job SET state = 'cancelled', finished_at = now() "
+                        "WHERE id = %s AND state = 'queued'", (job_id,))
+        return await self.get(job_id)
+
+    async def get(self, job_id: UUID) -> IngestJob | None:
+        row = await self._run("get", f"{_JOB_SELECT} WHERE j.id = %s", (job_id,), "one")
+        return _job(row) if row else None
+
+    async def list_jobs(self, finished_limit: int) -> list[IngestJob]:
+        rows = await self._run("list", f"{_JOB_SELECT} WHERE j.state IN ('queued', 'running') OR j.id IN ("
+                               "SELECT id FROM ingest_job WHERE state NOT IN ('queued', 'running') "
+                               "ORDER BY finished_at DESC NULLS LAST, seq DESC LIMIT %s) ORDER BY j.seq",
+                               (finished_limit,), "all")
+        return [_job(r) for r in rows]
+
+    async def recover_stale(self, stale_seconds: float, max_attempts: int) -> int:
+        return await self._run("recover", "UPDATE ingest_job SET "
+                               "state = CASE WHEN attempts >= %s THEN 'failed' ELSE 'queued' END, "
+                               "finished_at = CASE WHEN attempts >= %s THEN now() END, "
+                               "outcome = CASE WHEN attempts >= %s THEN jsonb_build_object("
+                               "'path', path, 'status', 'failed', 'stage', stage, 'error_type', 'WorkerLost', "
+                               "'error', 'the worker stopped during this file ' || attempts || ' time(s)') END, "
+                               "stage = CASE WHEN attempts >= %s THEN stage END, "
+                               "started_at = CASE WHEN attempts >= %s THEN started_at END, heartbeat_at = NULL "
+                               "WHERE state = 'running' AND heartbeat_at < now() - make_interval(secs => %s)",
+                               (max_attempts,) * 5 + (stale_seconds,))

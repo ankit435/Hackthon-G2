@@ -162,6 +162,9 @@ A browser UI for everything the API does. Pages:
   one background worker ingests them one by one. The page shows live state per file (place in line, the
   running pipeline stage, elapsed time) and the outcome (indexed, already indexed, or failed with the stage
   and reason). Queued files can be cancelled; you can leave the page while the queue runs.
+  The queue is stored in Postgres (`ingest_job` table), so it survives a restart: queued files resume, and a
+  file that was mid-run when the server died is retried (up to 3 attempts) once its heartbeat is 60 s stale.
+  Existing databases need the new table: re-run `python scripts/init_db.py` (idempotent, keeps your data).
 - **Ask**: LLM answers grounded in retrieved segments (needs `NVIDIA_API_KEY`). Each citation plays its segment.
 - **Evaluation**: runs the labelled query set; shows recall, MRR, speaker accuracy and p95 against the targets.
 - **System**: the active models and search configuration.
