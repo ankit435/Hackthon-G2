@@ -1,7 +1,8 @@
+import { useState } from "react";
 import { Link, NavLink, Outlet } from "react-router-dom";
 import { formatTime } from "../lib/format";
 import { usePlayer } from "../lib/player";
-import { Bubbles } from "./Bubbles";
+import { Bubbles, DEFAULT_BUBBLES, MAX_BUBBLES } from "./Bubbles";
 import { PlayIcon } from "./common";
 import { EqBars } from "./visuals";
 
@@ -41,11 +42,27 @@ function PlayerBar() {
   );
 }
 
+const BUBBLE_KEY = "audio-search:bubbles";
+
+function savedBubbleCount(): number {
+  try {
+    const v = Number(localStorage.getItem(BUBBLE_KEY));
+    return localStorage.getItem(BUBBLE_KEY) !== null && Number.isFinite(v) ? Math.min(MAX_BUBBLES, Math.max(0, v)) : DEFAULT_BUBBLES;
+  } catch {
+    return DEFAULT_BUBBLES; // storage blocked (private mode): just use the default
+  }
+}
+
 export function Layout() {
   const { track } = usePlayer();
+  const [bubbles, setBubbles] = useState(savedBubbleCount);
+  const changeBubbles = (n: number) => {
+    setBubbles(n);
+    try { localStorage.setItem(BUBBLE_KEY, String(n)); } catch { /* not persisted; still applies */ }
+  };
   return (
     <div className={`app ${track ? "with-player" : ""}`}>
-      <Bubbles />
+      <Bubbles count={bubbles} />
       <aside className="sidebar">
         <Link to="/search" className="brand">
           <span className="brand-mark" aria-hidden="true">
@@ -61,6 +78,12 @@ export function Layout() {
             </NavLink>
           ))}
         </nav>
+        <label className="bubble-control">
+          <span>Bubbles <b>{bubbles === 0 ? "off" : bubbles}</b></span>
+          <input className="scrubber" type="range" min={0} max={MAX_BUBBLES} step={1} value={bubbles}
+            style={{ ["--pct" as string]: `${(bubbles / MAX_BUBBLES) * 100}%` }}
+            onChange={(e) => changeBubbles(Number(e.target.value))} aria-label="Number of background bubbles" />
+        </label>
         <a className="nav-link subtle" href="/docs" target="_blank" rel="noreferrer">API docs ↗</a>
       </aside>
       <main className="content">
