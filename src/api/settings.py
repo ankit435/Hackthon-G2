@@ -60,7 +60,7 @@ class Settings(BaseSettings):
     # which keeps the evaluated /search path unchanged. Enable only with a recorded before/after
     # (scripts/evaluate.py with and without it): it must lift recall and keep p95 < 500 ms.
     # Recommended: cross-encoder/mmarco-mMiniLMv2-L12-H384-v1 (multilingual, small and fast).
-    reranker_model: str | None = None
+    reranker_model: str ="cross-encoder/mmarco-mMiniLMv2-L12-H384-v1"
     reranker_device: Literal["cpu", "mps", "cuda"] = "cpu"
     # Fused candidates the cross-encoder re-scores; top_k is cut after re-ranking. 30 >= 3x top_k 10.
     rerank_depth: int = Field(default=30, ge=1, le=100)
