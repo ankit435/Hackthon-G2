@@ -94,8 +94,9 @@ class IngestService:
                                              **summary})
         return outcomes
 
-    async def ingest_one(self, path: Path) -> IngestOutcome:
-        outcome = IngestOutcome(path=str(path), status=IngestStatus.FAILED)
+    async def ingest_one(self, path: Path, outcome: IngestOutcome | None = None) -> IngestOutcome:
+        """`outcome` may be passed in so a caller (the job queue) can watch `outcome.stage` while it runs."""
+        outcome = outcome or IngestOutcome(path=str(path), status=IngestStatus.FAILED)
         started = time.perf_counter()
         try:
             await self._run(path, outcome)

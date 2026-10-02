@@ -1,5 +1,5 @@
 import type {
-  AnswerResponse, ChunkContext, EvaluationReport, FileSummary, IngestOutcome, SearchHit, SearchMode, Transcript,
+  AnswerResponse, ChunkContext, EvaluationReport, FileSummary, IngestJob, SearchHit, SearchMode, Transcript,
 } from "./types";
 
 export class ApiError extends Error {
@@ -39,10 +39,13 @@ export const api = {
     }),
   evaluation: () => request<EvaluationReport>("/evaluation"),
   config: () => request<Record<string, unknown>>("/config"),
+  jobs: () => request<IngestJob[]>("/jobs"),
+  cancelJob: (id: string) => request<IngestJob>(`/jobs/${encodeURIComponent(id)}`, { method: "DELETE" }),
 };
 
-/** Upload one or more files with byte-level progress (fetch cannot report upload progress; XHR can). */
-export function uploadFiles(files: File[], onProgress: (fraction: number) => void): Promise<IngestOutcome[]> {
+/** Upload files with byte-level progress (fetch cannot report upload progress; XHR can). The server answers
+ * at once with one queued job per file; a background worker then ingests them one by one. */
+export function uploadFiles(files: File[], onProgress: (fraction: number) => void): Promise<IngestJob[]> {
   return new Promise((resolve, reject) => {
     const form = new FormData();
     files.forEach((f) => form.append("files", f, f.name));
@@ -52,7 +55,7 @@ export function uploadFiles(files: File[], onProgress: (fraction: number) => voi
     xhr.onload = () => {
       try {
         const body = JSON.parse(xhr.responseText);
-        if (xhr.status >= 200 && xhr.status < 300) resolve(body.outcomes as IngestOutcome[]);
+        if (xhr.status >= 200 && xhr.status < 300) resolve(body.jobs as IngestJob[]);
         else reject(new ApiError(xhr.status, typeof body.detail === "string" ? body.detail : xhr.statusText));
       } catch {
         reject(new ApiError(xhr.status, xhr.statusText || "invalid server response"));

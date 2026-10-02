@@ -15,6 +15,7 @@ from api.container import (build_answer_service, build_evaluation_service, build
                            build_library_service, build_search_service, build_upload_store, configure_logging)
 from api.settings import load_settings
 from application.ingest import IngestOutcome, IngestStatus
+from application.jobs import IngestJob, IngestQueue
 from domain.errors import ConfigurationError, InvalidInputError, NotFoundError
 from domain.models import AudioFile, Chunk
 
@@ -128,7 +129,10 @@ async def lifespan(app: FastAPI):
     app.state.evaluation_service = build_evaluation_service(settings)
     app.state.library_service = build_library_service(settings)
     app.state.upload_store = build_upload_store(settings)
+    app.state.ingest_queue = IngestQueue(app.state.ingest_service)
+    app.state.ingest_queue.start()
     yield
+    await app.state.ingest_queue.stop()
 
 
 app = FastAPI(
@@ -321,30 +325,60 @@ async def get_chunk_context(chunk_id: UUID, window: int = Query(2, ge=0, le=5, d
                                 chunk=_chunk_out(ctx.chunk), after=[_chunk_out(c) for c in ctx.after])
 
 
-@app.post("/ingest/upload", tags=["ingest"], summary="Upload audio files and ingest them")
-async def upload_and_ingest(files: List[UploadFile] = File(..., description="One or more audio files")):
-    """Saves each upload, then ingests the saved files as one batch (same pipeline and outcomes as /ingest).
+def _job_out(job: IngestJob) -> dict[str, Any]:
+    o = job.outcome
+    return {
+        "id": job.id, "file_name": job.file_name, "state": job.state.value,
+        "stage": o.stage if o else None, "position": app.state.ingest_queue.position(job),
+        "created_at": job.created_at, "started_at": job.started_at, "finished_at": job.finished_at,
+        "outcome": o,
+    }
 
-    A rejected upload (wrong type, empty, too large) becomes a `failed` outcome for that file only; the rest
-    of the batch still runs. Synchronous: large files take minutes (transcription + diarization).
+
+@app.post("/ingest/upload", status_code=status.HTTP_202_ACCEPTED, tags=["ingest"],
+          summary="Upload audio files and queue them for ingestion")
+async def upload_and_ingest(files: List[UploadFile] = File(..., description="One or more audio files")):
+    """Saves each upload and queues it; returns at once with one job per file.
+
+    A single background worker ingests queued files one by one (transcribe, diarize, chunk, embed,
+    index). Follow progress with `GET /jobs`. A rejected upload (wrong type, empty, too large) comes back
+    as an already `failed` job; the other files are still queued.
     """
     if not files:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="no files uploaded")
-    outcomes: list[IngestOutcome | None] = []
-    saved: list[tuple[int, Path]] = []
-    for i, upload in enumerate(files):
+    queue: IngestQueue = app.state.ingest_queue
+    jobs: list[IngestJob] = []
+    for upload in files:
+        name = upload.filename or "audio"
         try:
-            saved.append((i, await app.state.upload_store.save(upload.filename or "audio", upload.read)))
-            outcomes.append(None)
+            jobs.append(queue.submit(await app.state.upload_store.save(name, upload.read), name))
         except InvalidInputError as e:
-            outcomes.append(IngestOutcome(path=upload.filename or "", status=IngestStatus.FAILED, stage="upload",
-                                          error_type=type(e).__name__, error=str(e)))
+            jobs.append(queue.record_failure(name, IngestOutcome(
+                path=name, status=IngestStatus.FAILED, stage="upload", error_type=type(e).__name__, error=str(e))))
         finally:
             await upload.close()
-    if saved:
-        for (i, _), outcome in zip(saved, await app.state.ingest_service.ingest([p for _, p in saved])):
-            outcomes[i] = outcome
-    return {"outcomes": outcomes}
+    return {"jobs": [_job_out(j) for j in jobs]}
+
+
+@app.get("/jobs", tags=["ingest"], summary="Ingest queue: queued, running and recently finished jobs")
+async def list_jobs():
+    return [_job_out(j) for j in app.state.ingest_queue.jobs()]
+
+
+@app.get("/jobs/{job_id}", tags=["ingest"], summary="One ingest job")
+async def get_job(job_id: str):
+    job = app.state.ingest_queue.get(job_id)
+    if job is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="job not found")
+    return _job_out(job)
+
+
+@app.delete("/jobs/{job_id}", tags=["ingest"], summary="Cancel a queued ingest job")
+async def cancel_job(job_id: str):
+    job = app.state.ingest_queue.cancel(job_id)
+    if job is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="job not found")
+    return _job_out(job)
 
 
 @app.get("/config", tags=["system"], summary="Active search configuration and models")

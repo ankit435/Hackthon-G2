@@ -319,6 +319,22 @@ input[type="checkbox"] { accent-color: var(--v); }
 .status.skipped_existing { color: var(--warn); border-color: rgba(251, 191, 36, 0.3); }
 .status.failed { background: var(--fail-soft); color: var(--fail); border-color: rgba(251, 113, 133, 0.35); }
 .status.uploading, .status.processing { background: var(--accent-soft); color: #c4b5fd; border-color: rgba(139, 92, 246, 0.35); }
+.status.running { background: var(--accent-soft); color: #c4b5fd; border-color: rgba(139, 92, 246, 0.35); }
+.status.cancelled { opacity: 0.7; }
+.upload-item.running { border-color: rgba(139, 92, 246, 0.5); box-shadow: 0 0 30px -12px rgba(139, 92, 246, 0.8); }
+.upload-item.cancelled { opacity: 0.6; }
+.queue { display: flex; flex-direction: column; gap: 12px; }
+.queue-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; }
+.queue-head h2 { margin: 0; font-size: 1.1rem; display: inline-flex; align-items: center; gap: 10px; }
+.queue-stats { display: flex; flex-wrap: wrap; gap: 14px; color: var(--muted); font-size: 0.86rem; flex: 1; }
+.queue-stats b { color: var(--text); }
+.queue-pos { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 0.78rem; color: var(--c); border: 1px solid rgba(34, 211, 238, 0.35); border-radius: 8px; padding: 1px 7px; }
+.live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--c); box-shadow: 0 0 10px var(--c); animation: pulse 1.4s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: 0.35; transform: scale(0.8); } }
+.stages { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.stages li { font-size: 0.72rem; font-weight: 600; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); }
+.stages li.done { color: var(--pass); border-color: rgba(52, 211, 153, 0.35); }
+.stages li.now { color: #fff; background: var(--grad); border-color: transparent; box-shadow: 0 0 16px -4px rgba(139, 92, 246, 0.9); animation: pulse 1.6s ease-in-out infinite; }
 .upload-result { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; font-size: 0.9rem; }
 .upload-result .link { margin-left: auto; }
 .progress { height: 7px; background: rgba(148, 163, 255, 0.1); border-radius: 999px; overflow: hidden; }
