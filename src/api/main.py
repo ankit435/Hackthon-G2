@@ -12,12 +12,13 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from api.container import (build_answer_service, build_evaluation_service, build_ingest_service,
-                           build_library_service, build_search_service, build_upload_store, configure_logging)
+                           build_job_repository, build_library_service, build_search_service, build_upload_store,
+                           configure_logging)
 from api.settings import load_settings
 from application.ingest import IngestOutcome, IngestStatus
-from application.jobs import IngestJob, IngestQueue
+from application.jobs import IngestQueue
 from domain.errors import ConfigurationError, InvalidInputError, NotFoundError
-from domain.models import AudioFile, Chunk
+from domain.models import AudioFile, Chunk, IngestJob
 
 FRONTEND_DIST = Path(__file__).resolve().parents[2] / "frontend" / "dist"
 AUDIO_MEDIA_TYPES = {".wav": "audio/wav", ".mp3": "audio/mpeg", ".m4a": "audio/mp4", ".mp4": "audio/mp4",
@@ -129,7 +130,7 @@ async def lifespan(app: FastAPI):
     app.state.evaluation_service = build_evaluation_service(settings)
     app.state.library_service = build_library_service(settings)
     app.state.upload_store = build_upload_store(settings)
-    app.state.ingest_queue = IngestQueue(app.state.ingest_service)
+    app.state.ingest_queue = IngestQueue(app.state.ingest_service, build_job_repository(settings))
     app.state.ingest_queue.start()
     yield
     await app.state.ingest_queue.stop()
@@ -325,13 +326,15 @@ async def get_chunk_context(chunk_id: UUID, window: int = Query(2, ge=0, le=5, d
                                 chunk=_chunk_out(ctx.chunk), after=[_chunk_out(c) for c in ctx.after])
 
 
+def _epoch(t: datetime | None) -> float | None:
+    return t.timestamp() if t else None
+
+
 def _job_out(job: IngestJob) -> dict[str, Any]:
-    o = job.outcome
     return {
-        "id": job.id, "file_name": job.file_name, "state": job.state.value,
-        "stage": o.stage if o else None, "position": app.state.ingest_queue.position(job),
-        "created_at": job.created_at, "started_at": job.started_at, "finished_at": job.finished_at,
-        "outcome": o,
+        "id": str(job.id), "file_name": job.file_name, "state": job.state.value, "stage": job.stage,
+        "position": job.position, "attempts": job.attempts, "created_at": _epoch(job.created_at),
+        "started_at": _epoch(job.started_at), "finished_at": _epoch(job.finished_at), "outcome": job.outcome,
     }
 
 
@@ -340,9 +343,10 @@ def _job_out(job: IngestJob) -> dict[str, Any]:
 async def upload_and_ingest(files: List[UploadFile] = File(..., description="One or more audio files")):
     """Saves each upload and queues it; returns at once with one job per file.
 
-    A single background worker ingests queued files one by one (transcribe, diarize, chunk, embed,
+    A background worker ingests queued files one by one (transcribe, diarize, chunk, embed,
     index). Follow progress with `GET /jobs`. A rejected upload (wrong type, empty, too large) comes back
-    as an already `failed` job; the other files are still queued.
+    as an already `failed` job; the other files are still queued. Jobs are stored in Postgres, so the
+    queue survives a restart.
     """
     if not files:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="no files uploaded")
@@ -351,9 +355,9 @@ async def upload_and_ingest(files: List[UploadFile] = File(..., description="One
     for upload in files:
         name = upload.filename or "audio"
         try:
-            jobs.append(queue.submit(await app.state.upload_store.save(name, upload.read), name))
+            jobs.append(await queue.submit(await app.state.upload_store.save(name, upload.read), name))
         except InvalidInputError as e:
-            jobs.append(queue.record_failure(name, IngestOutcome(
+            jobs.append(await queue.record_failure(name, IngestOutcome(
                 path=name, status=IngestStatus.FAILED, stage="upload", error_type=type(e).__name__, error=str(e))))
         finally:
             await upload.close()
@@ -362,20 +366,20 @@ async def upload_and_ingest(files: List[UploadFile] = File(..., description="One
 
 @app.get("/jobs", tags=["ingest"], summary="Ingest queue: queued, running and recently finished jobs")
 async def list_jobs():
-    return [_job_out(j) for j in app.state.ingest_queue.jobs()]
+    return [_job_out(j) for j in await app.state.ingest_queue.jobs()]
 
 
 @app.get("/jobs/{job_id}", tags=["ingest"], summary="One ingest job")
-async def get_job(job_id: str):
-    job = app.state.ingest_queue.get(job_id)
+async def get_job(job_id: UUID):
+    job = await app.state.ingest_queue.get(job_id)
     if job is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="job not found")
     return _job_out(job)
 
 
 @app.delete("/jobs/{job_id}", tags=["ingest"], summary="Cancel a queued ingest job")
-async def cancel_job(job_id: str):
-    job = app.state.ingest_queue.cancel(job_id)
+async def cancel_job(job_id: UUID):
+    job = await app.state.ingest_queue.cancel(job_id)
     if job is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="job not found")
     return _job_out(job)

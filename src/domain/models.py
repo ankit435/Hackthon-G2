@@ -177,3 +177,32 @@ class ChunkContext:
     before: tuple[Chunk, ...]
     chunk: Chunk
     after: tuple[Chunk, ...]
+
+
+class JobState(str, Enum):
+    QUEUED = "queued"
+    RUNNING = "running"
+    INGESTED = "ingested"
+    SKIPPED_EXISTING = "skipped_existing"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+
+
+FINISHED_JOB_STATES = frozenset({JobState.INGESTED, JobState.SKIPPED_EXISTING, JobState.FAILED, JobState.CANCELLED})
+
+
+@dataclass
+class IngestJob:
+    """One uploaded file in the persistent ingest queue."""
+
+    file_name: str
+    path: str
+    id: UUID = field(default_factory=uuid4)
+    state: JobState = JobState.QUEUED
+    stage: str | None = None  # live pipeline stage while running
+    attempts: int = 0
+    outcome: dict | None = None  # the ingest outcome, JSON-ready
+    position: int | None = None  # 1-based place in line while queued; filled in on read
+    created_at: datetime | None = None
+    started_at: datetime | None = None
+    finished_at: datetime | None = None

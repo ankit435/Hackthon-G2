@@ -16,7 +16,7 @@ from infra.audio import TorchcodecDecoder
 from infra.diarizer import PyannoteDiarizer
 from infra.embedder import SentenceTransformerEmbedder
 from infra.nvidia import NvidiaAnswerGenerator
-from infra.postgres import PostgresRepository
+from infra.postgres import PostgresJobRepository, PostgresRepository
 from infra.reranker import CrossEncoderReranker
 from infra.uploads import UploadStore
 from infra.whisper import FasterWhisperTranscriber
@@ -86,6 +86,10 @@ def build_answer_service(settings: Settings, search: SearchService | None = None
 def build_library_service(settings: Settings) -> LibraryService:
     repo = PostgresRepository(settings.database_url)
     return LibraryService(files=repo, chunks=repo)
+
+
+def build_job_repository(settings: Settings) -> PostgresJobRepository:
+    return PostgresJobRepository(settings.database_url)
 
 
 def build_upload_store(settings: Settings) -> UploadStore:

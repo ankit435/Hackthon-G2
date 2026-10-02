@@ -14,6 +14,8 @@ from domain.models import (
     BranchHit,
     Chunk,
     DecodedAudio,
+    IngestJob,
+    JobState,
     LibraryFile,
     SearchResultItem,
     SpeakerTurn,
@@ -104,4 +106,33 @@ class ChunkRepository(Protocol):
 class AnswerGenerator(Protocol):
     async def answer(self, query: str, context: str) -> str:
         """Generate an answer solely from numbered retrieved context."""
+        ...
+
+
+class JobRepository(Protocol):
+    """Durable FIFO queue of ingest jobs, safe to share between processes."""
+
+    async def add(self, job: IngestJob) -> IngestJob: ...
+
+    async def claim_next(self) -> IngestJob | None:
+        """Atomically marks the oldest queued job running (attempts + 1) and returns it; None if none."""
+        ...
+
+    async def heartbeat(self, job_id: UUID, stage: str | None) -> None: ...
+
+    async def finish(self, job_id: UUID, state: JobState, outcome: dict | None) -> None: ...
+
+    async def cancel(self, job_id: UUID) -> IngestJob | None:
+        """Cancels the job if still queued; returns it in its current state, None if unknown."""
+        ...
+
+    async def get(self, job_id: UUID) -> IngestJob | None: ...
+
+    async def list_jobs(self, finished_limit: int) -> list[IngestJob]:
+        """Every queued/running job plus the newest `finished_limit` finished ones, oldest first."""
+        ...
+
+    async def recover_stale(self, stale_seconds: float, max_attempts: int) -> int:
+        """Re-queues running jobs whose heartbeat is older than `stale_seconds` (their process died);
+        ones that already used `max_attempts` are failed instead. Returns how many rows changed."""
         ...

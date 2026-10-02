@@ -10,6 +10,7 @@ from fastapi.testclient import TestClient
 from api.main import app
 from application.ingest import IngestOutcome, IngestStatus
 from application.jobs import IngestQueue
+from tests.unit.fake_jobs import InMemoryJobRepository
 from domain.errors import InvalidInputError, NotFoundError
 from domain.models import AudioFile, Chunk, ChunkContext, LibraryFile
 from infra.uploads import UploadStore
@@ -30,7 +31,7 @@ def client(tmp_path):
         app.state.library_service = AsyncMock()
         app.state.ingest_service = AsyncMock()
         app.state.upload_store = UploadStore(tmp_path, max_bytes=1000)
-        app.state.ingest_queue = IngestQueue(app.state.ingest_service)  # not started: jobs stay queued
+        app.state.ingest_queue = IngestQueue(app.state.ingest_service, InMemoryJobRepository())  # not started
         yield
 
     original = app.router.lifespan_context
@@ -93,7 +94,8 @@ def test_upload_returns_queued_jobs_at_once_and_isolates_a_bad_file(client, tmp_
     assert [j["state"] for j in jobs] == ["queued", "failed", "queued"]  # same order as uploaded
     assert [j["position"] for j in jobs] == [1, None, 2]
     assert jobs[1]["outcome"]["stage"] == "upload" and "unsupported" in jobs[1]["outcome"]["error"]
-    queued = [j for j in app.state.ingest_queue.jobs() if j.state.value == "queued"]
+    import asyncio
+    queued = [j for j in asyncio.run(app.state.ingest_queue.jobs()) if j.state.value == "queued"]
     assert [Path(j.path).name.split("-", 1)[1] for j in queued] == ["a.wav", "b.mp3"]  # only valid files queued
     assert all(Path(j.path).parent == tmp_path for j in queued)
     app.state.ingest_service.ingest_one.assert_not_awaited()  # nothing ran inside the request
@@ -104,8 +106,10 @@ def test_jobs_list_get_and_cancel(client):
     assert [j["id"] for j in client.get("/jobs").json()] == [job["id"]]
     assert client.get(f"/jobs/{job['id']}").json()["state"] == "queued"
     assert client.delete(f"/jobs/{job['id']}").json()["state"] == "cancelled"
-    assert client.get("/jobs/unknown").status_code == 404
-    assert client.delete("/jobs/unknown").status_code == 404
+    missing = uuid4()
+    assert client.get(f"/jobs/{missing}").status_code == 404
+    assert client.delete(f"/jobs/{missing}").status_code == 404
+    assert client.get("/jobs/not-a-uuid").status_code == 422
 
 
 def test_config_reports_models_and_search_settings(client):
