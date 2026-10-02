@@ -58,7 +58,7 @@ body::before { /* faint grid for depth */
 }
 #root { position: relative; z-index: 1; }
 /* Physics bubbles (components/Bubbles.tsx): fixed behind everything, never catches clicks. */
-.bubbles { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 0; pointer-events: none; filter: blur(1px) saturate(1.2); }
+.bubbles { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 0; pointer-events: none; filter: blur(6px) saturate(1.25); }
 .app > .sidebar, .app > .content { z-index: 1; }
 .app > .content { position: relative; }
 a { color: inherit; }
@@ -398,8 +398,7 @@ input[type="checkbox"] { accent-color: var(--v); }
   .sidebar nav { flex-direction: row; flex-wrap: wrap; flex: 1 1 100%; }
   .nav-link { padding: 6px 10px; font-size: 0.9rem; }
   .nav-link.active::before { display: none; }
-  .nav-link.subtle { display: none; }
-  .content { padding: 20px 16px 44px; }
+  .nav-link.subtle,   .content { padding: 20px 16px 44px; }
   h1, .page-head.hero h1 { font-size: 1.8rem; }
   .page-head.row { flex-direction: column; }
   .search-form::before { inset: -2px; }
