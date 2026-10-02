@@ -1,6 +1,7 @@
 import { Link, NavLink, Outlet } from "react-router-dom";
 import { formatTime } from "../lib/format";
 import { usePlayer } from "../lib/player";
+import { Bubbles } from "./Bubbles";
 import { PlayIcon } from "./common";
 import { EqBars } from "./visuals";
 
@@ -44,6 +45,7 @@ export function Layout() {
   const { track } = usePlayer();
   return (
     <div className={`app ${track ? "with-player" : ""}`}>
+      <Bubbles />
       <aside className="sidebar">
         <Link to="/search" className="brand">
           <span className="brand-mark" aria-hidden="true">

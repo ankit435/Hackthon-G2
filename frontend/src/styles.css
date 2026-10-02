@@ -57,6 +57,10 @@ body::before { /* faint grid for depth */
   mask-image: radial-gradient(ellipse at 50% 20%, black 30%, transparent 75%);
 }
 #root { position: relative; z-index: 1; }
+/* Physics bubbles (components/Bubbles.tsx): fixed behind everything, never catches clicks. */
+.bubbles { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 0; pointer-events: none; filter: blur(1px) saturate(1.2); }
+.app > .sidebar, .app > .content { z-index: 1; }
+.app > .content { position: relative; }
 a { color: inherit; }
 h1 { font-size: 2rem; line-height: 1.15; margin: 0 0 6px; letter-spacing: -0.03em; font-weight: 800; }
 h2 { font-size: 1.05rem; margin: 0 0 12px; letter-spacing: -0.01em; }
